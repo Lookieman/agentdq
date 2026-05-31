@@ -1,0 +1,32 @@
+# Data (DVC-tracked, not Git)
+data/raw/
+data/synthetic/
+mlruns/
+
+# Environment
+.env
+*.pyc
+__pycache__/
+.venv/
+venv/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Distribution
+dist/
+build/
+*.egg-info/
+
+# DVC cache
+.dvc/cache/
