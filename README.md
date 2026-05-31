@@ -132,5 +132,5 @@ This project is for portfolio and educational purposes.
 
 ## Author
 
-<!-- Replace with your details -->
-[Your Name](https://github.com/<your-username>)
+
+[Luqman ](https://github.com/Lookieman/agentdq)

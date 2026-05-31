@@ -9,6 +9,7 @@ mlruns/
 __pycache__/
 .venv/
 venv/
+.obsidian/
 
 # OS
 .DS_Store
