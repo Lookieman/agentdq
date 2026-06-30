@@ -1,0 +1,37 @@
+[project]
+name = "agentdq"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "dspy>=3.2.1",
+    "duckdb>=1.5.3",
+    "faker>=40.19.1",
+    "great-expectations>=1.17.2",
+    "httpx>=0.28.1",
+    "langchain-openai>=1.2.2",
+    "langgraph>=1.2.2",
+    "langgraph-cli[inmem]>=0.4.27",
+    "mlflow>=1.27.0",
+    "numpy>=2.4.6",
+    "openai>=2.38.0",
+    "openpyxl>=3.1.5",
+    "pandas>=3.0.3",
+    "plotly>=6.7.0",
+    "pyarrow>=24.0.0",
+    "pydantic>=2.13.4",
+    "python-dotenv>=1.2.2",
+    "pyyaml>=6.0.3",
+    "rapidfuzz>=3.14.5",
+    "sentence-transformers>=5.5.1",
+    "streamlit>=1.58.0",
+    "structlog>=25.5.0",
+]
+
+[dependency-groups]
+dev = [
+    "dvc>=3.67.1",
+    "pytest>=9.0.3",
+    "ruff>=0.15.15",
+]

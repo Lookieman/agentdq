@@ -1,0 +1,370 @@
+{
+  "table": "MAKT",
+  "row_count": 2776,
+  "field_count": 5,
+  "key_uniqueness": {
+    "primary_key": [
+      "MATNR",
+      "SPRAS"
+    ],
+    "key_fields_present": [
+      "MATNR",
+      "SPRAS"
+    ],
+    "key_fields_missing": [],
+    "distinct_key_count": 2776,
+    "duplicate_row_count": 0,
+    "is_unique": true,
+    "assessable": true,
+    "duplicate_examples": []
+  },
+  "fields": {
+    "MANDT": {
+      "name": "MANDT",
+      "type_hint": "constant",
+      "populated_count": 2776,
+      "populated_pct": 100.0,
+      "distinct_count": 1,
+      "min_length": 3,
+      "max_length": 3,
+      "top_values": [
+        {
+          "value": "100",
+          "count": 2776
+        }
+      ],
+      "inferred_domain": [
+        "100"
+      ],
+      "sample_values": [
+        "100",
+        "100",
+        "100",
+        "100",
+        "100"
+      ]
+    },
+    "MATNR": {
+      "name": "MATNR",
+      "type_hint": "key",
+      "populated_count": 2776,
+      "populated_pct": 100.0,
+      "distinct_count": 2776,
+      "min_length": 4,
+      "max_length": 18,
+      "top_values": [
+        {
+          "value": "000000000000000011",
+          "count": 1
+        },
+        {
+          "value": "000000000000000021",
+          "count": 1
+        },
+        {
+          "value": "000000000000000022",
+          "count": 1
+        },
+        {
+          "value": "000000000000000023",
+          "count": 1
+        },
+        {
+          "value": "000000000000000024",
+          "count": 1
+        },
+        {
+          "value": "000000000000000025",
+          "count": 1
+        },
+        {
+          "value": "000000000000000026",
+          "count": 1
+        },
+        {
+          "value": "000000000000000027",
+          "count": 1
+        },
+        {
+          "value": "000000000000000028",
+          "count": 1
+        },
+        {
+          "value": "000000000000000029",
+          "count": 1
+        },
+        {
+          "value": "000000000000000030",
+          "count": 1
+        },
+        {
+          "value": "000000000000000031",
+          "count": 1
+        },
+        {
+          "value": "000000000000000032",
+          "count": 1
+        },
+        {
+          "value": "000000000000000033",
+          "count": 1
+        },
+        {
+          "value": "000000000000000034",
+          "count": 1
+        },
+        {
+          "value": "000000000000000035",
+          "count": 1
+        },
+        {
+          "value": "000000000000000036",
+          "count": 1
+        },
+        {
+          "value": "000000000000000037",
+          "count": 1
+        },
+        {
+          "value": "000000000000000042",
+          "count": 1
+        },
+        {
+          "value": "000000000000000043",
+          "count": 1
+        }
+      ],
+      "inferred_domain": null,
+      "sample_values": [
+        "000000000000000011",
+        "000000000000000021",
+        "000000000000000022",
+        "000000000000000023",
+        "000000000000000024"
+      ]
+    },
+    "SPRAS": {
+      "name": "SPRAS",
+      "type_hint": "constant",
+      "populated_count": 2776,
+      "populated_pct": 100.0,
+      "distinct_count": 1,
+      "min_length": 1,
+      "max_length": 1,
+      "top_values": [
+        {
+          "value": "E",
+          "count": 2776
+        }
+      ],
+      "inferred_domain": [
+        "E"
+      ],
+      "sample_values": [
+        "E",
+        "E",
+        "E",
+        "E",
+        "E"
+      ]
+    },
+    "MAKTX": {
+      "name": "MAKTX",
+      "type_hint": "free_text",
+      "populated_count": 2776,
+      "populated_pct": 100.0,
+      "distinct_count": 1122,
+      "min_length": 4,
+      "max_length": 40,
+      "top_values": [
+        {
+          "value": "Frame",
+          "count": 95
+        },
+        {
+          "value": "Basic Paint",
+          "count": 62
+        },
+        {
+          "value": "Counterweight",
+          "count": 33
+        },
+        {
+          "value": "Additional Lighting",
+          "count": 33
+        },
+        {
+          "value": "Clutch",
+          "count": 32
+        },
+        {
+          "value": "Carrier",
+          "count": 32
+        },
+        {
+          "value": "Under Carriage",
+          "count": 32
+        },
+        {
+          "value": "Steering",
+          "count": 32
+        },
+        {
+          "value": "Wheels",
+          "count": 32
+        },
+        {
+          "value": "Oil assembly",
+          "count": 32
+        },
+        {
+          "value": "Schelter",
+          "count": 32
+        },
+        {
+          "value": "Gear Wheel",
+          "count": 32
+        },
+        {
+          "value": "Additions",
+          "count": 32
+        },
+        {
+          "value": "Tubes and Wires",
+          "count": 32
+        },
+        {
+          "value": "Generator",
+          "count": 32
+        },
+        {
+          "value": "Cylinder",
+          "count": 32
+        },
+        {
+          "value": "Engine cooling",
+          "count": 32
+        },
+        {
+          "value": "Brakes",
+          "count": 32
+        },
+        {
+          "value": "Fork",
+          "count": 32
+        },
+        {
+          "value": "Brake Unit",
+          "count": 32
+        }
+      ],
+      "inferred_domain": null,
+      "sample_values": [
+        "MDG Demo Laptop",
+        "Pump PRECISION 100",
+        "Pump PRECISION 107",
+        "Pump PRECISION 108",
+        "Pump cast steel IDESNORM 170-230"
+      ]
+    },
+    "MAKTG": {
+      "name": "MAKTG",
+      "type_hint": "free_text",
+      "populated_count": 2776,
+      "populated_pct": 100.0,
+      "distinct_count": 1121,
+      "min_length": 4,
+      "max_length": 95,
+      "top_values": [
+        {
+          "value": "FRAME",
+          "count": 95
+        },
+        {
+          "value": "BASIC PAINT",
+          "count": 62
+        },
+        {
+          "value": "COUNTERWEIGHT",
+          "count": 33
+        },
+        {
+          "value": "ADDITIONAL LIGHTING",
+          "count": 33
+        },
+        {
+          "value": "CLUTCH",
+          "count": 32
+        },
+        {
+          "value": "CARRIER",
+          "count": 32
+        },
+        {
+          "value": "UNDER CARRIAGE",
+          "count": 32
+        },
+        {
+          "value": "STEERING",
+          "count": 32
+        },
+        {
+          "value": "WHEELS",
+          "count": 32
+        },
+        {
+          "value": "OIL ASSEMBLY",
+          "count": 32
+        },
+        {
+          "value": "SCHELTER",
+          "count": 32
+        },
+        {
+          "value": "GEAR WHEEL",
+          "count": 32
+        },
+        {
+          "value": "ADDITIONS",
+          "count": 32
+        },
+        {
+          "value": "TUBES AND WIRES",
+          "count": 32
+        },
+        {
+          "value": "GENERATOR",
+          "count": 32
+        },
+        {
+          "value": "CYLINDER",
+          "count": 32
+        },
+        {
+          "value": "ENGINE COOLING",
+          "count": 32
+        },
+        {
+          "value": "BRAKES",
+          "count": 32
+        },
+        {
+          "value": "FORK",
+          "count": 32
+        },
+        {
+          "value": "BRAKE UNIT",
+          "count": 32
+        }
+      ],
+      "inferred_domain": null,
+      "sample_values": [
+        "MDG DEMO LAPTOP",
+        "PUMP PRECISION 100",
+        "PUMP PRECISION 107",
+        "PUMP PRECISION 108",
+        "PUMP CAST STEEL IDESNORM 170-230"
+      ]
+    }
+  }
+}

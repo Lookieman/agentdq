@@ -1,0 +1,325 @@
+table: MARA
+description: General Material Data
+source_system: SAP S/4HANA (Cloud Appliance Library)
+primary_key:
+- MATNR
+header_anchor: MATNR
+formatting:
+  decimal_separator: ','
+  thousands_separator: .
+  date_format: '%m/%d/%Y'
+  null_date_sentinels:
+  - 00/00/0000
+fields:
+  MANDT:
+    description: Client
+    role: client
+    type: client
+    mandatory: true
+    length:
+      min: 3
+      max: 3
+    observed_population_pct: 100.0
+  MATNR:
+    description: Material Number
+    role: key
+    type: key
+    mandatory: true
+    length:
+      min: 4
+      max: 18
+    observed_population_pct: 100.0
+  ERSDA:
+    description: Created On
+    role: temporal
+    type: date
+    mandatory: false
+    length:
+      min: 10
+      max: 10
+    observed_population_pct: 100.0
+  LAEDA:
+    description: Last Changed On
+    role: temporal
+    type: date
+    mandatory: false
+    length:
+      min: 10
+      max: 10
+    observed_population_pct: 100.0
+  ERNAM:
+    description: Created By
+    role: temporal
+    type: text
+    mandatory: false
+    length:
+      min: 6
+      max: 12
+    observed_population_pct: 100.0
+  AENAM:
+    description: Last Changed By
+    role: temporal
+    type: text
+    mandatory: false
+    length:
+      min: 6
+      max: 12
+    observed_population_pct: 96.93
+  LVORM:
+    description: Deletion Flag (client level)
+    role: flag
+    type: flag
+    mandatory: false
+    domain:
+    - X
+    length:
+      min: 1
+      max: 1
+    observed_population_pct: 0.07
+  MTART:
+    description: Material Type
+    role: attribute
+    type: code
+    mandatory: true
+    domain:
+    - BUND
+    - DIEN
+    - ERSA
+    - FERT
+    - FHMI
+    - HALB
+    - HAWA
+    - HIBE
+    - IBAU
+    - KMAT
+    - LEIH
+    - MAT
+    - NLAG
+    - PIPE
+    - ROH
+    - SERV
+    - SUBS
+    - SWNV
+    - UNFR
+    - UNSF
+    - VEHI
+    - VERP
+    length:
+      min: 3
+      max: 4
+    observed_population_pct: 100.0
+  MBRSH:
+    description: Industry Sector
+    role: attribute
+    type: code
+    mandatory: true
+    domain:
+    - '1'
+    - A
+    - C
+    - M
+    - P
+    length:
+      min: 1
+      max: 1
+    observed_population_pct: 100.0
+  MATKL:
+    description: Material Group
+    role: attribute
+    type: code
+    mandatory: false
+    domain:
+    - '01'
+    - '02'
+    - '190102'
+    - '211502'
+    - DIGIVEHI
+    - FL80
+    - L001
+    - L002
+    - L003
+    - L004
+    - L005
+    - L006
+    - L008
+    - P001
+    - P002
+    - SUBS
+    - YBFA05
+    - YBMM00
+    - YBMM01
+    - YBPM01
+    - Z991
+    - Z992
+    - ZBRAKES
+    - ZCRUISE
+    - ZFORK
+    - ZFRAME
+    - ZGEARS
+    - ZHANDLE
+    - ZMTN
+    - ZPEDAL
+    - ZRACING
+    - ZSEAT
+    - ZSHOCK
+    - ZTRAIN
+    - ZWHEEL
+    - ZYOUTH
+    length:
+      min: 2
+      max: 8
+    observed_population_pct: 96.14
+  BISMT:
+    description: Old Material Number
+    role: attribute
+    type: text
+    mandatory: false
+    length:
+      min: 6
+      max: 10
+    observed_population_pct: 0.86
+  MEINS:
+    description: Base Unit of Measure
+    role: attribute
+    type: code
+    mandatory: true
+    domain:
+    - BAG
+    - BOT
+    - CCM
+    - EA
+    - H
+    - KG
+    - KM
+    - L
+    - LE
+    - M2
+    - M3
+    - ST
+    - STD
+    - WCH
+    length:
+      min: 1
+      max: 3
+    observed_population_pct: 100.0
+  BSTME:
+    description: Order Unit
+    role: attribute
+    type: code
+    mandatory: false
+    length:
+      min: 0
+      max: 0
+    observed_population_pct: 0.0
+  MAGRV:
+    description: 'Material Group: Packaging Materials'
+    role: attribute
+    type: code
+    mandatory: false
+    domain:
+    - PKGR
+    length:
+      min: 4
+      max: 4
+    observed_population_pct: 0.21
+  RAUBE:
+    description: Storage Conditions
+    role: attribute
+    type: code
+    mandatory: false
+    domain:
+    - '01'
+    - '10'
+    - YE
+    length:
+      min: 2
+      max: 2
+    observed_population_pct: 7.39
+  TRAGR:
+    description: Transportation Group
+    role: attribute
+    type: code
+    mandatory: false
+    domain:
+    - '0001'
+    - '0004'
+    length:
+      min: 4
+      max: 4
+    observed_population_pct: 41.61
+  SPART:
+    description: Division
+    role: attribute
+    type: code
+    mandatory: false
+    domain:
+    - '00'
+    - '01'
+    length:
+      min: 2
+      max: 2
+    observed_population_pct: 13.43
+  BRGEW:
+    description: Gross Weight
+    role: attribute
+    type: quantity
+    mandatory: false
+    decimal: true
+    length:
+      min: 5
+      max: 9
+    observed_population_pct: 100.0
+  NTGEW:
+    description: Net Weight
+    role: attribute
+    type: quantity
+    mandatory: false
+    decimal: true
+    length:
+      min: 5
+      max: 9
+    observed_population_pct: 100.0
+  GEWEI:
+    description: Weight Unit
+    role: attribute
+    type: code
+    mandatory: false
+    domain:
+    - G
+    - KG
+    length:
+      min: 1
+      max: 2
+    observed_population_pct: 91.71
+  VOLUM:
+    description: Volume
+    role: attribute
+    type: quantity
+    mandatory: false
+    decimal: true
+    length:
+      min: 5
+      max: 7
+    observed_population_pct: 100.0
+  VOLEH:
+    description: Volume Unit
+    role: attribute
+    type: code
+    mandatory: false
+    domain:
+    - CDM
+    - L
+    - M3
+    length:
+      min: 1
+      max: 3
+    observed_population_pct: 17.57
+  WRKST:
+    description: Basic Material
+    role: attribute
+    type: text
+    mandatory: false
+    length:
+      min: 9
+      max: 22
+    observed_population_pct: 4.29

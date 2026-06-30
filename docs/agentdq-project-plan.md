@@ -43,6 +43,41 @@ Six specialist agents, one per DAMA dimension, plus an orchestrator and a report
 
 **Reporter — Remediation Recommender** — Consumes the structured findings from all six agents, prioritises by business impact (a completeness gap in safety-critical material fields outranks a formatting issue in search terms), and generates a structured remediation report. This is a DSPy pipeline: `DimensionFindings, MaterialType, BusinessContext -> PrioritisedRemediations, ExecutiveSummary`.
 
+### Profiling: Deterministic Measurement, Agentic Interpretation
+
+A deliberate separation runs through the profiling stage, and it is the template every downstream dimension agent follows: deterministic measurement first, language-model interpretation second. Profiling answers "what does the data look like?"; interpretation answers "so what, and who should care?". The two are different jobs and are kept in different layers.
+
+**Deterministic profiler (the evidence layer).** A pandas-based module computes the facts: per-field population rates, distinct counts, inferred domains, value-length ranges, a coarse type hint, and composite-key uniqueness (one row per material per plant in MARC, per plant and storage location in MARD). It is fast, free, fully reproducible, and emits structured JSON. It never uses a language model — arithmetic and counting are not tasks to delegate to an LLM. This layer is the single source of truth that everything else cites.
+
+**Profiler Agent (the interpretation layer).** A DSPy module sits on top of that JSON and turns it into a narrative for a non-technical data-operations audience. It interprets; it does not measure. A representative signature is:
+
+```
+TableProfile, BusinessContext -> HealthSummary, Concerns, PlainLanguageReadout
+```
+
+So "EKGRP populated 73.83%, MATKL 96.14%, MMSTD 99.97% sentinel" becomes "Purchasing groups are missing on roughly a quarter of plant records, which will block automated procurement for those materials. Material groups are in good shape. Most plant-status dates are empty, which is normal for active materials."
+
+Two principles govern the agent:
+
+- **It cites the numbers it reasons from.** Every claim is anchored to a figure in the deterministic profile rather than free-narrated. This keeps the readout honest and auditable, which a data-operations audience needs in order to trust and act on it.
+- **Severity reflects business impact, not raw percentage.** A 5% gap in a safety-relevant field outranks a 30% gap in a cosmetic one. The agent therefore takes a small amount of domain context about which fields matter as an input, supplied from SAP knowledge, rather than ranking issues by magnitude alone.
+
+The separation earns its keep three ways. The numbers stay trustworthy because no language model computes them. The narrative is cheap to regenerate and easy to tune per audience — the same JSON can yield a technical readout, a data-operations summary and an executive paragraph from three different signatures, with no change to the evidence layer. And it is a low-risk rehearsal of the exact pattern the six dimension agents use, letting the DSPy and MLflow plumbing be proven out before the dimension logic gets complicated.
+
+```mermaid
+graph LR
+    DATA[(Extract)] --> PROF[Deterministic Profiler<br/>pandas, no LLM]
+    PROF --> JSON[Structured profile JSON<br/>population, domains, key uniqueness]
+    JSON --> AGENT[Profiler Agent<br/>DSPy interpretation]
+    CTX[Business context<br/>which fields matter] --> AGENT
+    JSON --> GEN[Generator calibration]
+    JSON --> ROUTE[Orchestrator routing signals]
+    AGENT --> READ[Plain-language readout<br/>cites the numbers]
+    AGENT --> ROUTE
+```
+
+This "deterministic findings in, judgement out" contract is the shape of every dimension agent that follows: a deterministic core establishes verifiable findings, and a language-model layer interprets, prioritises and explains them while citing that evidence. The raw profile always remains available for anyone who wants the underlying numbers.
+
 ### Execution Flow
 
 ```mermaid
@@ -65,6 +100,140 @@ graph LR
 ```
 
 Conditional edges apply — for instance, if the Completeness Agent finds the table is less than 70% complete, the Uniqueness Agent gets deprioritised (no point finding duplicates in sparse data), and the Remediation Recommender is told to flag completeness as the primary concern.
+
+---
+
+---
+
+## Rules Ingestion and Authoring
+
+Rules are not hard-coded in the agents. They are declarative artefacts that enter the system, are validated against the schema, and are compiled to whichever engine runs them. How rules are authored determines whether Phase 2 is a recompile or a rewrite, so the design treats authoring as platform-neutral and execution as a compiler target.
+
+### Two front-ends, one representation, many back-ends
+
+Rules arrive two ways, and both converge on a single canonical representation:
+
+- the **IS importer**, which bulk-seeds the legacy Information Steward rules (roughly 1,600 rules) by deterministic parsing; and
+- the **natural-language authoring agent**, through which a data-operations user writes a new rule in English and the agent interprets it into a formal rule.
+
+Both emit one **canonical rule representation (IR)**: a declarative, platform-neutral specification. The IR is then compiled to the execution engine — pandas in Phase 1, Spark SQL on Databricks or HANA SQL on SAP BDC in Phase 2.
+
+```mermaid
+graph TD
+    NL[Data-ops natural language] --> AGENT[NL Authoring Agent<br/>DSPy]
+    IS[IS workbook expressions] --> IMP[IS Importer<br/>deterministic parse]
+    AGENT --> IR[Canonical Rule IR<br/>declarative, platform-neutral]
+    IMP --> IR
+    IR --> P1[pandas executor<br/>Phase 1]
+    IR --> P2A[Spark SQL / DLT<br/>Databricks]
+    IR --> P2B[HANA SQL / views<br/>SAP BDC Datasphere]
+    P1 --> FIND[Findings]
+    P2A --> FIND
+    P2B --> FIND
+```
+
+### Emit IR, not code
+
+The system never asks a language model to write executable Python or SQL. The IR is a declarative description of the check — a small typed predicate tree — and a deterministic compiler turns it into code. This buys four properties, each of which matters most in Phase 2:
+
+```
+Property         Why it matters
+---------------  ---------------------------------------------------------
+Safe             No model-authored code runs against the warehouse; the IR
+                 is validated before anything executes.
+Portable         One IR compiles to pandas, Spark SQL or HANA SQL. The rule
+                 outlives the platform.
+Validatable      Field names, types and domains are checked against the
+                 schema before a rule runs. Hallucinated fields are
+                 rejected, not executed.
+Pushdown         The IR compiles to SQL that runs in Databricks or
+                 Datasphere, so checks execute where the data lives rather
+                 than pulling rows to the client. This is what scales.
+```
+
+In Phase 1 the pandas executor pulls data to the desktop. In Phase 2 that is not viable, so the IR compiles to SQL that executes in place. The agent and the IR are unchanged; only the compiler differs.
+
+### The predicate: one structure, three roles
+
+A single small **predicate** type is reused throughout. A predicate is either a comparison (`{field, op, value}`, with operators such as `in`, `is_not_null`, `gt`, `matches`) or a boolean node (`and`, `or`, `not`, `implies` over child predicates). The same structure serves three roles:
+
+```
+Role         In the RuleSpec    What it expresses
+-----------  -----------------  ------------------------------------------
+scope        scope              which rows the rule applies to  (a filter)
+condition    assertion (when)   the antecedent of a cross-field rule
+assertion    assertion (then)   what must hold for in-scope rows
+```
+
+A scoped cross-field rule then reads cleanly:
+
+```
+rule:   max-stock required for reorder-point planning
+table:  MARC
+scope:      LVORM is_null                 # only non-deleted plant records
+assertion:  implies(
+              DISMM in ['VB', 'ZB'],      # when reorder-point MRP type
+              MABST is_not_null )         # then max stock must be set
+meta:   dimension=Consistency, archetype=cross_field, severity=High
+```
+
+Evaluation semantics are uniform across every archetype, which keeps the executor simple:
+
+```
+in_scope  = scope is None OR eval(scope, row) is True
+violated  = in_scope AND NOT eval(assertion, row)
+```
+
+A not-null rule is `assertion = {field, is_not_null}` with no scope; a domain rule is `assertion = {field, in, domain_values}`. One model expresses every rule.
+
+### Scope filters as a first-class concept
+
+Scope is a first-class part of the spec, not an afterthought, because it is the single biggest lever for high-volume data. The scope predicate compiles directly to a SQL `WHERE` clause, so a check only ever scans the rows it cares about. "Reorder-point rule for active FERT materials in three plants" might touch a fraction of a percent of a billion-row table rather than all of it. Scope filter equals pushdown equals cost saved, and it reuses the same predicate machinery the cross-field rules already need.
+
+For the first cut, scope predicates reference the rule's **own table** (single-table filter). Cross-table scope — for example "apply to MARC rows whose MARA-MTART is FERT" — requires join machinery and is deferred to the same extension that introduces cross-table consistency rules generally. Same-table scope covers the large majority of real filters.
+
+### The natural-language authoring agent
+
+A DSPy module, not a prompt string, with a signature along the lines of:
+
+```
+rule_text, table_schema, existing_rules -> rule_spec, dimension, archetype, rationale
+```
+
+The design points that make it trustworthy for a non-technical author:
+
+- **Grounded in the schema.** The agent receives the table's fields, types, domains and keys, so it binds to real columns and any reference to a non-existent field is rejected. This reuses the schema layer.
+- **Emits a typed RuleSpec, not free text.** DSPy produces a validated object directly, so the output is structurally constrained by construction.
+- **Explain-back and dry-run before saving.** The agent compiles the proposed IR with the Phase-1 executor, runs it against the current dataset, and shows the user a plain-language paraphrase plus an impact preview ("this would flag 412 of 5,000 MARC rows; here are five examples"). The user confirms or corrects. This closes the loop between intent and interpretation and resolves the ambiguity natural language always carries.
+- **Classifies dimension and archetype** with the same mapping logic the importer uses, and **stores the original natural-language text as provenance**, mirroring how the IS expression is retained for lineage.
+
+### The IS workbook as gold set
+
+The IS workbook is more than a seed catalogue. Each rule pairs a natural-language description with its formal expression, so once the importer has produced IR, the result is a set of roughly 1,600 `(natural language -> formal rule)` pairs. That is the labelled set used to optimise the authoring agent with DSPy and to score it in MLflow. Building the importer first is therefore doubly justified: it seeds the catalogue and it produces the evaluation set for the agent.
+
+### Phase 2 portability, concretely
+
+Only the bottom layer changes between phases:
+
+```
+Concern            Phase 1                  Phase 2
+-----------------  -----------------------  ------------------------------
+Execution          pandas executor          SQL compiler (Spark / HANA),
+                                             via a transpiler such as
+                                             SQLGlot for dialect targets
+Authoring LLM      OpenAI API               SAP AI Core (GenAI Hub) or
+                                             Databricks model serving;
+                                             a DSPy config change
+Rule repository    git-tracked YAML         governed table (Delta or
+                                             Datasphere) with a lifecycle:
+                                             draft -> approved -> active
+```
+
+Author, natural-language origin, dry-run statistics and timestamp travel with each rule for audit.
+
+### Relationship to the current contracts
+
+The `Rule` contract already carries dimension, archetype, domain values and provenance, and covers the simple archetypes (not-null, domain-in) directly. The one evolution required is to add the **predicate tree** for the compositional cases — scope filters and cross-field `when/then` with `and`/`or`/`not`/`implies` — so the IR can express the richer rules. This is an extension of the existing contract rather than a new concept.
 
 ---
 

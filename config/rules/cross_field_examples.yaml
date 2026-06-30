@@ -1,0 +1,87 @@
+table: MARC
+rule_count: 2
+note: Curated compositional rules demonstrating cross-field logic and same-table scope.
+rules:
+- rule_id: IS_MARC_DISLS_CROSS_FIELD
+  name: ZB_G13_MATNR_MARC_DISLS_LOTSIZE
+  table: MARC
+  dama_dimension: Consistency
+  is_dimension: Accuracy
+  archetype: cross_field
+  severity: High
+  description: Lot-sizing procedure must agree with MRP type (MRP 1 view).
+  fields:
+  - DISMM
+  - DISLS
+  assertion:
+    node: bool
+    op: or
+    operands:
+    - node: bool
+      op: and
+      operands:
+      - node: cmp
+        field: DISMM
+        op: in
+        value:
+        - VB
+        - ZB
+      - node: cmp
+        field: DISLS
+        op: eq
+        value: HB
+    - node: bool
+      op: and
+      operands:
+      - node: cmp
+        field: DISMM
+        op: eq
+        value: PD
+      - node: cmp
+        field: DISLS
+        op: eq
+        value: EX
+    - node: cmp
+      field: DISLS
+      op: is_null
+  executable: true
+  provenance:
+    source: information_steward
+    original_name: ZB_G13_MATNR_MARC_DISLS_LOTSIZE
+    original_expression: ($P_I_MRPType in ('VB','ZB') and $P_I_LotSize = 'HB') or
+      ($P_I_MRPType = 'PD' and $P_I_LotSize = 'EX') or $P_I_LotSize is null
+    rule_doc: Lot size of material master in MRP 1 view.
+- rule_id: EX_MARC_MABST_REORDER_SCOPED
+  name: EX_MARC_MABST_REQUIRED_FOR_REORDER
+  table: MARC
+  dama_dimension: Consistency
+  archetype: cross_field
+  severity: High
+  description: For active plant records, reorder-point MRP types require a maximum
+    stock level.
+  fields:
+  - LVORM
+  - DISMM
+  - MABST
+  scope:
+    node: cmp
+    field: LVORM
+    op: is_null
+  assertion:
+    node: bool
+    op: implies
+    operands:
+    - node: cmp
+      field: DISMM
+      op: in
+      value:
+      - VB
+      - ZB
+    - node: cmp
+      field: MABST
+      op: is_not_null
+  executable: true
+  provenance:
+    source: curated_example
+    rule_doc: Illustrative scoped cross-field rule demonstrating same-table scope
+      filtering.

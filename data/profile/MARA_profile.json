@@ -1,0 +1,3369 @@
+{
+  "table": "MARA",
+  "row_count": 2800,
+  "field_count": 85,
+  "key_uniqueness": {
+    "primary_key": [
+      "MATNR"
+    ],
+    "key_fields_present": [
+      "MATNR"
+    ],
+    "key_fields_missing": [],
+    "distinct_key_count": 2800,
+    "duplicate_row_count": 0,
+    "is_unique": true,
+    "assessable": true,
+    "duplicate_examples": []
+  },
+  "fields": {
+    "MANDT": {
+      "name": "MANDT",
+      "type_hint": "constant",
+      "populated_count": 2800,
+      "populated_pct": 100.0,
+      "distinct_count": 1,
+      "min_length": 3,
+      "max_length": 3,
+      "top_values": [
+        {
+          "value": "100",
+          "count": 2800
+        }
+      ],
+      "inferred_domain": [
+        "100"
+      ],
+      "sample_values": [
+        "100",
+        "100",
+        "100",
+        "100",
+        "100"
+      ]
+    },
+    "MATNR": {
+      "name": "MATNR",
+      "type_hint": "key",
+      "populated_count": 2800,
+      "populated_pct": 100.0,
+      "distinct_count": 2800,
+      "min_length": 4,
+      "max_length": 18,
+      "top_values": [
+        {
+          "value": "000000000000000011",
+          "count": 1
+        },
+        {
+          "value": "000000000000000021",
+          "count": 1
+        },
+        {
+          "value": "000000000000000022",
+          "count": 1
+        },
+        {
+          "value": "000000000000000023",
+          "count": 1
+        },
+        {
+          "value": "000000000000000024",
+          "count": 1
+        },
+        {
+          "value": "000000000000000025",
+          "count": 1
+        },
+        {
+          "value": "000000000000000026",
+          "count": 1
+        },
+        {
+          "value": "000000000000000027",
+          "count": 1
+        },
+        {
+          "value": "000000000000000028",
+          "count": 1
+        },
+        {
+          "value": "000000000000000029",
+          "count": 1
+        },
+        {
+          "value": "000000000000000030",
+          "count": 1
+        },
+        {
+          "value": "000000000000000031",
+          "count": 1
+        },
+        {
+          "value": "000000000000000032",
+          "count": 1
+        },
+        {
+          "value": "000000000000000033",
+          "count": 1
+        },
+        {
+          "value": "000000000000000034",
+          "count": 1
+        },
+        {
+          "value": "000000000000000035",
+          "count": 1
+        },
+        {
+          "value": "000000000000000036",
+          "count": 1
+        },
+        {
+          "value": "000000000000000037",
+          "count": 1
+        },
+        {
+          "value": "000000000000000042",
+          "count": 1
+        },
+        {
+          "value": "000000000000000043",
+          "count": 1
+        }
+      ],
+      "inferred_domain": null,
+      "sample_values": [
+        "000000000000000011",
+        "000000000000000021",
+        "000000000000000022",
+        "000000000000000023",
+        "000000000000000024"
+      ]
+    },
+    "ERSDA": {
+      "name": "ERSDA",
+      "type_hint": "free_text",
+      "populated_count": 2800,
+      "populated_pct": 100.0,
+      "distinct_count": 93,
+      "min_length": 10,
+      "max_length": 10,
+      "top_values": [
+        {
+          "value": "10/24/2019",
+          "count": 2056
+        },
+        {
+          "value": "10/05/2017",
+          "count": 108
+        },
+        {
+          "value": "10/09/2018",
+          "count": 89
+        },
+        {
+          "value": "10/07/2017",
+          "count": 81
+        },
+        {
+          "value": "03/06/2019",
+          "count": 71
+        },
+        {
+          "value": "09/26/2019",
+          "count": 65
+        },
+        {
+          "value": "10/16/2025",
+          "count": 48
+        },
+        {
+          "value": "10/16/2020",
+          "count": 24
+        },
+        {
+          "value": "11/17/2023",
+          "count": 20
+        },
+        {
+          "value": "02/26/2019",
+          "count": 18
+        },
+        {
+          "value": "10/19/2021",
+          "count": 16
+        },
+        {
+          "value": "10/06/2017",
+          "count": 14
+        },
+        {
+          "value": "05/13/2026",
+          "count": 10
+        },
+        {
+          "value": "10/18/2024",
+          "count": 10
+        },
+        {
+          "value": "10/08/2017",
+          "count": 9
+        },
+        {
+          "value": "06/21/2023",
+          "count": 8
+        },
+        {
+          "value": "10/17/2022",
+          "count": 8
+        },
+        {
+          "value": "10/28/2020",
+          "count": 6
+        },
+        {
+          "value": "02/22/2019",
+          "count": 6
+        },
+        {
+          "value": "11/22/2022",
+          "count": 5
+        }
+      ],
+      "inferred_domain": null,
+      "sample_values": [
+        "02/14/2019",
+        "02/26/2019",
+        "02/26/2019",
+        "02/26/2019",
+        "02/26/2019"
+      ]
+    },
+    "CREATED_AT_TIME": {
+      "name": "CREATED_AT_TIME",
+      "type_hint": "free_text",
+      "populated_count": 2800,
+      "populated_pct": 100.0,
+      "distinct_count": 204,
+      "min_length": 8,
+      "max_length": 8,
+      "top_values": [
+        {
+          "value": "00:00:00",
+          "count": 406
+        },
+        {
+          "value": "10:30:01",
+          "count": 164
+        },
+        {
+          "value": "10:30:02",
+          "count": 164
+        },
+        {
+          "value": "10:30:18",
+          "count": 162
+        },
+        {
+          "value": "10:30:20",
+          "count": 162
+        },
+        {
+          "value": "10:30:21",
+          "count": 162
+        },
+        {
+          "value": "10:30:03",
+          "count": 161
+        },
+        {
+          "value": "10:30:19",
+          "count": 161
+        },
+        {
+          "value": "10:30:00",
+          "count": 158
+        },
+        {
+          "value": "10:30:04",
+          "count": 158
+        },
+        {
+          "value": "10:30:17",
+          "count": 150
+        },
+        {
+          "value": "10:30:05",
+          "count": 132
+        },
+        {
+          "value": "10:30:22",
+          "count": 103
+        },
+        {
+          "value": "10:29:59",
+          "count": 58
+        },
+        {
+          "value": "10:30:16",
+          "count": 51
+        },
+        {
+          "value": "10:30:23",
+          "count": 45
+        },
+        {
+          "value": "23:51:34",
+          "count": 20
+        },
+        {
+          "value": "10:30:33",
+          "count": 15
+        },
+        {
+          "value": "10:30:31",
+          "count": 14
+        },
+        {
+          "value": "16:33:16",
+          "count": 14
+        }
+      ],
+      "inferred_domain": null,
+      "sample_values": [
+        "00:00:00",
+        "00:00:00",
+        "00:00:00",
+        "00:00:00",
+        "00:00:00"
+      ]
+    },
+    "ERNAM": {
+      "name": "ERNAM",
+      "type_hint": "categorical",
+      "populated_count": 2800,
+      "populated_pct": 100.0,
+      "distinct_count": 17,
+      "min_length": 6,
+      "max_length": 12,
+      "top_values": [
+        {
+          "value": "SAP_WFRT",
+          "count": 2167
+        },
+        {
+          "value": "BPINST",
+          "count": 523
+        },
+        {
+          "value": "MDG_APPROVER",
+          "count": 26
+        },
+        {
+          "value": "S4H_PP",
+          "count": 18
+        },
+        {
+          "value": "I511972",
+          "count": 18
+        },
+        {
+          "value": "S4H_MM",
+          "count": 9
+        },
+        {
+          "value": "SERV_MAN",
+          "count": 8
+        },
+        {
+          "value": "S4H_EXT",
+          "count": 8
+        },
+        {
+          "value": "MDG_EXPERT",
+          "count": 4
+        },
+        {
+          "value": "APPROVER",
+          "count": 4
+        },
+        {
+          "value": "S4H_PP_DEM",
+          "count": 4
+        },
+        {
+          "value": "I503086",
+          "count": 3
+        },
+        {
+          "value": "S4H_SD",
+          "count": 3
+        },
+        {
+          "value": "I572561",
+          "count": 2
+        },
+        {
+          "value": "S4H_TM",
+          "count": 1
+        },
+        {
+          "value": "MCS_MAN",
+          "count": 1
+        },
+        {
+          "value": "S4H_MM_DEM",
+          "count": 1
+        }
+      ],
+      "inferred_domain": [
+        "APPROVER",
+        "BPINST",
+        "I503086",
+        "I511972",
+        "I572561",
+        "MCS_MAN",
+        "MDG_APPROVER",
+        "MDG_EXPERT",
+        "S4H_EXT",
+        "S4H_MM",
+        "S4H_MM_DEM",
+        "S4H_PP",
+        "S4H_PP_DEM",
+        "S4H_SD",
+        "S4H_TM",
+        "SAP_WFRT",
+        "SERV_MAN"
+      ],
+      "sample_values": [
+        "MDG_APPROVER",
+        "SAP_WFRT",
+        "SAP_WFRT",
+        "SAP_WFRT",
+        "SAP_WFRT"
+      ]
+    },
+    "LAEDA": {
+      "name": "LAEDA",
+      "type_hint": "free_text",
+      "populated_count": 2800,
+      "populated_pct": 100.0,
+      "distinct_count": 109,
+      "min_length": 10,
+      "max_length": 10,
+      "top_values": [
+        {
+          "value": "10/24/2019",
+          "count": 2055
+        },
+        {
+          "value": "00/00/0000",
+          "count": 86
+        },
+        {
+          "value": "10/17/2022",
+          "count": 82
+        },
+        {
+          "value": "11/02/2021",
+          "count": 67
+        },
+        {
+          "value": "10/16/2023",
+          "count": 67
+        },
+        {
+          "value": "10/16/2025",
+          "count": 52
+        },
+        {
+          "value": "09/27/2019",
+          "count": 49
+        },
+        {
+          "value": "10/19/2021",
+          "count": 42
+        },
+        {
+          "value": "10/17/2020",
+          "count": 21
+        },
+        {
+          "value": "11/17/2023",
+          "count": 20
+        },
+        {
+          "value": "03/19/2019",
+          "count": 16
+        },
+        {
+          "value": "10/18/2024",
+          "count": 15
+        },
+        {
+          "value": "10/09/2018",
+          "count": 14
+        },
+        {
+          "value": "11/22/2022",
+          "count": 11
+        },
+        {
+          "value": "05/19/2026",
+          "count": 10
+        },
+        {
+          "value": "05/13/2026",
+          "count": 10
+        },
+        {
+          "value": "06/21/2023",
+          "count": 8
+        },
+        {
+          "value": "11/07/2025",
+          "count": 8
+        },
+        {
+          "value": "10/09/2017",
+          "count": 6
+        },
+        {
+          "value": "09/26/2019",
+          "count": 6
+        }
+      ],
+      "inferred_domain": null,
+      "sample_values": [
+        "05/19/2026",
+        "05/19/2026",
+        "05/19/2026",
+        "05/19/2026",
+        "05/19/2026"
+      ]
+    },
+    "AENAM": {
+      "name": "AENAM",
+      "type_hint": "categorical",
+      "populated_count": 2714,
+      "populated_pct": 96.93,
+      "distinct_count": 22,
+      "min_length": 6,
+      "max_length": 12,
+      "top_values": [
+        {
+          "value": "SAP_WFRT",
+          "count": 2095
+        },
+        {
+          "value": "BPINST",
+          "count": 395
+        },
+        {
+          "value": "S4H_PP",
+          "count": 102
+        },
+        {
+          "value": "MDG_APPROVER",
+          "count": 25
+        },
+        {
+          "value": "I511972",
+          "count": 18
+        },
+        {
+          "value": "I503086",
+          "count": 14
+        },
+        {
+          "value": "S4H_EXT",
+          "count": 11
+        },
+        {
+          "value": "S4H_MM",
+          "count": 8
+        },
+        {
+          "value": "SERV_MAN",
+          "count": 7
+        },
+        {
+          "value": "S4H_CO",
+          "count": 6
+        },
+        {
+          "value": "S4H_PP_DEM",
+          "count": 5
+        },
+        {
+          "value": "MDG_EXPERT",
+          "count": 4
+        },
+        {
+          "value": "S4H_TM",
+          "count": 4
+        },
+        {
+          "value": "APPROVER",
+          "count": 4
+        },
+        {
+          "value": "S4H_FIN",
+          "count": 4
+        },
+        {
+          "value": "S4H_SD",
+          "count": 3
+        },
+        {
+          "value": "S4H_EWM_DEM",
+          "count": 2
+        },
+        {
+          "value": "S4H_DDR_DEM",
+          "count": 2
+        },
+        {
+          "value": "I572561",
+          "count": 2
+        },
+        {
+          "value": "SERV_EMPL",
+          "count": 1
+        }
+      ],
+      "inferred_domain": [
+        "APPROVER",
+        "BPINST",
+        "I503086",
+        "I511972",
+        "I572561",
+        "IHR_MAN",
+        "MDG_APPROVER",
+        "MDG_EXPERT",
+        "S4H_CO",
+        "S4H_DDR_DEM",
+        "S4H_EWM",
+        "S4H_EWM_DEM",
+        "S4H_EXT",
+        "S4H_FIN",
+        "S4H_MM",
+        "S4H_PP",
+        "S4H_PP_DEM",
+        "S4H_SD",
+        "S4H_TM",
+        "SAP_WFRT",
+        "SERV_EMPL",
+        "SERV_MAN"
+      ],
+      "sample_values": [
+        "I503086",
+        "I503086",
+        "I503086",
+        "I503086",
+        "I503086"
+      ]
+    },
+    "VPSTA": {
+      "name": "VPSTA",
+      "type_hint": "free_text",
+      "populated_count": 2800,
+      "populated_pct": 100.0,
+      "distinct_count": 163,
+      "min_length": 1,
+      "max_length": 14,
+      "top_values": [
+        {
+          "value": "KELD",
+          "count": 807
+        },
+        {
+          "value": "KLVD",
+          "count": 468
+        },
+        {
+          "value": "KA",
+          "count": 303
+        },
+        {
+          "value": "KLVDA",
+          "count": 220
+        },
+        {
+          "value": "KLD",
+          "count": 100
+        },
+        {
+          "value": "K",
+          "count": 98
+        },
+        {
+          "value": "KDELBQG",
+          "count": 77
+        },
+        {
+          "value": "KELVDQ",
+          "count": 64
+        },
+        {
+          "value": "KLEVDBG",
+          "count": 47
+        },
+        {
+          "value": "KDVG",
+          "count": 34
+        },
+        {
+          "value": "KELVQD",
+          "count": 32
+        },
+        {
+          "value": "KLVDAQ",
+          "count": 32
+        },
+        {
+          "value": "KLVDQ",
+          "count": 31
+        },
+        {
+          "value": "KV",
+          "count": 26
+        },
+        {
+          "value": "KVEDGLB",
+          "count": 20
+        },
+        {
+          "value": "KVEDLGB",
+          "count": 20
+        },
+        {
+          "value": "KAG",
+          "count": 16
+        },
+        {
+          "value": "KVDAGLB",
+          "count": 15
+        },
+        {
+          "value": "KLEVDB",
+          "count": 14
+        },
+        {
+          "value": "KLEVDBGZX",
+          "count": 14
+        }
+      ],
+      "inferred_domain": null,
+      "sample_values": [
+        "KDPX",
+        "KLVDGBX",
+        "KV",
+        "K",
+        "KLV"
+      ]
+    },
+    "PSTAT": {
+      "name": "PSTAT",
+      "type_hint": "free_text",
+      "populated_count": 2800,
+      "populated_pct": 100.0,
+      "distinct_count": 138,
+      "min_length": 1,
+      "max_length": 12,
+      "top_values": [
+        {
+          "value": "KELD",
+          "count": 807
+        },
+        {
+          "value": "KLVD",
+          "count": 468
+        },
+        {
+          "value": "KA",
+          "count": 303
+        },
+        {
+          "value": "KLVDA",
+          "count": 220
+        },
+        {
+          "value": "KLD",
+          "count": 100
+        },
+        {
+          "value": "K",
+          "count": 98
+        },
+        {
+          "value": "KDELBQG",
+          "count": 77
+        },
+        {
+          "value": "KELVDQ",
+          "count": 64
+        },
+        {
+          "value": "KLEVDBG",
+          "count": 61
+        },
+        {
+          "value": "KDVG",
+          "count": 34
+        },
+        {
+          "value": "KV",
+          "count": 32
+        },
+        {
+          "value": "KELVQD",
+          "count": 32
+        },
+        {
+          "value": "KLVDAQ",
+          "count": 32
+        },
+        {
+          "value": "KLVDQ",
+          "count": 31
+        },
+        {
+          "value": "KVEDGLB",
+          "count": 20
+        },
+        {
+          "value": "KVEDLGB",
+          "count": 20
+        },
+        {
+          "value": "KLEVDB",
+          "count": 17
+        },
+        {
+          "value": "KAG",
+          "count": 16
+        },
+        {
+          "value": "KVDAGLB",
+          "count": 15
+        },
+        {
+          "value": "KVEB",
+          "count": 14
+        }
+      ],
+      "inferred_domain": null,
+      "sample_values": [
+        "KDP",
+        "KLVDGB",
+        "KV",
+        "K",
+        "KLV"
+      ]
+    },
+    "LVORM": {
+      "name": "LVORM",
+      "type_hint": "constant",
+      "populated_count": 2,
+      "populated_pct": 0.07,
+      "distinct_count": 1,
+      "min_length": 1,
+      "max_length": 1,
+      "top_values": [
+        {
+          "value": "X",
+          "count": 2
+        }
+      ],
+      "inferred_domain": [
+        "X"
+      ],
+      "sample_values": [
+        "X",
+        "X"
+      ]
+    },
+    "MTART": {
+      "name": "MTART",
+      "type_hint": "categorical",
+      "populated_count": 2800,
+      "populated_pct": 100.0,
+      "distinct_count": 22,
+      "min_length": 3,
+      "max_length": 4,
+      "top_values": [
+        {
+          "value": "HALB",
+          "count": 2186
+        },
+        {
+          "value": "FERT",
+          "count": 251
+        },
+        {
+          "value": "ROH",
+          "count": 183
+        },
+        {
+          "value": "HAWA",
+          "count": 53
+        },
+        {
+          "value": "SERV",
+          "count": 28
+        },
+        {
+          "value": "KMAT",
+          "count": 20
+        },
+        {
+          "value": "VERP",
+          "count": 12
+        },
+        {
+          "value": "ERSA",
+          "count": 12
+        },
+        {
+          "value": "MAT",
+          "count": 11
+        },
+        {
+          "value": "FHMI",
+          "count": 8
+        },
+        {
+          "value": "DIEN",
+          "count": 6
+        },
+        {
+          "value": "SUBS",
+          "count": 6
+        },
+        {
+          "value": "SWNV",
+          "count": 6
+        },
+        {
+          "value": "BUND",
+          "count": 4
+        },
+        {
+          "value": "HIBE",
+          "count": 3
+        },
+        {
+          "value": "NLAG",
+          "count": 3
+        },
+        {
+          "value": "IBAU",
+          "count": 2
+        },
+        {
+          "value": "UNSF",
+          "count": 2
+        },
+        {
+          "value": "UNFR",
+          "count": 1
+        },
+        {
+          "value": "VEHI",
+          "count": 1
+        }
+      ],
+      "inferred_domain": [
+        "BUND",
+        "DIEN",
+        "ERSA",
+        "FERT",
+        "FHMI",
+        "HALB",
+        "HAWA",
+        "HIBE",
+        "IBAU",
+        "KMAT",
+        "LEIH",
+        "MAT",
+        "NLAG",
+        "PIPE",
+        "ROH",
+        "SERV",
+        "SUBS",
+        "SWNV",
+        "UNFR",
+        "UNSF",
+        "VEHI",
+        "VERP"
+      ],
+      "sample_values": [
+        "FERT",
+        "FERT",
+        "FERT",
+        "FERT",
+        "FERT"
+      ]
+    },
+    "MBRSH": {
+      "name": "MBRSH",
+      "type_hint": "categorical",
+      "populated_count": 2800,
+      "populated_pct": 100.0,
+      "distinct_count": 5,
+      "min_length": 1,
+      "max_length": 1,
+      "top_values": [
+        {
+          "value": "M",
+          "count": 2611
+        },
+        {
+          "value": "C",
+          "count": 160
+        },
+        {
+          "value": "1",
+          "count": 18
+        },
+        {
+          "value": "A",
+          "count": 6
+        },
+        {
+          "value": "P",
+          "count": 5
+        }
+      ],
+      "inferred_domain": [
+        "1",
+        "A",
+        "C",
+        "M",
+        "P"
+      ],
+      "sample_values": [
+        "M",
+        "M",
+        "M",
+        "M",
+        "M"
+      ]
+    },
+    "MATKL": {
+      "name": "MATKL",
+      "type_hint": "categorical",
+      "populated_count": 2692,
+      "populated_pct": 96.14,
+      "distinct_count": 36,
+      "min_length": 2,
+      "max_length": 8,
+      "top_values": [
+        {
+          "value": "L003",
+          "count": 1574
+        },
+        {
+          "value": "211502",
+          "count": 312
+        },
+        {
+          "value": "L004",
+          "count": 220
+        },
+        {
+          "value": "FL80",
+          "count": 125
+        },
+        {
+          "value": "L002",
+          "count": 93
+        },
+        {
+          "value": "L001",
+          "count": 86
+        },
+        {
+          "value": "L008",
+          "count": 52
+        },
+        {
+          "value": "01",
+          "count": 32
+        },
+        {
+          "value": "P001",
+          "count": 28
+        },
+        {
+          "value": "Z991",
+          "count": 15
+        },
+        {
+          "value": "02",
+          "count": 10
+        },
+        {
+          "value": "ZFRAME",
+          "count": 10
+        },
+        {
+          "value": "YBPM01",
+          "count": 10
+        },
+        {
+          "value": "ZHANDLE",
+          "count": 9
+        },
+        {
+          "value": "ZSEAT",
+          "count": 9
+        },
+        {
+          "value": "ZWHEEL",
+          "count": 9
+        },
+        {
+          "value": "ZFORK",
+          "count": 9
+        },
+        {
+          "value": "ZBRAKES",
+          "count": 9
+        },
+        {
+          "value": "ZTRAIN",
+          "count": 9
+        },
+        {
+          "value": "Z992",
+          "count": 8
+        }
+      ],
+      "inferred_domain": [
+        "01",
+        "02",
+        "190102",
+        "211502",
+        "DIGIVEHI",
+        "FL80",
+        "L001",
+        "L002",
+        "L003",
+        "L004",
+        "L005",
+        "L006",
+        "L008",
+        "P001",
+        "P002",
+        "SUBS",
+        "YBFA05",
+        "YBMM00",
+        "YBMM01",
+        "YBPM01",
+        "Z991",
+        "Z992",
+        "ZBRAKES",
+        "ZCRUISE",
+        "ZFORK",
+        "ZFRAME",
+        "ZGEARS",
+        "ZHANDLE",
+        "ZMTN",
+        "ZPEDAL",
+        "ZRACING",
+        "ZSEAT",
+        "ZSHOCK",
+        "ZTRAIN",
+        "ZWHEEL",
+        "ZYOUTH"
+      ],
+      "sample_values": [
+        "01",
+        "01",
+        "01",
+        "01",
+        "01"
+      ]
+    },
+    "BISMT": {
+      "name": "BISMT",
+      "type_hint": "categorical",
+      "populated_count": 24,
+      "populated_pct": 0.86,
+      "distinct_count": 4,
+      "min_length": 6,
+      "max_length": 10,
+      "top_values": [
+        {
+          "value": "MDCCALMASS",
+          "count": 18
+        },
+        {
+          "value": "ZST-ZB199",
+          "count": 3
+        },
+        {
+          "value": "ABC123",
+          "count": 2
+        },
+        {
+          "value": "A12345",
+          "count": 1
+        }
+      ],
+      "inferred_domain": [
+        "A12345",
+        "ABC123",
+        "MDCCALMASS",
+        "ZST-ZB199"
+      ],
+      "sample_values": [
+        "MDCCALMASS",
+        "MDCCALMASS",
+        "MDCCALMASS",
+        "MDCCALMASS",
+        "MDCCALMASS"
+      ]
+    },
+    "MEINS": {
+      "name": "MEINS",
+      "type_hint": "categorical",
+      "populated_count": 2800,
+      "populated_pct": 100.0,
+      "distinct_count": 14,
+      "min_length": 1,
+      "max_length": 3,
+      "top_values": [
+        {
+          "value": "ST",
+          "count": 2310
+        },
+        {
+          "value": "EA",
+          "count": 175
+        },
+        {
+          "value": "L",
+          "count": 172
+        },
+        {
+          "value": "KG",
+          "count": 46
+        },
+        {
+          "value": "M2",
+          "count": 32
+        },
+        {
+          "value": "BAG",
+          "count": 18
+        },
+        {
+          "value": "BOT",
+          "count": 17
+        },
+        {
+          "value": "LE",
+          "count": 12
+        },
+        {
+          "value": "STD",
+          "count": 11
+        },
+        {
+          "value": "CCM",
+          "count": 3
+        },
+        {
+          "value": "M3",
+          "count": 1
+        },
+        {
+          "value": "KM",
+          "count": 1
+        },
+        {
+          "value": "WCH",
+          "count": 1
+        },
+        {
+          "value": "H",
+          "count": 1
+        }
+      ],
+      "inferred_domain": [
+        "BAG",
+        "BOT",
+        "CCM",
+        "EA",
+        "H",
+        "KG",
+        "KM",
+        "L",
+        "LE",
+        "M2",
+        "M3",
+        "ST",
+        "STD",
+        "WCH"
+      ],
+      "sample_values": [
+        "ST",
+        "ST",
+        "ST",
+        "ST",
+        "ST"
+      ]
+    },
+    "BSTME": {
+      "name": "BSTME",
+      "type_hint": "constant",
+      "populated_count": 0,
+      "populated_pct": 0.0,
+      "distinct_count": 0,
+      "min_length": 0,
+      "max_length": 0,
+      "top_values": [],
+      "inferred_domain": [],
+      "sample_values": []
+    },
+    "ZEINR": {
+      "name": "ZEINR",
+      "type_hint": "constant",
+      "populated_count": 0,
+      "populated_pct": 0.0,
+      "distinct_count": 0,
+      "min_length": 0,
+      "max_length": 0,
+      "top_values": [],
+      "inferred_domain": [],
+      "sample_values": []
+    },
+    "ZEIAR": {
+      "name": "ZEIAR",
+      "type_hint": "constant",
+      "populated_count": 0,
+      "populated_pct": 0.0,
+      "distinct_count": 0,
+      "min_length": 0,
+      "max_length": 0,
+      "top_values": [],
+      "inferred_domain": [],
+      "sample_values": []
+    },
+    "ZEIVR": {
+      "name": "ZEIVR",
+      "type_hint": "constant",
+      "populated_count": 0,
+      "populated_pct": 0.0,
+      "distinct_count": 0,
+      "min_length": 0,
+      "max_length": 0,
+      "top_values": [],
+      "inferred_domain": [],
+      "sample_values": []
+    },
+    "ZEIFO": {
+      "name": "ZEIFO",
+      "type_hint": "constant",
+      "populated_count": 0,
+      "populated_pct": 0.0,
+      "distinct_count": 0,
+      "min_length": 0,
+      "max_length": 0,
+      "top_values": [],
+      "inferred_domain": [],
+      "sample_values": []
+    },
+    "AESZN": {
+      "name": "AESZN",
+      "type_hint": "constant",
+      "populated_count": 0,
+      "populated_pct": 0.0,
+      "distinct_count": 0,
+      "min_length": 0,
+      "max_length": 0,
+      "top_values": [],
+      "inferred_domain": [],
+      "sample_values": []
+    },
+    "BLATT": {
+      "name": "BLATT",
+      "type_hint": "constant",
+      "populated_count": 0,
+      "populated_pct": 0.0,
+      "distinct_count": 0,
+      "min_length": 0,
+      "max_length": 0,
+      "top_values": [],
+      "inferred_domain": [],
+      "sample_values": []
+    },
+    "BLANZ": {
+      "name": "BLANZ",
+      "type_hint": "constant",
+      "populated_count": 2800,
+      "populated_pct": 100.0,
+      "distinct_count": 1,
+      "min_length": 3,
+      "max_length": 3,
+      "top_values": [
+        {
+          "value": "000",
+          "count": 2800
+        }
+      ],
+      "inferred_domain": [
+        "000"
+      ],
+      "sample_values": [
+        "000",
+        "000",
+        "000",
+        "000",
+        "000"
+      ]
+    },
+    "FERTH": {
+      "name": "FERTH",
+      "type_hint": "constant",
+      "populated_count": 0,
+      "populated_pct": 0.0,
+      "distinct_count": 0,
+      "min_length": 0,
+      "max_length": 0,
+      "top_values": [],
+      "inferred_domain": [],
+      "sample_values": []
+    },
+    "FORMT": {
+      "name": "FORMT",
+      "type_hint": "constant",
+      "populated_count": 0,
+      "populated_pct": 0.0,
+      "distinct_count": 0,
+      "min_length": 0,
+      "max_length": 0,
+      "top_values": [],
+      "inferred_domain": [],
+      "sample_values": []
+    },
+    "GROES": {
+      "name": "GROES",
+      "type_hint": "categorical",
+      "populated_count": 21,
+      "populated_pct": 0.75,
+      "distinct_count": 3,
+      "min_length": 11,
+      "max_length": 13,
+      "top_values": [
+        {
+          "value": "80 X 80 X 120",
+          "count": 14
+        },
+        {
+          "value": "10 X 10 X 12",
+          "count": 4
+        },
+        {
+          "value": "1 X 1 X 1 M",
+          "count": 3
+        }
+      ],
+      "inferred_domain": [
+        "1 X 1 X 1 M",
+        "10 X 10 X 12",
+        "80 X 80 X 120"
+      ],
+      "sample_values": [
+        "80 X 80 X 120",
+        "80 X 80 X 120",
+        "80 X 80 X 120",
+        "80 X 80 X 120",
+        "80 X 80 X 120"
+      ]
+    },
+    "WRKST": {
+      "name": "WRKST",
+      "type_hint": "categorical",
+      "populated_count": 120,
+      "populated_pct": 4.29,
+      "distinct_count": 3,
+      "min_length": 9,
+      "max_length": 22,
+      "top_values": [
+        {
+          "value": "Stahl / Steel",
+          "count": 50
+        },
+        {
+          "value": "Aluminium",
+          "count": 39
+        },
+        {
+          "value": "verschiedene / various",
+          "count": 31
+        }
+      ],
+      "inferred_domain": [
+        "Aluminium",
+        "Stahl / Steel",
+        "verschiedene / various"
+      ],
+      "sample_values": [
+        "Stahl / Steel",
+        "Stahl / Steel",
+        "Stahl / Steel",
+        "Stahl / Steel",
+        "Stahl / Steel"
+      ]
+    },
+    "NORMT": {
+      "name": "NORMT",
+      "type_hint": "constant",
+      "populated_count": 0,
+      "populated_pct": 0.0,
+      "distinct_count": 0,
+      "min_length": 0,
+      "max_length": 0,
+      "top_values": [],
+      "inferred_domain": [],
+      "sample_values": []
+    },
+    "LABOR": {
+      "name": "LABOR",
+      "type_hint": "categorical",
+      "populated_count": 81,
+      "populated_pct": 2.89,
+      "distinct_count": 2,
+      "min_length": 3,
+      "max_length": 3,
+      "top_values": [
+        {
+          "value": "002",
+          "count": 52
+        },
+        {
+          "value": "001",
+          "count": 29
+        }
+      ],
+      "inferred_domain": [
+        "001",
+        "002"
+      ],
+      "sample_values": [
+        "001",
+        "001",
+        "001",
+        "001",
+        "001"
+      ]
+    },
+    "EKWSL": {
+      "name": "EKWSL",
+      "type_hint": "constant",
+      "populated_count": 905,
+      "populated_pct": 32.32,
+      "distinct_count": 1,
+      "min_length": 1,
+      "max_length": 1,
+      "top_values": [
+        {
+          "value": "1",
+          "count": 905
+        }
+      ],
+      "inferred_domain": [
+        "1"
+      ],
+      "sample_values": [
+        "1",
+        "1",
+        "1",
+        "1",
+        "1"
+      ]
+    },
+    "BRGEW": {
+      "name": "BRGEW",
+      "type_hint": "free_text",
+      "populated_count": 2800,
+      "populated_pct": 100.0,
+      "distinct_count": 61,
+      "min_length": 5,
+      "max_length": 9,
+      "top_values": [
+        {
+          "value": "10,000",
+          "count": 480
+        },
+        {
+          "value": "0,000",
+          "count": 333
+        },
+        {
+          "value": "0,500",
+          "count": 310
+        },
+        {
+          "value": "300,000",
+          "count": 221
+        },
+        {
+          "value": "250,000",
+          "count": 137
+        },
+        {
+          "value": "200,000",
+          "count": 132
+        },
+        {
+          "value": "7,000",
+          "count": 126
+        },
+        {
+          "value": "20,000",
+          "count": 104
+        },
+        {
+          "value": "0,250",
+          "count": 96
+        },
+        {
+          "value": "60,000",
+          "count": 76
+        },
+        {
+          "value": "100,000",
+          "count": 73
+        },
+        {
+          "value": "30,000",
+          "count": 64
+        },
+        {
+          "value": "800,000",
+          "count": 47
+        },
+        {
+          "value": "120,000",
+          "count": 35
+        },
+        {
+          "value": "150,000",
+          "count": 35
+        },
+        {
+          "value": "350,000",
+          "count": 34
+        },
+        {
+          "value": "900,000",
+          "count": 34
+        },
+        {
+          "value": "410,000",
+          "count": 33
+        },
+        {
+          "value": "6,850",
+          "count": 33
+        },
+        {
+          "value": "450,000",
+          "count": 32
+        }
+      ],
+      "inferred_domain": null,
+      "sample_values": [
+        "0,000",
+        "280,000",
+        "280,000",
+        "280,000",
+        "290,000"
+      ]
+    },
+    "NTGEW": {
+      "name": "NTGEW",
+      "type_hint": "free_text",
+      "populated_count": 2800,
+      "populated_pct": 100.0,
+      "distinct_count": 78,
+      "min_length": 5,
+      "max_length": 9,
+      "top_values": [
+        {
+          "value": "0,000",
+          "count": 1467
+        },
+        {
+          "value": "0,450",
+          "count": 241
+        },
+        {
+          "value": "288,000",
+          "count": 156
+        },
+        {
+          "value": "3,000",
+          "count": 117
+        },
+        {
+          "value": "9,000",
+          "count": 72
+        },
+        {
+          "value": "222,000",
+          "count": 64
+        },
+        {
+          "value": "1,000",
+          "count": 47
+        },
+        {
+          "value": "5,000",
+          "count": 47
+        },
+        {
+          "value": "0,400",
+          "count": 46
+        },
+        {
+          "value": "188,000",
+          "count": 32
+        },
+        {
+          "value": "285,000",
+          "count": 32
+        },
+        {
+          "value": "777,000",
+          "count": 31
+        },
+        {
+          "value": "49,000",
+          "count": 31
+        },
+        {
+          "value": "141,000",
+          "count": 31
+        },
+        {
+          "value": "395,000",
+          "count": 31
+        },
+        {
+          "value": "875,000",
+          "count": 31
+        },
+        {
+          "value": "500,000",
+          "count": 31
+        },
+        {
+          "value": "4,800",
+          "count": 25
+        },
+        {
+          "value": "7,000",
+          "count": 18
+        },
+        {
+          "value": "19,000",
+          "count": 16
+        }
+      ],
+      "inferred_domain": null,
+      "sample_values": [
+        "0,000",
+        "250,000",
+        "250,000",
+        "250,000",
+        "260,000"
+      ]
+    },
+    "GEWEI": {
+      "name": "GEWEI",
+      "type_hint": "categorical",
+      "populated_count": 2568,
+      "populated_pct": 91.71,
+      "distinct_count": 2,
+      "min_length": 1,
+      "max_length": 2,
+      "top_values": [
+        {
+          "value": "KG",
+          "count": 2225
+        },
+        {
+          "value": "G",
+          "count": 343
+        }
+      ],
+      "inferred_domain": [
+        "G",
+        "KG"
+      ],
+      "sample_values": [
+        "KG",
+        "KG",
+        "KG",
+        "KG",
+        "KG"
+      ]
+    },
+    "VOLUM": {
+      "name": "VOLUM",
+      "type_hint": "categorical",
+      "populated_count": 2800,
+      "populated_pct": 100.0,
+      "distinct_count": 16,
+      "min_length": 5,
+      "max_length": 7,
+      "top_values": [
+        {
+          "value": "0,000",
+          "count": 2323
+        },
+        {
+          "value": "3,000",
+          "count": 401
+        },
+        {
+          "value": "0,070",
+          "count": 31
+        },
+        {
+          "value": "1,000",
+          "count": 14
+        },
+        {
+          "value": "0,180",
+          "count": 9
+        },
+        {
+          "value": "0,768",
+          "count": 4
+        },
+        {
+          "value": "0,500",
+          "count": 4
+        },
+        {
+          "value": "144,000",
+          "count": 3
+        },
+        {
+          "value": "135,000",
+          "count": 3
+        },
+        {
+          "value": "13,000",
+          "count": 2
+        },
+        {
+          "value": "138,000",
+          "count": 1
+        },
+        {
+          "value": "1,380",
+          "count": 1
+        },
+        {
+          "value": "8,000",
+          "count": 1
+        },
+        {
+          "value": "5,000",
+          "count": 1
+        },
+        {
+          "value": "2,250",
+          "count": 1
+        },
+        {
+          "value": "20,000",
+          "count": 1
+        }
+      ],
+      "inferred_domain": [
+        "0,000",
+        "0,070",
+        "0,180",
+        "0,500",
+        "0,768",
+        "1,000",
+        "1,380",
+        "13,000",
+        "135,000",
+        "138,000",
+        "144,000",
+        "2,250",
+        "20,000",
+        "3,000",
+        "5,000",
+        "8,000"
+      ],
+      "sample_values": [
+        "0,000",
+        "0,768",
+        "0,000",
+        "0,000",
+        "0,000"
+      ]
+    },
+    "VOLEH": {
+      "name": "VOLEH",
+      "type_hint": "categorical",
+      "populated_count": 492,
+      "populated_pct": 17.57,
+      "distinct_count": 3,
+      "min_length": 1,
+      "max_length": 3,
+      "top_values": [
+        {
+          "value": "M3",
+          "count": 474
+        },
+        {
+          "value": "L",
+          "count": 14
+        },
+        {
+          "value": "CDM",
+          "count": 4
+        }
+      ],
+      "inferred_domain": [
+        "CDM",
+        "L",
+        "M3"
+      ],
+      "sample_values": [
+        "M3",
+        "M3",
+        "M3",
+        "M3",
+        "M3"
+      ]
+    },
+    "BEHVO": {
+      "name": "BEHVO",
+      "type_hint": "constant",
+      "populated_count": 0,
+      "populated_pct": 0.0,
+      "distinct_count": 0,
+      "min_length": 0,
+      "max_length": 0,
+      "top_values": [],
+      "inferred_domain": [],
+      "sample_values": []
+    },
+    "RAUBE": {
+      "name": "RAUBE",
+      "type_hint": "categorical",
+      "populated_count": 207,
+      "populated_pct": 7.39,
+      "distinct_count": 3,
+      "min_length": 2,
+      "max_length": 2,
+      "top_values": [
+        {
+          "value": "10",
+          "count": 192
+        },
+        {
+          "value": "YE",
+          "count": 14
+        },
+        {
+          "value": "01",
+          "count": 1
+        }
+      ],
+      "inferred_domain": [
+        "01",
+        "10",
+        "YE"
+      ],
+      "sample_values": [
+        "10",
+        "01",
+        "10",
+        "10",
+        "10"
+      ]
+    },
+    "TEMPB": {
+      "name": "TEMPB",
+      "type_hint": "constant",
+      "populated_count": 0,
+      "populated_pct": 0.0,
+      "distinct_count": 0,
+      "min_length": 0,
+      "max_length": 0,
+      "top_values": [],
+      "inferred_domain": [],
+      "sample_values": []
+    },
+    "DISST": {
+      "name": "DISST",
+      "type_hint": "categorical",
+      "populated_count": 358,
+      "populated_pct": 12.79,
+      "distinct_count": 4,
+      "min_length": 3,
+      "max_length": 3,
+      "top_values": [
+        {
+          "value": "001",
+          "count": 208
+        },
+        {
+          "value": "000",
+          "count": 85
+        },
+        {
+          "value": "002",
+          "count": 47
+        },
+        {
+          "value": "003",
+          "count": 18
+        }
+      ],
+      "inferred_domain": [
+        "000",
+        "001",
+        "002",
+        "003"
+      ],
+      "sample_values": [
+        "001",
+        "002",
+        "002",
+        "002",
+        "000"
+      ]
+    },
+    "TRAGR": {
+      "name": "TRAGR",
+      "type_hint": "categorical",
+      "populated_count": 1165,
+      "populated_pct": 41.61,
+      "distinct_count": 2,
+      "min_length": 4,
+      "max_length": 4,
+      "top_values": [
+        {
+          "value": "0001",
+          "count": 1140
+        },
+        {
+          "value": "0004",
+          "count": 25
+        }
+      ],
+      "inferred_domain": [
+        "0001",
+        "0004"
+      ],
+      "sample_values": [
+        "0001",
+        "0001",
+        "0001",
+        "0001",
+        "0001"
+      ]
+    },
+    "STOFF": {
+      "name": "STOFF",
+      "type_hint": "constant",
+      "populated_count": 0,
+      "populated_pct": 0.0,
+      "distinct_count": 0,
+      "min_length": 0,
+      "max_length": 0,
+      "top_values": [],
+      "inferred_domain": [],
+      "sample_values": []
+    },
+    "SPART": {
+      "name": "SPART",
+      "type_hint": "categorical",
+      "populated_count": 376,
+      "populated_pct": 13.43,
+      "distinct_count": 2,
+      "min_length": 2,
+      "max_length": 2,
+      "top_values": [
+        {
+          "value": "00",
+          "count": 310
+        },
+        {
+          "value": "01",
+          "count": 66
+        }
+      ],
+      "inferred_domain": [
+        "00",
+        "01"
+      ],
+      "sample_values": [
+        "01",
+        "00",
+        "01",
+        "01",
+        "01"
+      ]
+    },
+    "KUNNR": {
+      "name": "KUNNR",
+      "type_hint": "constant",
+      "populated_count": 0,
+      "populated_pct": 0.0,
+      "distinct_count": 0,
+      "min_length": 0,
+      "max_length": 0,
+      "top_values": [],
+      "inferred_domain": [],
+      "sample_values": []
+    },
+    "EANNR": {
+      "name": "EANNR",
+      "type_hint": "constant",
+      "populated_count": 0,
+      "populated_pct": 0.0,
+      "distinct_count": 0,
+      "min_length": 0,
+      "max_length": 0,
+      "top_values": [],
+      "inferred_domain": [],
+      "sample_values": []
+    },
+    "WESCH": {
+      "name": "WESCH",
+      "type_hint": "categorical",
+      "populated_count": 2800,
+      "populated_pct": 100.0,
+      "distinct_count": 2,
+      "min_length": 5,
+      "max_length": 5,
+      "top_values": [
+        {
+          "value": "0,000",
+          "count": 2799
+        },
+        {
+          "value": "1,000",
+          "count": 1
+        }
+      ],
+      "inferred_domain": [
+        "0,000",
+        "1,000"
+      ],
+      "sample_values": [
+        "0,000",
+        "0,000",
+        "0,000",
+        "0,000",
+        "0,000"
+      ]
+    },
+    "BWVOR": {
+      "name": "BWVOR",
+      "type_hint": "constant",
+      "populated_count": 0,
+      "populated_pct": 0.0,
+      "distinct_count": 0,
+      "min_length": 0,
+      "max_length": 0,
+      "top_values": [],
+      "inferred_domain": [],
+      "sample_values": []
+    },
+    "BWSCL": {
+      "name": "BWSCL",
+      "type_hint": "constant",
+      "populated_count": 0,
+      "populated_pct": 0.0,
+      "distinct_count": 0,
+      "min_length": 0,
+      "max_length": 0,
+      "top_values": [],
+      "inferred_domain": [],
+      "sample_values": []
+    },
+    "SAISO": {
+      "name": "SAISO",
+      "type_hint": "constant",
+      "populated_count": 0,
+      "populated_pct": 0.0,
+      "distinct_count": 0,
+      "min_length": 0,
+      "max_length": 0,
+      "top_values": [],
+      "inferred_domain": [],
+      "sample_values": []
+    },
+    "ETIAR": {
+      "name": "ETIAR",
+      "type_hint": "constant",
+      "populated_count": 5,
+      "populated_pct": 0.18,
+      "distinct_count": 1,
+      "min_length": 2,
+      "max_length": 2,
+      "top_values": [
+        {
+          "value": "M7",
+          "count": 5
+        }
+      ],
+      "inferred_domain": [
+        "M7"
+      ],
+      "sample_values": [
+        "M7",
+        "M7",
+        "M7",
+        "M7",
+        "M7"
+      ]
+    },
+    "ETIFO": {
+      "name": "ETIFO",
+      "type_hint": "constant",
+      "populated_count": 5,
+      "populated_pct": 0.18,
+      "distinct_count": 1,
+      "min_length": 2,
+      "max_length": 2,
+      "top_values": [
+        {
+          "value": "E1",
+          "count": 5
+        }
+      ],
+      "inferred_domain": [
+        "E1"
+      ],
+      "sample_values": [
+        "E1",
+        "E1",
+        "E1",
+        "E1",
+        "E1"
+      ]
+    },
+    "ENTAR": {
+      "name": "ENTAR",
+      "type_hint": "constant",
+      "populated_count": 0,
+      "populated_pct": 0.0,
+      "distinct_count": 0,
+      "min_length": 0,
+      "max_length": 0,
+      "top_values": [],
+      "inferred_domain": [],
+      "sample_values": []
+    },
+    "EAN11": {
+      "name": "EAN11",
+      "type_hint": "categorical",
+      "populated_count": 30,
+      "populated_pct": 1.07,
+      "distinct_count": 15,
+      "min_length": 12,
+      "max_length": 14,
+      "top_values": [
+        {
+          "value": "4012345900101",
+          "count": 14
+        },
+        {
+          "value": "4012345120103",
+          "count": 2
+        },
+        {
+          "value": "4012345110234",
+          "count": 2
+        },
+        {
+          "value": "205000000016",
+          "count": 1
+        },
+        {
+          "value": "20500000000146",
+          "count": 1
+        },
+        {
+          "value": "2050000000249",
+          "count": 1
+        },
+        {
+          "value": "20500000000153",
+          "count": 1
+        },
+        {
+          "value": "2050000000669",
+          "count": 1
+        },
+        {
+          "value": "9783836239684",
+          "count": 1
+        },
+        {
+          "value": "9781592292868",
+          "count": 1
+        },
+        {
+          "value": "9781592294091",
+          "count": 1
+        },
+        {
+          "value": "9781937585648",
+          "count": 1
+        },
+        {
+          "value": "9781592293858",
+          "count": 1
+        },
+        {
+          "value": "9781592298686",
+          "count": 1
+        },
+        {
+          "value": "4012345110104",
+          "count": 1
+        }
+      ],
+      "inferred_domain": [
+        "20500000000146",
+        "20500000000153",
+        "205000000016",
+        "2050000000249",
+        "2050000000669",
+        "4012345110104",
+        "4012345110234",
+        "4012345120103",
+        "4012345900101",
+        "9781592292868",
+        "9781592293858",
+        "9781592294091",
+        "9781592298686",
+        "9781937585648",
+        "9783836239684"
+      ],
+      "sample_values": [
+        "205000000016",
+        "20500000000146",
+        "2050000000249",
+        "20500000000153",
+        "2050000000669"
+      ]
+    },
+    "NUMTP": {
+      "name": "NUMTP",
+      "type_hint": "categorical",
+      "populated_count": 30,
+      "populated_pct": 1.07,
+      "distinct_count": 4,
+      "min_length": 2,
+      "max_length": 2,
+      "top_values": [
+        {
+          "value": "HE",
+          "count": 25
+        },
+        {
+          "value": "IC",
+          "count": 2
+        },
+        {
+          "value": "IE",
+          "count": 2
+        },
+        {
+          "value": "UC",
+          "count": 1
+        }
+      ],
+      "inferred_domain": [
+        "HE",
+        "IC",
+        "IE",
+        "UC"
+      ],
+      "sample_values": [
+        "UC",
+        "IC",
+        "IE",
+        "IC",
+        "IE"
+      ]
+    },
+    "LAENG": {
+      "name": "LAENG",
+      "type_hint": "categorical",
+      "populated_count": 2800,
+      "populated_pct": 100.0,
+      "distinct_count": 10,
+      "min_length": 5,
+      "max_length": 7,
+      "top_values": [
+        {
+          "value": "0,000",
+          "count": 2784
+        },
+        {
+          "value": "80,000",
+          "count": 4
+        },
+        {
+          "value": "50,000",
+          "count": 3
+        },
+        {
+          "value": "10,000",
+          "count": 2
+        },
+        {
+          "value": "40,000",
+          "count": 2
+        },
+        {
+          "value": "20,000",
+          "count": 1
+        },
+        {
+          "value": "16,000",
+          "count": 1
+        },
+        {
+          "value": "14,000",
+          "count": 1
+        },
+        {
+          "value": "120,000",
+          "count": 1
+        },
+        {
+          "value": "30,000",
+          "count": 1
+        }
+      ],
+      "inferred_domain": [
+        "0,000",
+        "10,000",
+        "120,000",
+        "14,000",
+        "16,000",
+        "20,000",
+        "30,000",
+        "40,000",
+        "50,000",
+        "80,000"
+      ],
+      "sample_values": [
+        "0,000",
+        "80,000",
+        "0,000",
+        "0,000",
+        "0,000"
+      ]
+    },
+    "BREIT": {
+      "name": "BREIT",
+      "type_hint": "categorical",
+      "populated_count": 2800,
+      "populated_pct": 100.0,
+      "distinct_count": 9,
+      "min_length": 5,
+      "max_length": 7,
+      "top_values": [
+        {
+          "value": "0,000",
+          "count": 2785
+        },
+        {
+          "value": "80,000",
+          "count": 4
+        },
+        {
+          "value": "30,000",
+          "count": 3
+        },
+        {
+          "value": "20,000",
+          "count": 2
+        },
+        {
+          "value": "120,000",
+          "count": 2
+        },
+        {
+          "value": "10,000",
+          "count": 1
+        },
+        {
+          "value": "18,000",
+          "count": 1
+        },
+        {
+          "value": "40,000",
+          "count": 1
+        },
+        {
+          "value": "15,000",
+          "count": 1
+        }
+      ],
+      "inferred_domain": [
+        "0,000",
+        "10,000",
+        "120,000",
+        "15,000",
+        "18,000",
+        "20,000",
+        "30,000",
+        "40,000",
+        "80,000"
+      ],
+      "sample_values": [
+        "0,000",
+        "80,000",
+        "0,000",
+        "0,000",
+        "0,000"
+      ]
+    },
+    "HOEHE": {
+      "name": "HOEHE",
+      "type_hint": "categorical",
+      "populated_count": 2800,
+      "populated_pct": 100.0,
+      "distinct_count": 8,
+      "min_length": 5,
+      "max_length": 7,
+      "top_values": [
+        {
+          "value": "0,000",
+          "count": 2785
+        },
+        {
+          "value": "120,000",
+          "count": 4
+        },
+        {
+          "value": "30,000",
+          "count": 4
+        },
+        {
+          "value": "90,000",
+          "count": 3
+        },
+        {
+          "value": "20,000",
+          "count": 1
+        },
+        {
+          "value": "16,000",
+          "count": 1
+        },
+        {
+          "value": "14,000",
+          "count": 1
+        },
+        {
+          "value": "5,000",
+          "count": 1
+        }
+      ],
+      "inferred_domain": [
+        "0,000",
+        "120,000",
+        "14,000",
+        "16,000",
+        "20,000",
+        "30,000",
+        "5,000",
+        "90,000"
+      ],
+      "sample_values": [
+        "0,000",
+        "120,000",
+        "0,000",
+        "0,000",
+        "0,000"
+      ]
+    },
+    "MEABM": {
+      "name": "MEABM",
+      "type_hint": "categorical",
+      "populated_count": 20,
+      "populated_pct": 0.71,
+      "distinct_count": 2,
+      "min_length": 1,
+      "max_length": 2,
+      "top_values": [
+        {
+          "value": "CM",
+          "count": 19
+        },
+        {
+          "value": "M",
+          "count": 1
+        }
+      ],
+      "inferred_domain": [
+        "CM",
+        "M"
+      ],
+      "sample_values": [
+        "CM",
+        "CM",
+        "CM",
+        "CM",
+        "M"
+      ]
+    },
+    "PRDHA": {
+      "name": "PRDHA",
+      "type_hint": "categorical",
+      "populated_count": 65,
+      "populated_pct": 2.32,
+      "distinct_count": 4,
+      "min_length": 10,
+      "max_length": 18,
+      "top_values": [
+        {
+          "value": "000010000300001",
+          "count": 26
+        },
+        {
+          "value": "000010000100000002",
+          "count": 26
+        },
+        {
+          "value": "000010000100000001",
+          "count": 12
+        },
+        {
+          "value": "0000100001",
+          "count": 1
+        }
+      ],
+      "inferred_domain": [
+        "0000100001",
+        "000010000100000001",
+        "000010000100000002",
+        "000010000300001"
+      ],
+      "sample_values": [
+        "0000100001",
+        "000010000100000001",
+        "000010000100000001",
+        "000010000100000001",
+        "000010000100000001"
+      ]
+    },
+    "AEKLK": {
+      "name": "AEKLK",
+      "type_hint": "constant",
+      "populated_count": 0,
+      "populated_pct": 0.0,
+      "distinct_count": 0,
+      "min_length": 0,
+      "max_length": 0,
+      "top_values": [],
+      "inferred_domain": [],
+      "sample_values": []
+    },
+    "CADKZ": {
+      "name": "CADKZ",
+      "type_hint": "constant",
+      "populated_count": 0,
+      "populated_pct": 0.0,
+      "distinct_count": 0,
+      "min_length": 0,
+      "max_length": 0,
+      "top_values": [],
+      "inferred_domain": [],
+      "sample_values": []
+    },
+    "QMPUR": {
+      "name": "QMPUR",
+      "type_hint": "constant",
+      "populated_count": 37,
+      "populated_pct": 1.32,
+      "distinct_count": 1,
+      "min_length": 1,
+      "max_length": 1,
+      "top_values": [
+        {
+          "value": "X",
+          "count": 37
+        }
+      ],
+      "inferred_domain": [
+        "X"
+      ],
+      "sample_values": [
+        "X",
+        "X",
+        "X",
+        "X",
+        "X"
+      ]
+    },
+    "ERGEW": {
+      "name": "ERGEW",
+      "type_hint": "constant",
+      "populated_count": 2800,
+      "populated_pct": 100.0,
+      "distinct_count": 1,
+      "min_length": 5,
+      "max_length": 5,
+      "top_values": [
+        {
+          "value": "0,000",
+          "count": 2800
+        }
+      ],
+      "inferred_domain": [
+        "0,000"
+      ],
+      "sample_values": [
+        "0,000",
+        "0,000",
+        "0,000",
+        "0,000",
+        "0,000"
+      ]
+    },
+    "ERGEI": {
+      "name": "ERGEI",
+      "type_hint": "constant",
+      "populated_count": 0,
+      "populated_pct": 0.0,
+      "distinct_count": 0,
+      "min_length": 0,
+      "max_length": 0,
+      "top_values": [],
+      "inferred_domain": [],
+      "sample_values": []
+    },
+    "ERVOL": {
+      "name": "ERVOL",
+      "type_hint": "categorical",
+      "populated_count": 2800,
+      "populated_pct": 100.0,
+      "distinct_count": 2,
+      "min_length": 5,
+      "max_length": 7,
+      "top_values": [
+        {
+          "value": "0,000",
+          "count": 2799
+        },
+        {
+          "value": "100,000",
+          "count": 1
+        }
+      ],
+      "inferred_domain": [
+        "0,000",
+        "100,000"
+      ],
+      "sample_values": [
+        "0,000",
+        "0,000",
+        "0,000",
+        "0,000",
+        "0,000"
+      ]
+    },
+    "ERVOE": {
+      "name": "ERVOE",
+      "type_hint": "constant",
+      "populated_count": 1,
+      "populated_pct": 0.04,
+      "distinct_count": 1,
+      "min_length": 1,
+      "max_length": 1,
+      "top_values": [
+        {
+          "value": "L",
+          "count": 1
+        }
+      ],
+      "inferred_domain": [
+        "L"
+      ],
+      "sample_values": [
+        "L"
+      ]
+    },
+    "GEWTO": {
+      "name": "GEWTO",
+      "type_hint": "constant",
+      "populated_count": 2800,
+      "populated_pct": 100.0,
+      "distinct_count": 1,
+      "min_length": 3,
+      "max_length": 3,
+      "top_values": [
+        {
+          "value": "0,0",
+          "count": 2800
+        }
+      ],
+      "inferred_domain": [
+        "0,0"
+      ],
+      "sample_values": [
+        "0,0",
+        "0,0",
+        "0,0",
+        "0,0",
+        "0,0"
+      ]
+    },
+    "VOLTO": {
+      "name": "VOLTO",
+      "type_hint": "constant",
+      "populated_count": 2800,
+      "populated_pct": 100.0,
+      "distinct_count": 1,
+      "min_length": 3,
+      "max_length": 3,
+      "top_values": [
+        {
+          "value": "0,0",
+          "count": 2800
+        }
+      ],
+      "inferred_domain": [
+        "0,0"
+      ],
+      "sample_values": [
+        "0,0",
+        "0,0",
+        "0,0",
+        "0,0",
+        "0,0"
+      ]
+    },
+    "VABME": {
+      "name": "VABME",
+      "type_hint": "constant",
+      "populated_count": 0,
+      "populated_pct": 0.0,
+      "distinct_count": 0,
+      "min_length": 0,
+      "max_length": 0,
+      "top_values": [],
+      "inferred_domain": [],
+      "sample_values": []
+    },
+    "KZREV": {
+      "name": "KZREV",
+      "type_hint": "constant",
+      "populated_count": 0,
+      "populated_pct": 0.0,
+      "distinct_count": 0,
+      "min_length": 0,
+      "max_length": 0,
+      "top_values": [],
+      "inferred_domain": [],
+      "sample_values": []
+    },
+    "KZKFG": {
+      "name": "KZKFG",
+      "type_hint": "constant",
+      "populated_count": 47,
+      "populated_pct": 1.68,
+      "distinct_count": 1,
+      "min_length": 1,
+      "max_length": 1,
+      "top_values": [
+        {
+          "value": "X",
+          "count": 47
+        }
+      ],
+      "inferred_domain": [
+        "X"
+      ],
+      "sample_values": [
+        "X",
+        "X",
+        "X",
+        "X",
+        "X"
+      ]
+    },
+    "XCHPF": {
+      "name": "XCHPF",
+      "type_hint": "constant",
+      "populated_count": 149,
+      "populated_pct": 5.32,
+      "distinct_count": 1,
+      "min_length": 1,
+      "max_length": 1,
+      "top_values": [
+        {
+          "value": "X",
+          "count": 149
+        }
+      ],
+      "inferred_domain": [
+        "X"
+      ],
+      "sample_values": [
+        "X",
+        "X",
+        "X",
+        "X",
+        "X"
+      ]
+    },
+    "VHART": {
+      "name": "VHART",
+      "type_hint": "categorical",
+      "populated_count": 10,
+      "populated_pct": 0.36,
+      "distinct_count": 5,
+      "min_length": 4,
+      "max_length": 4,
+      "top_values": [
+        {
+          "value": "YN01",
+          "count": 3
+        },
+        {
+          "value": "YN03",
+          "count": 3
+        },
+        {
+          "value": "SP11",
+          "count": 2
+        },
+        {
+          "value": "YN02",
+          "count": 1
+        },
+        {
+          "value": "YN04",
+          "count": 1
+        }
+      ],
+      "inferred_domain": [
+        "SP11",
+        "YN01",
+        "YN02",
+        "YN03",
+        "YN04"
+      ],
+      "sample_values": [
+        "YN01",
+        "YN02",
+        "YN01",
+        "YN01",
+        "YN03"
+      ]
+    },
+    "FUELG": {
+      "name": "FUELG",
+      "type_hint": "constant",
+      "populated_count": 2800,
+      "populated_pct": 100.0,
+      "distinct_count": 1,
+      "min_length": 1,
+      "max_length": 1,
+      "top_values": [
+        {
+          "value": "0",
+          "count": 2800
+        }
+      ],
+      "inferred_domain": [
+        "0"
+      ],
+      "sample_values": [
+        "0",
+        "0",
+        "0",
+        "0",
+        "0"
+      ]
+    },
+    "STFAK": {
+      "name": "STFAK",
+      "type_hint": "constant",
+      "populated_count": 2800,
+      "populated_pct": 100.0,
+      "distinct_count": 1,
+      "min_length": 1,
+      "max_length": 1,
+      "top_values": [
+        {
+          "value": "0",
+          "count": 2800
+        }
+      ],
+      "inferred_domain": [
+        "0"
+      ],
+      "sample_values": [
+        "0",
+        "0",
+        "0",
+        "0",
+        "0"
+      ]
+    },
+    "MAGRV": {
+      "name": "MAGRV",
+      "type_hint": "constant",
+      "populated_count": 6,
+      "populated_pct": 0.21,
+      "distinct_count": 1,
+      "min_length": 4,
+      "max_length": 4,
+      "top_values": [
+        {
+          "value": "PKGR",
+          "count": 6
+        }
+      ],
+      "inferred_domain": [
+        "PKGR"
+      ],
+      "sample_values": [
+        "PKGR",
+        "PKGR",
+        "PKGR",
+        "PKGR",
+        "PKGR"
+      ]
+    },
+    "BEGRU": {
+      "name": "BEGRU",
+      "type_hint": "constant",
+      "populated_count": 0,
+      "populated_pct": 0.0,
+      "distinct_count": 0,
+      "min_length": 0,
+      "max_length": 0,
+      "top_values": [],
+      "inferred_domain": [],
+      "sample_values": []
+    },
+    "DATAB": {
+      "name": "DATAB",
+      "type_hint": "categorical",
+      "populated_count": 2800,
+      "populated_pct": 100.0,
+      "distinct_count": 3,
+      "min_length": 10,
+      "max_length": 10,
+      "top_values": [
+        {
+          "value": "00/00/0000",
+          "count": 2798
+        },
+        {
+          "value": "11/10/2020",
+          "count": 1
+        },
+        {
+          "value": "11/26/2022",
+          "count": 1
+        }
+      ],
+      "inferred_domain": [
+        "00/00/0000",
+        "11/10/2020",
+        "11/26/2022"
+      ],
+      "sample_values": [
+        "00/00/0000",
+        "00/00/0000",
+        "00/00/0000",
+        "00/00/0000",
+        "00/00/0000"
+      ]
+    },
+    "LIQDT": {
+      "name": "LIQDT",
+      "type_hint": "categorical",
+      "populated_count": 2800,
+      "populated_pct": 100.0,
+      "distinct_count": 3,
+      "min_length": 10,
+      "max_length": 355,
+      "top_values": [
+        {
+          "value": "00/00/0000",
+          "count": 2797
+        },
+        {
+          "value": "12/31/9999",
+          "count": 2
+        },
+        {
+          "value": "                                                                                                                                                                                                                                                                                                                                                         00/00/0000",
+          "count": 1
+        }
+      ],
+      "inferred_domain": [
+        "                                                                                                                                                                                                                                                                                                                                                         00/00/0000",
+        "00/00/0000",
+        "12/31/9999"
+      ],
+      "sample_values": [
+        "00/00/0000",
+        "00/00/0000",
+        "00/00/0000",
+        "00/00/0000",
+        "00/00/0000"
+      ]
+    },
+    "SAISJ": {
+      "name": "SAISJ",
+      "type_hint": "constant",
+      "populated_count": 0,
+      "populated_pct": 0.0,
+      "distinct_count": 0,
+      "min_length": 0,
+      "max_length": 0,
+      "top_values": [],
+      "inferred_domain": [],
+      "sample_values": []
+    },
+    "PLGTP": {
+      "name": "PLGTP",
+      "type_hint": "constant",
+      "populated_count": 0,
+      "populated_pct": 0.0,
+      "distinct_count": 0,
+      "min_length": 0,
+      "max_length": 0,
+      "top_values": [],
+      "inferred_domain": [],
+      "sample_values": []
+    },
+    "MLGUT": {
+      "name": "MLGUT",
+      "type_hint": "constant",
+      "populated_count": 0,
+      "populated_pct": 0.0,
+      "distinct_count": 0,
+      "min_length": 0,
+      "max_length": 0,
+      "top_values": [],
+      "inferred_domain": [],
+      "sample_values": []
+    },
+    "EXTWG": {
+      "name": "EXTWG",
+      "type_hint": "categorical",
+      "populated_count": 96,
+      "populated_pct": 3.43,
+      "distinct_count": 32,
+      "min_length": 6,
+      "max_length": 10,
+      "top_values": [
+        {
+          "value": "MDCCAL",
+          "count": 18
+        },
+        {
+          "value": "DMM165-004",
+          "count": 4
+        },
+        {
+          "value": "DMM165-007",
+          "count": 4
+        },
+        {
+          "value": "DMM165-001",
+          "count": 4
+        },
+        {
+          "value": "DMM165-008",
+          "count": 4
+        },
+        {
+          "value": "DMM165-003",
+          "count": 4
+        },
+        {
+          "value": "DMM165-009",
+          "count": 4
+        },
+        {
+          "value": "DMM165-002",
+          "count": 4
+        },
+        {
+          "value": "DMM165-006",
+          "count": 4
+        },
+        {
+          "value": "DMM165-005",
+          "count": 4
+        },
+        {
+          "value": "DMM165-013",
+          "count": 2
+        },
+        {
+          "value": "DMM165-014",
+          "count": 2
+        },
+        {
+          "value": "DMM165-015",
+          "count": 2
+        },
+        {
+          "value": "DMM165-016",
+          "count": 2
+        },
+        {
+          "value": "DMM165-017",
+          "count": 2
+        },
+        {
+          "value": "DMM165-018",
+          "count": 2
+        },
+        {
+          "value": "DMM165-019",
+          "count": 2
+        },
+        {
+          "value": "DMM165-020",
+          "count": 2
+        },
+        {
+          "value": "DMM165-021",
+          "count": 2
+        },
+        {
+          "value": "DMM165-022",
+          "count": 2
+        }
+      ],
+      "inferred_domain": [
+        "BLABLA",
+        "DMM165-001",
+        "DMM165-002",
+        "DMM165-003",
+        "DMM165-004",
+        "DMM165-005",
+        "DMM165-006",
+        "DMM165-007",
+        "DMM165-008",
+        "DMM165-009",
+        "DMM165-010",
+        "DMM165-011",
+        "DMM165-012",
+        "DMM165-013",
+        "DMM165-014",
+        "DMM165-015",
+        "DMM165-016",
+        "DMM165-017",
+        "DMM165-018",
+        "DMM165-019",
+        "DMM165-020",
+        "DMM165-021",
+        "DMM165-022",
+        "DMM165-023",
+        "DMM165-024",
+        "DMM165-025",
+        "DMM165-026",
+        "DMM165-027",
+        "DMM165-028",
+        "DMM165-029",
+        "DMM165-030",
+        "MDCCAL"
+      ],
+      "sample_values": [
+        "MDCCAL",
+        "MDCCAL",
+        "MDCCAL",
+        "MDCCAL",
+        "MDCCAL"
+      ]
+    },
+    "SATNR": {
+      "name": "SATNR",
+      "type_hint": "constant",
+      "populated_count": 3,
+      "populated_pct": 0.11,
+      "distinct_count": 1,
+      "min_length": 9,
+      "max_length": 9,
+      "top_values": [
+        {
+          "value": "CM-FL-V00",
+          "count": 3
+        }
+      ],
+      "inferred_domain": [
+        "CM-FL-V00"
+      ],
+      "sample_values": [
+        "CM-FL-V00",
+        "CM-FL-V00",
+        "CM-FL-V00"
+      ]
+    },
+    "ATTYP": {
+      "name": "ATTYP",
+      "type_hint": "constant",
+      "populated_count": 0,
+      "populated_pct": 0.0,
+      "distinct_count": 0,
+      "min_length": 0,
+      "max_length": 0,
+      "top_values": [],
+      "inferred_domain": [],
+      "sample_values": []
+    },
+    "KZKUP": {
+      "name": "KZKUP",
+      "type_hint": "constant",
+      "populated_count": 97,
+      "populated_pct": 3.46,
+      "distinct_count": 1,
+      "min_length": 1,
+      "max_length": 1,
+      "top_values": [
+        {
+          "value": "X",
+          "count": 97
+        }
+      ],
+      "inferred_domain": [
+        "X"
+      ],
+      "sample_values": [
+        "X",
+        "X",
+        "X",
+        "X",
+        "X"
+      ]
+    }
+  }
+}

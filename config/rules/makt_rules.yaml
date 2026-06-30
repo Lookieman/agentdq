@@ -1,0 +1,29 @@
+table: MAKT
+rule_count: 1
+rules:
+- rule_id: IS_MAKT_MAKTX_NOT_NULL
+  name: MAT1000_DescriptionPopulated
+  table: MAKT
+  dama_dimension: Completeness
+  is_dimension: Completeness
+  archetype: not_null
+  severity: High
+  description: Verify the material description field is not empty.
+  fields:
+  - MAKTX
+  assertion:
+    node: cmp
+    field: MAKTX
+    op: is_not_null
+  executable: true
+  provenance:
+    source: information_steward
+    original_name: MAT1000_DescriptionPopulated
+    original_expression: 'BEGIN RETURN
+
+      $P_I_Description IS NOT NULL
+
+      AND $P_I_Description != '''';
+
+      END'
+    rule_doc: Verify the material description field is not empty.

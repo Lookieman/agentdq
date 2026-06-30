@@ -1,0 +1,61 @@
+table: MAKT
+description: Material Descriptions
+source_system: SAP S/4HANA (Cloud Appliance Library)
+primary_key:
+- MATNR
+- SPRAS
+header_anchor: MATNR
+formatting:
+  decimal_separator: ','
+  thousands_separator: .
+  date_format: '%m/%d/%Y'
+  null_date_sentinels:
+  - 00/00/0000
+fields:
+  MANDT:
+    description: Client
+    role: client
+    type: client
+    mandatory: true
+    length:
+      min: 3
+      max: 3
+    observed_population_pct: 100.0
+  MATNR:
+    description: Material Number
+    role: key
+    type: key
+    mandatory: true
+    length:
+      min: 4
+      max: 18
+    observed_population_pct: 100.0
+  SPRAS:
+    description: Language Key
+    role: key
+    type: lang
+    mandatory: true
+    domain:
+    - E
+    length:
+      min: 1
+      max: 1
+    observed_population_pct: 100.0
+  MAKTX:
+    description: Material Description (short)
+    role: description
+    type: text
+    mandatory: true
+    length:
+      min: 4
+      max: 40
+    observed_population_pct: 100.0
+  MAKTG:
+    description: Material Description in Upper Case
+    role: description
+    type: text
+    mandatory: false
+    length:
+      min: 4
+      max: 95
+    observed_population_pct: 100.0

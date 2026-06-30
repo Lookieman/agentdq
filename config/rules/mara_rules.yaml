@@ -1,0 +1,980 @@
+table: MARA
+rule_count: 34
+rules:
+- rule_id: IS_MARA_TRAGR_NOT_NULL
+  name: MAT0160_TransportationGroupPopulated
+  table: MARA
+  dama_dimension: Completeness
+  is_dimension: Completeness
+  archetype: not_null
+  severity: Medium
+  description: Verify the transportation group field Is not empty.
+  fields:
+  - TRAGR
+  assertion:
+    node: cmp
+    field: TRAGR
+    op: is_not_null
+  executable: true
+  provenance:
+    source: information_steward
+    original_name: MAT0160_TransportationGroupPopulated
+    original_expression: 'BEGIN RETURN
+
+      $P_I_TransportationGroup IS NOT NULL
+
+      AND $P_I_TransportationGroup != '''';
+
+      END'
+    rule_doc: Verify the transportation group field Is not empty.
+- rule_id: IS_MARA_RAUBE_REFERENCE_EXISTS
+  name: MAT0140_StorageConditionRef
+  table: MARA
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify the storage condition value exists in the Storage Conditions
+    for Materials table.
+  fields:
+  - RAUBE
+  assertion:
+    node: cmp
+    field: RAUBE
+    op: in
+    value:
+    - '01'
+    - '10'
+    - YE
+  executable: true
+  provenance:
+    source: information_steward
+    original_name: MAT0140_StorageConditionRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T142', 'RAUBE',\
+      \ $P_I_StorageCondition);\nEND"
+    reference_table: T142
+    rule_doc: Verify the storage condition value exists in the Storage Conditions
+      for Materials table.
+- rule_id: IS_MARA_RBNRM_REFERENCE_EXISTS
+  name: MAT0240_CatalogProfileRef
+  table: MARA
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify the catalog profile value exists in the Technical Report table.
+  fields:
+  - RBNRM
+  assertion:
+    node: cmp
+    field: RBNRM
+    op: in
+  executable: false
+  binding_notes: no self-defined domain for field; resolve from check table on the
+    real-data path
+  provenance:
+    source: information_steward
+    original_name: MAT0240_CatalogProfileRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T352B', 'RBNR',\
+      \ $P_I_CatalogProfile);\nEND"
+    reference_table: T352B
+    rule_doc: Verify the catalog profile value exists in the Technical Report table.
+- rule_id: IS_MARA_SERLV_DOMAIN_IN
+  name: MAT0280_SerialNumberLevelIsValid
+  table: MARA
+  dama_dimension: Validity
+  is_dimension: Accuracy
+  archetype: domain_in
+  severity: Medium
+  description: Verify the serial number level value is valid according to the appropriate
+    reference domain or value range.
+  fields:
+  - SERLV
+  assertion:
+    node: cmp
+    field: SERLV
+    op: in
+    value:
+    - '1'
+  executable: false
+  binding_notes: field not present in current schema projection
+  provenance:
+    source: information_steward
+    original_name: MAT0280_SerialNumberLevelIsValid
+    original_expression: "BEGIN RETURN\n   $P_I_SerialNoDomain IN ('1');\nEND"
+    rule_doc: Verify the serial number level value is valid according to the appropriate
+      reference domain or value range.
+- rule_id: IS_MARA_SATNR_REFERENCE_EXISTS
+  name: MAT1370_CrossPlantCMRef
+  table: MARA
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify the cross plant CM value exists in the Material Master Data
+    table.
+  fields:
+  - SATNR
+  assertion:
+    node: cmp
+    field: SATNR
+    op: in
+  executable: false
+  binding_notes: no self-defined domain for field; resolve from check table on the
+    real-data path
+  provenance:
+    source: information_steward
+    original_name: MAT1370_CrossPlantCMRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'MARA', 'MATNR',\
+      \ $P_I_XPlantCM);\nEND"
+    reference_table: MARA
+    rule_doc: Verify the cross plant CM value exists in the Material Master Data table.
+- rule_id: IS_MARA_MBRSH_REFERENCE_EXISTS
+  name: MAT0050_IndustrySectorRef
+  table: MARA
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify the industry sector value exists in the Industries for Materials
+    table.
+  fields:
+  - MBRSH
+  assertion:
+    node: cmp
+    field: MBRSH
+    op: in
+    value:
+    - '1'
+    - A
+    - C
+    - M
+    - P
+  executable: true
+  provenance:
+    source: information_steward
+    original_name: MAT0050_IndustrySectorRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T137', 'MBRSH',\
+      \ $P_I_IndustrySector);\nEND"
+    reference_table: T137
+    rule_doc: Verify the industry sector value exists in the Industries for Materials
+      table.
+- rule_id: IS_MARA_LABOR_REFERENCE_EXISTS
+  name: MAT0110_LaboratoryOfficeRef
+  table: MARA
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify the laboratory / office value exists in the Laboratory/Office
+    for Material table.
+  fields:
+  - LABOR
+  assertion:
+    node: cmp
+    field: LABOR
+    op: in
+  executable: false
+  binding_notes: no self-defined domain for field; resolve from check table on the
+    real-data path
+  provenance:
+    source: information_steward
+    original_name: MAT0110_LaboratoryOfficeRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T024L', 'LABOR',\
+      \ $P_I_LabOffice);\nEND"
+    reference_table: T024L
+    rule_doc: Verify the laboratory / office value exists in the Laboratory/Office
+      for Material table.
+- rule_id: IS_MARA_MTPOS_MARA_REFERENCE_EXISTS
+  name: MAT0310_GeneralItemCategoryGroupRef
+  table: MARA
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: 'Verify the general item category group value exists in the Materials:
+    Item Category Groups in Material Master table.'
+  fields:
+  - MTPOS_MARA
+  assertion:
+    node: cmp
+    field: MTPOS_MARA
+    op: in
+  executable: false
+  binding_notes: no self-defined domain for field; resolve from check table on the
+    real-data path
+  provenance:
+    source: information_steward
+    original_name: MAT0310_GeneralItemCategoryGroupRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TPTM', 'MTPOS',\
+      \ $P_I_GenItemCatGroup);\nEND"
+    reference_table: TPTM
+    rule_doc: 'Verify the general item category group value exists in the Materials:
+      Item Category Groups in Material Master table.'
+- rule_id: IS_MARA_MATNR_NOT_NULL
+  name: MAT000_MaterialNumberPopulated
+  table: MARA
+  dama_dimension: Completeness
+  is_dimension: Completeness
+  archetype: not_null
+  severity: High
+  description: Verify the material number is not empty.
+  fields:
+  - MATNR
+  assertion:
+    node: cmp
+    field: MATNR
+    op: is_not_null
+  executable: true
+  provenance:
+    source: information_steward
+    original_name: MAT000_MaterialNumberPopulated
+    original_expression: 'BEGIN RETURN
+
+      $P_I_Material IS NOT NULL
+
+      AND $P_I_Material != '''';
+
+      END'
+    rule_doc: Verify the material number is not empty.
+- rule_id: IS_MARA_MEINS_REFERENCE_EXISTS
+  name: MAT0090_BaseUnitofMeasureRef
+  table: MARA
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify the base unit of measure value exists in the Assign Internal
+    To Language-Dependent Unit table.
+  fields:
+  - MEINS
+  assertion:
+    node: cmp
+    field: MEINS
+    op: in
+    value:
+    - BAG
+    - BOT
+    - CCM
+    - EA
+    - H
+    - KG
+    - KM
+    - L
+    - LE
+    - M2
+    - M3
+    - ST
+    - STD
+    - WCH
+  executable: true
+  provenance:
+    source: information_steward
+    original_name: MAT0090_BaseUnitofMeasureRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T006A', 'MSEHI',\
+      \ $P_I_BaseUOM);\nEND"
+    reference_table: T006A
+    rule_doc: Verify the base unit of measure value exists in the Assign Internal
+      To Language-Dependent Unit table.
+- rule_id: IS_MARA_IPRKZ_REFERENCE_EXISTS
+  name: MAT0290_PeriodIndicatorforSLEDRef
+  table: MARA
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify the period indicator for SLED value exists in the Language-Dependent
+    Texts for SLED Period Indicator table.
+  fields:
+  - IPRKZ
+  assertion:
+    node: cmp
+    field: IPRKZ
+    op: in
+  executable: false
+  binding_notes: no self-defined domain for field; resolve from check table on the
+    real-data path
+  provenance:
+    source: information_steward
+    original_name: MAT0290_PeriodIndicatorforSLEDRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'PRDKZT', 'IPRKZ',\
+      \ $P_I_PeriodIndForSLED);\nEND"
+    reference_table: PRDKZT
+    rule_doc: Verify the period indicator for SLED value exists in the Language-Dependent
+      Texts for SLED Period Indicator table.
+- rule_id: IS_MARA_MEINS_NOT_NULL
+  name: MAT0080_BaseUnitOfMeasurePopulated
+  table: MARA
+  dama_dimension: Completeness
+  is_dimension: Completeness
+  archetype: not_null
+  severity: High
+  description: Verify the base unit of measure field is not empty.
+  fields:
+  - MEINS
+  assertion:
+    node: cmp
+    field: MEINS
+    op: is_not_null
+  executable: true
+  provenance:
+    source: information_steward
+    original_name: MAT0080_BaseUnitOfMeasurePopulated
+    original_expression: 'BEGIN RETURN
+
+      $P_I_BaseUOM IS NOT NULL
+
+      AND $P_I_BaseUOM != '''';
+
+      END'
+    rule_doc: Verify the base unit of measure field is not empty.
+- rule_id: IS_MARA_ETIFO_REFERENCE_EXISTS
+  name: MAT0210_LabFormRef
+  table: MARA
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify the lab form value exists in the Check Table for Label Shape
+    table.
+  fields:
+  - ETIFO
+  assertion:
+    node: cmp
+    field: ETIFO
+    op: in
+  executable: false
+  binding_notes: no self-defined domain for field; resolve from check table on the
+    real-data path
+  provenance:
+    source: information_steward
+    original_name: MAT0210_LabFormRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T6WP4', 'ETIFO',\
+      \ $P_I_LabForm);\nEND"
+    reference_table: T6WP4
+    rule_doc: Verify the lab form value exists in the Check Table for Label Shape
+      table.
+- rule_id: IS_MARA_NRFHG_DOMAIN_IN
+  name: MAT0260_QualforFreeGoodsDiscIsValid
+  table: MARA
+  dama_dimension: Validity
+  is_dimension: Accuracy
+  archetype: domain_in
+  severity: Medium
+  description: Verify the qualify for free goods discount value is valid according
+    to the appropriate reference domain or value range.
+  fields:
+  - NRFHG
+  assertion:
+    node: cmp
+    field: NRFHG
+    op: in
+    value:
+    - '1'
+    - '2'
+    - '3'
+  executable: false
+  binding_notes: field not present in current schema projection
+  provenance:
+    source: information_steward
+    original_name: MAT0260_QualforFreeGoodsDiscIsValid
+    original_expression: "BEGIN RETURN\n   $P_I_QualForFreeGoodsDis IN ('1', '2',\
+      \ '3');\nEND"
+    rule_doc: Verify the qualify for free goods discount value is valid according
+      to the appropriate reference domain or value range.
+- rule_id: IS_MARA_MFRNR_REFERENCE_EXISTS
+  name: MAT0270_ManufacturerRef
+  table: MARA
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify the manufacturer value exists in the Vendor Master (General
+    Section) table.
+  fields:
+  - MFRNR
+  assertion:
+    node: cmp
+    field: MFRNR
+    op: in
+  executable: false
+  binding_notes: no self-defined domain for field; resolve from check table on the
+    real-data path
+  provenance:
+    source: information_steward
+    original_name: MAT0270_ManufacturerRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'LFA1', 'LIFNR',\
+      \ $P_I_Manufacturer);\nEND"
+    reference_table: LFA1
+    rule_doc: Verify the manufacturer value exists in the Vendor Master (General Section)
+      table.
+- rule_id: IS_MARA_KOSCH_REFERENCE_EXISTS
+  name: MAT0250_ProductAllocationRef
+  table: MARA
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: 'Verify the product allocation value exists in the Product Allocation:
+    Definition Procedure table.'
+  fields:
+  - KOSCH
+  assertion:
+    node: cmp
+    field: KOSCH
+    op: in
+  executable: false
+  binding_notes: no self-defined domain for field; resolve from check table on the
+    real-data path
+  provenance:
+    source: information_steward
+    original_name: MAT0250_ProductAllocationRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T190S', 'KOSCH',\
+      \ $P_I_ProductAllocation);\nEND"
+    reference_table: T190S
+    rule_doc: 'Verify the product allocation value exists in the Product Allocation:
+      Definition Procedure table.'
+- rule_id: IS_MARA_MATKL_REFERENCE_EXISTS
+  name: MAT0070_MaterialGroupRef
+  table: MARA
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify the material group value exists in the Material Groups table.
+  fields:
+  - MATKL
+  assertion:
+    node: cmp
+    field: MATKL
+    op: in
+    value:
+    - '01'
+    - '02'
+    - '190102'
+    - '211502'
+    - DIGIVEHI
+    - FL80
+    - L001
+    - L002
+    - L003
+    - L004
+    - L005
+    - L006
+    - L008
+    - P001
+    - P002
+    - SUBS
+    - YBFA05
+    - YBMM00
+    - YBMM01
+    - YBPM01
+    - Z991
+    - Z992
+    - ZBRAKES
+    - ZCRUISE
+    - ZFORK
+    - ZFRAME
+    - ZGEARS
+    - ZHANDLE
+    - ZMTN
+    - ZPEDAL
+    - ZRACING
+    - ZSEAT
+    - ZSHOCK
+    - ZTRAIN
+    - ZWHEEL
+    - ZYOUTH
+  executable: true
+  provenance:
+    source: information_steward
+    original_name: MAT0070_MaterialGroupRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T023', 'MATKL',\
+      \ $P_I_MaterialGroup);\nEND"
+    reference_table: T023
+    rule_doc: Verify the material group value exists in the Material Groups table.
+- rule_id: IS_MARA_EKWSL_REFERENCE_EXISTS
+  name: MAT0120_PurchasingValueKeyRef
+  table: MARA
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify the purchasing value key exists in the Purchasing Value Key
+    table.
+  fields:
+  - EKWSL
+  assertion:
+    node: cmp
+    field: EKWSL
+    op: in
+  executable: false
+  binding_notes: no self-defined domain for field; resolve from check table on the
+    real-data path
+  provenance:
+    source: information_steward
+    original_name: MAT0120_PurchasingValueKeyRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T405', 'EKWSL',\
+      \ $P_I_PurchasingValueKey);\nEND"
+    reference_table: T405
+    rule_doc: Verify the purchasing value key exists in the Purchasing Value Key table.
+- rule_id: IS_MARA_MAGRV_REFERENCE_EXISTS
+  name: MAT0230_MaterialGroupPackagingMatlsRef
+  table: MARA
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: 'Verify the material group packaging materials value exists in the
+    Material Group: Packaging Materials table.'
+  fields:
+  - MAGRV
+  assertion:
+    node: cmp
+    field: MAGRV
+    op: in
+    value:
+    - PKGR
+  executable: true
+  provenance:
+    source: information_steward
+    original_name: MAT0230_MaterialGroupPackagingMatlsRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TVEGR', 'MAGRV',\
+      \ $P_I_MatGrpPackMatls);\nEND"
+    reference_table: TVEGR
+    rule_doc: 'Verify the material group packaging materials value exists in the Material
+      Group: Packaging Materials table.'
+- rule_id: IS_MARA_STOFF_REFERENCE_EXISTS
+  name: MAT0180_HazardousMaterialNumberRef
+  table: MARA
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify the hazardous material number value exists in the Hazardous
+    Materials table.
+  fields:
+  - STOFF
+  assertion:
+    node: cmp
+    field: STOFF
+    op: in
+  executable: false
+  binding_notes: no self-defined domain for field; resolve from check table on the
+    real-data path
+  provenance:
+    source: information_steward
+    original_name: MAT0180_HazardousMaterialNumberRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'MGEF', 'STOFF',\
+      \ $P_I_HazmatRequirements);\nEND"
+    reference_table: MGEF
+    rule_doc: Verify the hazardous material number value exists in the Hazardous Materials
+      table.
+- rule_id: IS_MARA_SPART_REFERENCE_EXISTS
+  name: MAT0190_DivisionRef
+  table: MARA
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: 'Verify the material division value exists in the Organizational Unit:
+    Sales Divisions table.'
+  fields:
+  - SPART
+  assertion:
+    node: cmp
+    field: SPART
+    op: in
+    value:
+    - '00'
+    - '01'
+  executable: true
+  provenance:
+    source: information_steward
+    original_name: MAT0190_DivisionRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TSPA', 'SPART',\
+      \ $P_I_Division);\nEND"
+    reference_table: TSPA
+    rule_doc: 'Verify the material division value exists in the Organizational Unit:
+      Sales Divisions table.'
+- rule_id: IS_MARA_WRKST_REFERENCE_EXISTS
+  name: MAT0100_BasicMaterialRef
+  table: MARA
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify the basic material value exists in the Check Table for Basic
+    Material Field table.
+  fields:
+  - WRKST
+  assertion:
+    node: cmp
+    field: WRKST
+    op: in
+  executable: false
+  binding_notes: no self-defined domain for field; resolve from check table on the
+    real-data path
+  provenance:
+    source: information_steward
+    original_name: MAT0100_BasicMaterialRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TWSPR', 'WRKST',\
+      \ $P_I_BasicMaterial);\nEND"
+    reference_table: TWSPR
+    rule_doc: Verify the basic material value exists in the Check Table for Basic
+      Material Field table.
+- rule_id: IS_MARA_TEMPB_REFERENCE_EXISTS
+  name: MAT0150_TemperatureConditionRef
+  table: MARA
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify the temperature condition value exists in the Temperature Conditions
+    for Storing Materials table.
+  fields:
+  - TEMPB
+  assertion:
+    node: cmp
+    field: TEMPB
+    op: in
+  executable: false
+  binding_notes: no self-defined domain for field; resolve from check table on the
+    real-data path
+  provenance:
+    source: information_steward
+    original_name: MAT0150_TemperatureConditionRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T143', 'TEMPB',\
+      \ $P_I_TemperatureCondition);\nEND"
+    reference_table: T143
+    rule_doc: Verify the temperature condition value exists in the Temperature Conditions
+      for Storing Materials table.
+- rule_id: IS_MARA_RMATP_REFERENCE_EXISTS
+  name: MAT0320_ReferenceMatlForPackagingRef
+  table: MARA
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify the reference material for packaging value exists in the General
+    Material Data table.
+  fields:
+  - RMATP
+  assertion:
+    node: cmp
+    field: RMATP
+    op: in
+  executable: false
+  binding_notes: no self-defined domain for field; resolve from check table on the
+    real-data path
+  provenance:
+    source: information_steward
+    original_name: MAT0320_ReferenceMatlForPackagingRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'MARA', 'MATNR',\
+      \ $P_I_RefMatPackaging);\nEND"
+    reference_table: MARA
+    rule_doc: Verify the reference material for packaging value exists in the General
+      Material Data table.
+- rule_id: IS_MARA_ETIAR_REFERENCE_EXISTS
+  name: MAT0200_LabelTypeRef
+  table: MARA
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify the label type value exists in the Check Table for Labelling
+    Type table.
+  fields:
+  - ETIAR
+  assertion:
+    node: cmp
+    field: ETIAR
+    op: in
+  executable: false
+  binding_notes: no self-defined domain for field; resolve from check table on the
+    real-data path
+  provenance:
+    source: information_steward
+    original_name: MAT0200_LabelTypeRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T6WP3', 'ETIAR',\
+      \ $P_I_LabelType);\nEND"
+    reference_table: T6WP3
+    rule_doc: Verify the label type value exists in the Check Table for Labelling
+      Type table.
+- rule_id: IS_MARA_MATKL_NOT_NULL
+  name: MAT0060_MaterialGroupPopulated
+  table: MARA
+  dama_dimension: Completeness
+  is_dimension: Completeness
+  archetype: not_null
+  severity: Medium
+  description: Verify the material group field is not empty.
+  fields:
+  - MATKL
+  assertion:
+    node: cmp
+    field: MATKL
+    op: is_not_null
+  executable: true
+  provenance:
+    source: information_steward
+    original_name: MAT0060_MaterialGroupPopulated
+    original_expression: 'BEGIN RETURN
+
+      $P_I_MaterialGroup IS NOT NULL
+
+      AND $P_I_MaterialGroup != '''';
+
+      END'
+    rule_doc: Verify the material group field is not empty.
+- rule_id: IS_MARA_MTART_REFERENCE_EXISTS
+  name: MAT0020_MaterialTypeRef
+  table: MARA
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify the material type value exists in the Material Types table.
+  fields:
+  - MTART
+  assertion:
+    node: cmp
+    field: MTART
+    op: in
+    value:
+    - BUND
+    - DIEN
+    - ERSA
+    - FERT
+    - FHMI
+    - HALB
+    - HAWA
+    - HIBE
+    - IBAU
+    - KMAT
+    - LEIH
+    - MAT
+    - NLAG
+    - PIPE
+    - ROH
+    - SERV
+    - SUBS
+    - SWNV
+    - UNFR
+    - UNSF
+    - VEHI
+    - VERP
+  executable: true
+  provenance:
+    source: information_steward
+    original_name: MAT0020_MaterialTypeRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T134', 'MTART',\
+      \ $P_I_MaterialType);\nEND"
+    reference_table: T134
+    rule_doc: Verify the material type value exists in the Material Types table.
+- rule_id: IS_MARA_BEHVO_REFERENCE_EXISTS
+  name: MAT0130_ContainerRequirementsRef
+  table: MARA
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify the container requirements value exists in the Container Requirements
+    for Storing Materials table.
+  fields:
+  - BEHVO
+  assertion:
+    node: cmp
+    field: BEHVO
+    op: in
+  executable: false
+  binding_notes: no self-defined domain for field; resolve from check table on the
+    real-data path
+  provenance:
+    source: information_steward
+    original_name: MAT0130_ContainerRequirementsRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T144', 'BEHVO',\
+      \ $P_I_ContainerRequirements);\nEND"
+    reference_table: T144
+    rule_doc: Verify the container requirements value exists in the Container Requirements
+      for Storing Materials table.
+- rule_id: IS_MARA_NUMTP_REFERENCE_EXISTS
+  name: MAT0220_EANCategoryRef
+  table: MARA
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify the EAN category value exists in the international Article Number
+    (EAN) Categories table.
+  fields:
+  - NUMTP
+  assertion:
+    node: cmp
+    field: NUMTP
+    op: in
+  executable: false
+  binding_notes: no self-defined domain for field; resolve from check table on the
+    real-data path
+  provenance:
+    source: information_steward
+    original_name: MAT0220_EANCategoryRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TNTP', 'NUMTP',\
+      \ $P_I_EANCategory);\nEND"
+    reference_table: TNTP
+    rule_doc: Verify the EAN category value exists in the international Article Number
+      (EAN) Categories table.
+- rule_id: IS_MARA_TRAGR_REFERENCE_EXISTS
+  name: MAT0170_TransportationGroupRef
+  table: MARA
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: 'Verify the transportation group value exists in the Delivery Scheduling:
+    Transportation Groups table.'
+  fields:
+  - TRAGR
+  assertion:
+    node: cmp
+    field: TRAGR
+    op: in
+    value:
+    - '0001'
+    - '0004'
+  executable: true
+  provenance:
+    source: information_steward
+    original_name: MAT0170_TransportationGroupRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TTGR', 'TRAGR',\
+      \ $P_I_TransportationGroup);\nEND"
+    reference_table: TTGR
+    rule_doc: 'Verify the transportation group value exists in the Delivery Scheduling:
+      Transportation Groups table.'
+- rule_id: IS_MARA_MTART_NOT_NULL
+  name: MAT0010_MaterialTypePopulated
+  table: MARA
+  dama_dimension: Completeness
+  is_dimension: Completeness
+  archetype: not_null
+  severity: High
+  description: Verify the material type field is not empty.
+  fields:
+  - MTART
+  assertion:
+    node: cmp
+    field: MTART
+    op: is_not_null
+  executable: true
+  provenance:
+    source: information_steward
+    original_name: MAT0010_MaterialTypePopulated
+    original_expression: 'BEGIN RETURN
+
+      $P_I_MaterialType IS NOT NULL
+
+      AND $P_I_MaterialType != '''';
+
+      END'
+    rule_doc: Verify the material type field is not empty.
+- rule_id: IS_MARA_MBRSH_NOT_NULL
+  name: MAT0040_IndustrySectorPopulated
+  table: MARA
+  dama_dimension: Completeness
+  is_dimension: Completeness
+  archetype: not_null
+  severity: High
+  description: Verify the industry sector field is not empty
+  fields:
+  - MBRSH
+  assertion:
+    node: cmp
+    field: MBRSH
+    op: is_not_null
+  executable: true
+  provenance:
+    source: information_steward
+    original_name: MAT0040_IndustrySectorPopulated
+    original_expression: 'BEGIN RETURN
+
+      $P_I_IndustrySector IS NOT NULL
+
+      AND $P_I_IndustrySector != '''';
+
+      END'
+    rule_doc: Verify the industry sector field is not empty
+- rule_id: IS_MARA_RDMHD_DOMAIN_IN
+  name: MAT0300_RoundingRuleSLEDIsValid
+  table: MARA
+  dama_dimension: Validity
+  is_dimension: Accuracy
+  archetype: domain_in
+  severity: Medium
+  description: Verify the rounding rule for calculating shelf life expiration date
+    (SLED) of a material is valid according to the appropriate reference domain or
+    value range.
+  fields:
+  - RDMHD
+  assertion:
+    node: cmp
+    field: RDMHD
+    op: in
+    value:
+    - '-'
+    - +
+    - F
+  executable: false
+  binding_notes: field not present in current schema projection
+  provenance:
+    source: information_steward
+    original_name: MAT0300_RoundingRuleSLEDIsValid
+    original_expression: "BEGIN RETURN\n   $P_I_RoundingRuleSLED IN ('-', '+', 'F');\n\
+      END"
+    rule_doc: Verify the rounding rule for calculating shelf life expiration date
+      (SLED) of a material is valid according to the appropriate reference domain
+      or value range.
+- rule_id: IS_MARA_$MATNR_NOT_NULL
+  name: 425_LE_Packaging Materials_Check Mandat Fields
+  table: MARA
+  dama_dimension: Completeness
+  is_dimension: Completeness
+  archetype: not_null
+  severity: Medium
+  description: Check if all mandatory fields of table MARA are maintained.
+  fields:
+  - $MATNR
+  assertion:
+    node: cmp
+    field: $MATNR
+    op: is_not_null
+  executable: false
+  binding_notes: field not present in current schema projection
+  provenance:
+    source: information_steward
+    original_name: 425_LE_Packaging Materials_Check Mandat Fields
+    original_expression: 'BEGIN RETURN
+
+      $MATNR IS NOT NULL
+
+      AND $MTART IS NOT NULL
+
+      AND $MBRSH IS NOT NULL
+
+      AND $MATKL IS NOT NULL
+
+      AND $MEINS IS NOT NULL
+
+      AND $GEWEI IS NOT NULL
+
+      AND $VOLEH IS NOT NULL
+
+      AND $MEABM IS NOT NULL
+
+      AND $ERGEI IS NOT NULL
+
+      AND $ERVOE IS NOT NULL
+
+      AND $MTPOS_MARA IS NOT NULL;
+
+      END'
+    rule_doc: Check if all mandatory fields of table MARA are maintained.

@@ -1,0 +1,1984 @@
+table: MARC
+rule_count: 72
+rules:
+- rule_id: IS_MARC_QSSYS_REFERENCE_EXISTS
+  name: MAT0780_TargetQMSystemRef
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify the Target QM System value exists in the QM system definition
+    table.
+  fields:
+  - QSSYS
+  assertion:
+    node: cmp
+    field: QSSYS
+    op: in
+  executable: false
+  binding_notes: no self-defined domain for field; resolve from check table on the
+    real-data path
+  provenance:
+    source: information_steward
+    original_name: MAT0780_TargetQMSystemRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TQ02', 'QSSYS',\
+      \ $P_I_TargetQMSystem);\nEND"
+    reference_table: TQ02
+    rule_doc: Verify the Target QM System value exists in the QM system definition
+      table.
+- rule_id: IS_MARC_DPLFS_DOMAIN_IN
+  name: MAT0920_FairShareRuleIsValid
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Accuracy
+  archetype: domain_in
+  severity: Medium
+  description: Verify the fair share rule value is valid according to the appropriate
+    reference domain or value range.
+  fields:
+  - DPLFS
+  assertion:
+    node: cmp
+    field: DPLFS
+    op: in
+    value:
+    - A
+    - B
+    - X
+  executable: false
+  binding_notes: field not present in current schema projection
+  provenance:
+    source: information_steward
+    original_name: MAT0920_FairShareRuleIsValid
+    original_expression: "BEGIN RETURN\n   $P_I_FairShare_Rule IN ('A', 'B', 'X');\n\
+      END"
+    rule_doc: Verify the fair share rule value is valid according to the appropriate
+      reference domain or value range.
+- rule_id: IS_MARC_PLNTY_REFERENCE_EXISTS
+  name: MAT0820_TaskListTypeRef
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify the task list type value exists in the Task List Types table.
+  fields:
+  - PLNTY
+  assertion:
+    node: cmp
+    field: PLNTY
+    op: in
+  executable: false
+  binding_notes: no self-defined domain for field; resolve from check table on the
+    real-data path
+  provenance:
+    source: information_steward
+    original_name: MAT0820_TaskListTypeRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TCA01', 'PLNTY',\
+      \ $P_I_TaskListType);\nEND"
+    reference_table: TCA01
+    rule_doc: Verify the task list type value exists in the Task List Types table.
+- rule_id: IS_MARC_MTVFP_NOT_NULL
+  name: MAT0600_AvailabilityCheckPopulated
+  table: MARC
+  dama_dimension: Completeness
+  is_dimension: Completeness
+  archetype: not_null
+  severity: Medium
+  description: Verify the availability check field is not empty.
+  fields:
+  - MTVFP
+  assertion:
+    node: cmp
+    field: MTVFP
+    op: is_not_null
+  executable: true
+  provenance:
+    source: information_steward
+    original_name: MAT0600_AvailabilityCheckPopulated
+    original_expression: 'BEGIN RETURN
+
+      $P_I_AvailabilityCheck IS NOT NULL
+
+      AND $P_I_AvailabilityCheck != '''';
+
+      END'
+    rule_doc: Verify the availability check field is not empty.
+- rule_id: IS_MARC_DISMM_REFERENCE_EXISTS
+  name: MAT0410_MRPTypeRef
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify the MRP Type value exists in the MRP Type table.
+  fields:
+  - DISMM
+  assertion:
+    node: cmp
+    field: DISMM
+    op: in
+    value:
+    - D1
+    - M0
+    - ND
+    - P1
+    - PD
+    - VB
+  executable: true
+  provenance:
+    source: information_steward
+    original_name: MAT0410_MRPTypeRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T438A', 'DISMM',\
+      \ $P_I_MRPType);\nEND"
+    reference_table: T438A
+    rule_doc: Verify the MRP Type value exists in the MRP Type table.
+- rule_id: IS_MARC_FHORI_REFERENCE_EXISTS
+  name: MAT0540_SchedulingMarginKeyRef
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify the scheduling margin key value exists in the Floats for Scheduling
+    table.
+  fields:
+  - FHORI
+  assertion:
+    node: cmp
+    field: FHORI
+    op: in
+    value:
+    - '000'
+    - '001'
+    - '002'
+  executable: true
+  provenance:
+    source: information_steward
+    original_name: MAT0540_SchedulingMarginKeyRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T436A', 'FHORI',\
+      \ $P_I_SchedulingMarginKey);\nEND"
+    reference_table: T436A
+    rule_doc: Verify the scheduling margin key value exists in the Floats for Scheduling
+      table.
+- rule_id: IS_MARC_LADGR_NOT_NULL
+  name: MAT0570_LoadingGroupPopulated
+  table: MARC
+  dama_dimension: Completeness
+  is_dimension: Completeness
+  archetype: not_null
+  severity: Medium
+  description: Verify the loading group field is not empty.
+  fields:
+  - LADGR
+  assertion:
+    node: cmp
+    field: LADGR
+    op: is_not_null
+  executable: true
+  provenance:
+    source: information_steward
+    original_name: MAT0570_LoadingGroupPopulated
+    original_expression: 'BEGIN RETURN
+
+      $P_I_LoadingGroup IS NOT NULL
+
+      AND $P_I_LoadingGroup != '''';
+
+      END'
+    rule_doc: Verify the loading group field is not empty.
+- rule_id: IS_MARC_STLAN_REFERENCE_EXISTS
+  name: MAT0690_BOMUsageRef
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify the BOM usage value exists in the BOM Usage - Item Statuses
+    table.
+  fields:
+  - STLAN
+  assertion:
+    node: cmp
+    field: STLAN
+    op: in
+  executable: false
+  binding_notes: no self-defined domain for field; resolve from check table on the
+    real-data path
+  provenance:
+    source: information_steward
+    original_name: MAT0690_BOMUsageRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T416', 'STLAN',\
+      \ $P_I_BOMUsage);\nEND"
+    reference_table: T416
+    rule_doc: Verify the BOM usage value exists in the BOM Usage - Item Statuses table.
+- rule_id: IS_MARC_PERIV_REFERENCE_EXISTS
+  name: MAT0620_FIYearVariantRef
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify the material fiscal year variant exists in the Fiscal Year Variants
+    table.
+  fields:
+  - PERIV
+  assertion:
+    node: cmp
+    field: PERIV
+    op: in
+  executable: false
+  binding_notes: no self-defined domain for field; resolve from check table on the
+    real-data path
+  provenance:
+    source: information_steward
+    original_name: MAT0620_FIYearVariantRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T009', 'PERIV',\
+      \ $P_I_FIYearVariant);\nEND"
+    reference_table: T009
+    rule_doc: Verify the material fiscal year variant exists in the Fiscal Year Variants
+      table.
+- rule_id: IS_MARC_ABCIN_REFERENCE_EXISTS
+  name: MAT0730_CCPhysicalInventoryIndicatorRef
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify the physical inventory indicator value for cycle counting exists
+    in reference table T159C.
+  fields:
+  - ABCIN
+  assertion:
+    node: cmp
+    field: ABCIN
+    op: in
+  executable: false
+  binding_notes: no self-defined domain for field; resolve from check table on the
+    real-data path
+  provenance:
+    source: information_steward
+    original_name: MAT0730_CCPhysicalInventoryIndicatorRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T159C', 'ABCIN',\
+      \ $P_I_CCPhyInvIndicator);\nEND"
+    reference_table: T159C
+    rule_doc: Verify the physical inventory indicator value for cycle counting exists
+      in reference table T159C.
+- rule_id: IS_MARC_MEGRU_REFERENCE_EXISTS
+  name: MAT0860_UnitofMeasureGroupRef
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify the unit of measure group value exists in the Unit of Measure
+    Group table.
+  fields:
+  - MEGRU
+  assertion:
+    node: cmp
+    field: MEGRU
+    op: in
+  executable: false
+  binding_notes: no self-defined domain for field; resolve from check table on the
+    real-data path
+  provenance:
+    source: information_steward
+    original_name: MAT0860_UnitofMeasureGroupRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TWMEG', 'MEGRU',\
+      \ $P_I_UnitOfMeasureGroup);\nEND"
+    reference_table: TWMEG
+    rule_doc: Verify the unit of measure group value exists in the Unit of Measure
+      Group table.
+- rule_id: IS_MARC_MTVFP_REFERENCE_EXISTS
+  name: MAT0610_AvailabilityCheckRef
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify the availability check value exists in the Availability Check
+    Control table.
+  fields:
+  - MTVFP
+  assertion:
+    node: cmp
+    field: MTVFP
+    op: in
+    value:
+    - '01'
+    - '02'
+    - CH
+    - NC
+    - SP
+    - SR
+    - ST
+    - Y1
+    - Y2
+  executable: true
+  provenance:
+    source: information_steward
+    original_name: MAT0610_AvailabilityCheckRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TMVF', 'MTVFP',\
+      \ $P_I_AvailabilityCheck);\nEND"
+    reference_table: TMVF
+    rule_doc: Verify the availability check value exists in the Availability Check
+      Control table.
+- rule_id: IS_MARC_EKGRP_NOT_NULL
+  name: MAT0380_PurchasingGroupPopulated
+  table: MARC
+  dama_dimension: Completeness
+  is_dimension: Completeness
+  archetype: not_null
+  severity: Medium
+  description: Verify the purchasing group field is not empty.
+  fields:
+  - EKGRP
+  assertion:
+    node: cmp
+    field: EKGRP
+    op: is_not_null
+  executable: true
+  provenance:
+    source: information_steward
+    original_name: MAT0380_PurchasingGroupPopulated
+    original_expression: 'BEGIN RETURN
+
+      $P_I_PurchasingGroup IS NOT NULL
+
+      AND $P_I_PurchasingGroup != '''';
+
+      END'
+    rule_doc: Verify the purchasing group field is not empty.
+- rule_id: IS_MARC_FHORI_NOT_NULL
+  name: MAT0530_SchedulingMarginKeyPopulated
+  table: MARC
+  dama_dimension: Completeness
+  is_dimension: Completeness
+  archetype: not_null
+  severity: Medium
+  description: Verify the scheduling margin key for floats field is not empty.
+  fields:
+  - FHORI
+  assertion:
+    node: cmp
+    field: FHORI
+    op: is_not_null
+  executable: true
+  provenance:
+    source: information_steward
+    original_name: MAT0530_SchedulingMarginKeyPopulated
+    original_expression: 'BEGIN RETURN
+
+      $P_I_SchedKey IS NOT NULL
+
+      AND $P_I_SchedKey != '''';
+
+      END'
+    rule_doc: Verify the scheduling margin key for floats field is not empty.
+- rule_id: IS_MARC_STAWN_REFERENCE_EXISTS
+  name: MAT0630_CommodityorImportCodeRef
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify the commodity / import code value exists in reference table
+    T604.
+  fields:
+  - STAWN
+  assertion:
+    node: cmp
+    field: STAWN
+    op: in
+  executable: false
+  binding_notes: no self-defined domain for field; resolve from check table on the
+    real-data path
+  provenance:
+    source: information_steward
+    original_name: MAT0630_CommodityorImportCodeRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T604', 'STAWN',\
+      \ $P_I_CommImportCode);\nEND"
+    reference_table: T604
+    rule_doc: Verify the commodity / import code value exists in reference table T604.
+- rule_id: IS_MARC_MFRGR_REFERENCE_EXISTS
+  name: MAT0870_MaterialFreightGroupRef
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify the material freight group value exists in the Material Freight
+    Groups table.
+  fields:
+  - MFRGR
+  assertion:
+    node: cmp
+    field: MFRGR
+    op: in
+  executable: false
+  binding_notes: no self-defined domain for field; resolve from check table on the
+    real-data path
+  provenance:
+    source: information_steward
+    original_name: MAT0870_MaterialFreightGroupRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TMFG', 'MFRGR',\
+      \ $P_I_FreightGroup);\nEND"
+    reference_table: TMFG
+    rule_doc: Verify the material freight group value exists in the Material Freight
+      Groups table.
+- rule_id: IS_MARC_SHFLG_DOMAIN_IN
+  name: MAT0830_SafetyTimeIndicatorIsValid
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Accuracy
+  archetype: domain_in
+  severity: Medium
+  description: Verify the safety time indicator value is valid according to the appropriate
+    reference domain or value range.
+  fields:
+  - SHFLG
+  assertion:
+    node: cmp
+    field: SHFLG
+    op: in
+    value:
+    - '1'
+    - '2'
+  executable: false
+  binding_notes: field not present in current schema projection
+  provenance:
+    source: information_steward
+    original_name: MAT0830_SafetyTimeIndicatorIsValid
+    original_expression: "BEGIN RETURN\n   $P_I_SafetyTimeInd IN ('1','2');\nEND"
+    rule_doc: Verify the safety time indicator value is valid according to the appropriate
+      reference domain or value range.
+- rule_id: IS_MARC_HERKL_REFERENCE_EXISTS
+  name: MAT0640_CountryRef
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify the material's country of origin exists in the Countries table.
+  fields:
+  - HERKL
+  assertion:
+    node: cmp
+    field: HERKL
+    op: in
+  executable: false
+  binding_notes: no self-defined domain for field; resolve from check table on the
+    real-data path
+  provenance:
+    source: information_steward
+    original_name: MAT0640_CountryRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T005', 'LAND1',\
+      \ $P_I_Country);\nEND"
+    reference_table: T005
+    rule_doc: Verify the material's country of origin exists in the Countries table.
+- rule_id: IS_MARC_HERKR_REFERENCE_EXISTS
+  name: MAT0650_RegionRef
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify that material's region (state, province, county) exists in the
+    Tax Region table.
+  fields:
+  - HERKR
+  assertion:
+    node: cmp
+    field: HERKR
+    op: in
+  executable: false
+  binding_notes: no self-defined domain for field; resolve from check table on the
+    real-data path
+  provenance:
+    source: information_steward
+    original_name: MAT0650_RegionRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T005S', 'BLAND',\
+      \ $P_I_Region);\nEND"
+    reference_table: T005S
+    rule_doc: Verify that material's region (state, province, county) exists in the
+      Tax Region table.
+- rule_id: IS_MARC_KZBED_DOMAIN_IN
+  name: MAT0510_RequirementsGroupIsValid
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Accuracy
+  archetype: domain_in
+  severity: Medium
+  description: Verify the requirements group value is valid according to the appropriate
+    reference domain or value range.
+  fields:
+  - KZBED
+  assertion:
+    node: cmp
+    field: KZBED
+    op: in
+    value:
+    - T
+    - '0'
+  executable: false
+  binding_notes: field not present in current schema projection
+  provenance:
+    source: information_steward
+    original_name: MAT0510_RequirementsGroupIsValid
+    original_expression: "BEGIN RETURN\n   $P_I_RequirementGroup IN ('T', '0');\n\
+      END"
+    rule_doc: Verify the requirements group value is valid according to the appropriate
+      reference domain or value range.
+- rule_id: IS_MARC_KZPSP_DOMAIN_IN
+  name: MAT0950_CrossProjectIsValid
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Accuracy
+  archetype: domain_in
+  severity: Medium
+  description: Verify the cross-project value is valid according to the appropriate
+    reference domain or value range.
+  fields:
+  - KZPSP
+  assertion:
+    node: cmp
+    field: KZPSP
+    op: in
+    value:
+    - '1'
+  executable: false
+  binding_notes: field not present in current schema projection
+  provenance:
+    source: information_steward
+    original_name: MAT0950_CrossProjectIsValid
+    original_expression: "BEGIN RETURN\n   $P_I_CrossProjectDomain IN ('1');\nEND"
+    rule_doc: Verify the cross-project value is valid according to the appropriate
+      reference domain or value range.
+- rule_id: IS_MARC_PRENC_DOMAIN_IN
+  name: MAT0790_ExemptionCertificateIsValid
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Accuracy
+  archetype: domain_in
+  severity: Medium
+  description: Verify the exemption certificate value is valid according to the appropriate
+    reference domain or value range.
+  fields:
+  - PRENC
+  assertion:
+    node: cmp
+    field: PRENC
+    op: in
+    value:
+    - A
+    - B
+    - C
+  executable: false
+  binding_notes: field not present in current schema projection
+  provenance:
+    source: information_steward
+    original_name: MAT0790_ExemptionCertificateIsValid
+    original_expression: "BEGIN RETURN\n   $P_I_ExcemptionCertificate IN ('A', 'B',\
+      \ 'C');\nEND"
+    rule_doc: Verify the exemption certificate value is valid according to the appropriate
+      reference domain or value range.
+- rule_id: IS_MARC_QZGTP_REFERENCE_EXISTS
+  name: MAT0710_CertificateTypeRefeference
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify the certificate type value exists in the QM Certificate Categories
+    for Procurement table.
+  fields:
+  - QZGTP
+  assertion:
+    node: cmp
+    field: QZGTP
+    op: in
+  executable: false
+  binding_notes: no self-defined domain for field; resolve from check table on the
+    real-data path
+  provenance:
+    source: information_steward
+    original_name: MAT0710_CertificateTypeRefeference
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TQ05', 'ZGTYP',\
+      \ $P_I_CertificateType);\nEND"
+    reference_table: TQ05
+    rule_doc: Verify the certificate type value exists in the QM Certificate Categories
+      for Procurement table.
+- rule_id: IS_MARC_WERKS_REFERENCE_EXISTS
+  name: MAT0340_PlantRef
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify the plant value exists in the Plants/Branches table.
+  fields:
+  - WERKS
+  assertion:
+    node: cmp
+    field: WERKS
+    op: in
+    value:
+    - '0001'
+    - '0003'
+    - '1010'
+    - '1011'
+    - '1012'
+    - '1710'
+    - '1711'
+    - '1712'
+    - '1720'
+    - FOBP
+    - FORP
+  executable: true
+  provenance:
+    source: information_steward
+    original_name: MAT0340_PlantRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T001W', 'WERKS',\
+      \ $P_I_Plant);\nEND"
+    reference_table: T001W
+    rule_doc: Verify the plant value exists in the Plants/Branches table.
+- rule_id: IS_MARC_MDACH_REFERENCE_EXISTS
+  name: MAT0840_ActionControlRef
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify the action control value exists in the Action Control table.
+  fields:
+  - MDACH
+  assertion:
+    node: cmp
+    field: MDACH
+    op: in
+  executable: false
+  binding_notes: no self-defined domain for field; resolve from check table on the
+    real-data path
+  provenance:
+    source: information_steward
+    original_name: MAT0840_ActionControlRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T46AC', 'MDACH',\
+      \ $P_I_ActionControl);\nEND"
+    reference_table: T46AC
+    rule_doc: Verify the action control value exists in the Action Control table.
+- rule_id: IS_MARC_SFEPR_REFERENCE_EXISTS
+  name: MAT0770_REMProfileRef
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify the REM profile value exists in the Repetitive Manufacturing
+    Profile  table.
+  fields:
+  - SFEPR
+  assertion:
+    node: cmp
+    field: SFEPR
+    op: in
+  executable: false
+  binding_notes: no self-defined domain for field; resolve from check table on the
+    real-data path
+  provenance:
+    source: information_steward
+    original_name: MAT0770_REMProfileRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T437S', 'SFPRO',\
+      \ $P_I_REMProfile);\nEND"
+    reference_table: T437S
+    rule_doc: Verify the REM profile value exists in the Repetitive Manufacturing
+      Profile  table.
+- rule_id: IS_MARC_MMSTA_REFERENCE_EXISTS
+  name: MAT0360_PlantSpecificMaterialStatusRef
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify the plant specific material status value exists in the Material
+    Status From Materials Management/PPC View table.
+  fields:
+  - MMSTA
+  assertion:
+    node: cmp
+    field: MMSTA
+    op: in
+    value:
+    - '01'
+    - '03'
+  executable: true
+  provenance:
+    source: information_steward
+    original_name: MAT0360_PlantSpecificMaterialStatusRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T141', 'MMSTA',\
+      \ $P_I_PlantSpMatlStatus);\nEND"
+    reference_table: T141
+    rule_doc: Verify the plant specific material status value exists in the Material
+      Status From Materials Management/PPC View table.
+- rule_id: IS_MARC_LADGR_REFERENCE_EXISTS
+  name: MAT0580_LoadingGroupRef
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: 'Verify the loading group value exists in the Routes: Loading Groups
+    table.'
+  fields:
+  - LADGR
+  assertion:
+    node: cmp
+    field: LADGR
+    op: in
+    value:
+    - '0001'
+    - '0002'
+    - '0003'
+  executable: true
+  provenance:
+    source: information_steward
+    original_name: MAT0580_LoadingGroupRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TLGR', 'LADGR',\
+      \ $P_I_LoadingGroup);\nEND"
+    reference_table: TLGR
+    rule_doc: 'Verify the loading group value exists in the Routes: Loading Groups
+      table.'
+- rule_id: IS_MARC_STDPD_REFERENCE_EXISTS
+  name: MAT0760_ConfigurableMaterialRef
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify the configurable material value exists in the General Material
+    Data table.
+  fields:
+  - STDPD
+  assertion:
+    node: cmp
+    field: STDPD
+    op: in
+  executable: false
+  binding_notes: no self-defined domain for field; resolve from check table on the
+    real-data path
+  provenance:
+    source: information_steward
+    original_name: MAT0760_ConfigurableMaterialRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'MARA', 'MATNR',\
+      \ $P_I_ConfigurableMaterial);\nEND"
+    reference_table: MARA
+    rule_doc: Verify the configurable material value exists in the General Material
+      Data table.
+- rule_id: IS_MARC_AWSLS_REFERENCE_EXISTS
+  name: MAT0740_VarianceKeyRef
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: 'Verify the variance key value exists in the Variance Keys: Cost Centers/Costing
+    table.'
+  fields:
+  - AWSLS
+  assertion:
+    node: cmp
+    field: AWSLS
+    op: in
+  executable: false
+  binding_notes: no self-defined domain for field; resolve from check table on the
+    real-data path
+  provenance:
+    source: information_steward
+    original_name: MAT0740_VarianceKeyRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TKV01', 'AWSLS',\
+      \ $P_I_VarianceKey);\nEND"
+    reference_table: TKV01
+    rule_doc: 'Verify the variance key value exists in the Variance Keys: Cost Centers/Costing
+      table.'
+- rule_id: IS_MARC_WERKS_NOT_NULL
+  name: MAT0330_PlantPopulated
+  table: MARC
+  dama_dimension: Completeness
+  is_dimension: Completeness
+  archetype: not_null
+  severity: High
+  description: Verify the plant Field is not empty.
+  fields:
+  - WERKS
+  assertion:
+    node: cmp
+    field: WERKS
+    op: is_not_null
+  executable: true
+  provenance:
+    source: information_steward
+    original_name: MAT0330_PlantPopulated
+    original_expression: 'BEGIN RETURN
+
+      $P_I_Plant IS NOT NULL
+
+      AND $P_I_Plant != '''';
+
+      END'
+    rule_doc: Verify the plant Field is not empty.
+- rule_id: IS_MARC_MRPPP_REFERENCE_EXISTS
+  name: MAT0670_PlanningCycleRef
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: 'Verify the planning cycle value exists in T439G: PPplanning periods:
+    header table.'
+  fields:
+  - MRPPP
+  assertion:
+    node: cmp
+    field: MRPPP
+    op: in
+  executable: false
+  binding_notes: no self-defined domain for field; resolve from check table on the
+    real-data path
+  provenance:
+    source: information_steward
+    original_name: MAT0670_PlanningCycleRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T439G', 'MRPPP',\
+      \ $P_I_PlanningCycle);\nEND"
+    reference_table: T439G
+    rule_doc: 'Verify the planning cycle value exists in T439G: PPplanning periods:
+      header table.'
+- rule_id: IS_MARC_MAABC_REFERENCE_EXISTS
+  name: MAT0370_ABCIndicatorRef
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify the ABC indicator value exists in the 'Values Table for the
+    ABC indicator for Materials' table.
+  fields:
+  - MAABC
+  assertion:
+    node: cmp
+    field: MAABC
+    op: in
+    value:
+    - A
+    - B
+  executable: true
+  provenance:
+    source: information_steward
+    original_name: MAT0370_ABCIndicatorRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TMABC', 'MAABC',\
+      \ $P_I_ABCIndicator);\nEND"
+    reference_table: TMABC
+    rule_doc: Verify the ABC indicator value exists in the 'Values Table for the ABC
+      indicator for Materials' table.
+- rule_id: IS_MARC_USEQU_REFERENCE_EXISTS
+  name: MAT0590_QuotaArrangementUsageRef
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify the quota arrangement usage value exists in the Quota Arrangement
+    Rules table.
+  fields:
+  - USEQU
+  assertion:
+    node: cmp
+    field: USEQU
+    op: in
+  executable: false
+  binding_notes: no self-defined domain for field; resolve from check table on the
+    real-data path
+  provenance:
+    source: information_steward
+    original_name: MAT0590_QuotaArrangementUsageRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TMQ2', 'USEQU',\
+      \ $P_I_QuotaArrangementUsage);\nEND"
+    reference_table: TMQ2
+    rule_doc: Verify the quota arrangement usage value exists in the Quota Arrangement
+      Rules table.
+- rule_id: IS_MARC_QMATA_REFERENCE_EXISTS
+  name: MAT0810_QMMaterialAuthorizationRef
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify the QM material authorization value exists in the Material Authorization
+    Groups in Quality Management table.
+  fields:
+  - QMATA
+  assertion:
+    node: cmp
+    field: QMATA
+    op: in
+  executable: false
+  binding_notes: no self-defined domain for field; resolve from check table on the
+    real-data path
+  provenance:
+    source: information_steward
+    original_name: MAT0810_QMMaterialAuthorizationRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TQ01B', 'QMATAUTH',\
+      \ $P_I_QMMatAuth);\nEND"
+    reference_table: TQ01B
+    rule_doc: Verify the QM material authorization value exists in the Material Authorization
+      Groups in Quality Management table.
+- rule_id: IS_MARC_DISLS_REFERENCE_EXISTS
+  name: MAT0450_LotSizeRef
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify the lot size value exists in the MRP Lot Sizes table.
+  fields:
+  - DISLS
+  assertion:
+    node: cmp
+    field: DISLS
+    op: in
+    value:
+    - EX
+    - FX
+    - H1
+    - WB
+  executable: true
+  provenance:
+    source: information_steward
+    original_name: MAT0450_LotSizeRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T439A', 'DISLS',\
+      \ $P_I_LotSize);\nEND"
+    reference_table: T439A
+    rule_doc: Verify the lot size value exists in the MRP Lot Sizes table.
+- rule_id: IS_MARC_SERNP_REFERENCE_EXISTS
+  name: MAT0750_SerialNumberProfileRef
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify the serial number profile value exists in the Serial Number
+    Management Profiles table.
+  fields:
+  - SERNP
+  assertion:
+    node: cmp
+    field: SERNP
+    op: in
+  executable: false
+  binding_notes: no self-defined domain for field; resolve from check table on the
+    real-data path
+  provenance:
+    source: information_steward
+    original_name: MAT0750_SerialNumberProfileRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T377P', 'SERAIL',\
+      \ $P_I_SerialNoProfile);\nEND"
+    reference_table: T377P
+    rule_doc: Verify the serial number profile value exists in the Serial Number Management
+      Profiles table.
+- rule_id: IS_MARC_FPRFM_REFERENCE_EXISTS
+  name: MAT0890_DistributionProfileRef
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify the distribution profile value exists in the Distribution Profile
+    of Material in DC table.
+  fields:
+  - FPRFM
+  assertion:
+    node: cmp
+    field: FPRFM
+    op: in
+  executable: false
+  binding_notes: no self-defined domain for field; resolve from check table on the
+    real-data path
+  provenance:
+    source: information_steward
+    original_name: MAT0890_DistributionProfileRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TMFPF', 'FPRFM',\
+      \ $P_I_DistributionProfile);\nEND"
+    reference_table: TMFPF
+    rule_doc: Verify the distribution profile value exists in the Distribution Profile
+      of Material in DC table.
+- rule_id: IS_MARC_KZAUS_DOMAIN_IN
+  name: MAT0500_DiscontinuationIndIsValid
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Accuracy
+  archetype: domain_in
+  severity: Medium
+  description: Verify the discontinuation indicator value is valid according to the
+    appropriate reference domain or value range.
+  fields:
+  - KZAUS
+  assertion:
+    node: cmp
+    field: KZAUS
+    op: in
+    value:
+    - '1'
+    - '3'
+  executable: false
+  binding_notes: field not present in current schema projection
+  provenance:
+    source: information_steward
+    original_name: MAT0500_DiscontinuationIndIsValid
+    original_expression: "BEGIN RETURN\n   $P_I_DiscontinuationInd IN ('1', '3');\n\
+      END"
+    rule_doc: Verify the discontinuation indicator value is valid according to the
+      appropriate reference domain or value range.
+- rule_id: IS_MARC_DISPO_NOT_NULL
+  name: MAT0420_MRPControllerPopulated
+  table: MARC
+  dama_dimension: Completeness
+  is_dimension: Completeness
+  archetype: not_null
+  severity: Medium
+  description: Verify the MRP controller field is not empty.
+  fields:
+  - DISPO
+  assertion:
+    node: cmp
+    field: DISPO
+    op: is_not_null
+  executable: true
+  provenance:
+    source: information_steward
+    original_name: MAT0420_MRPControllerPopulated
+    original_expression: 'BEGIN RETURN
+
+      $P_I_MrpController IS NOT NULL
+
+      AND $P_I_MrpController != '''';
+
+      END'
+    rule_doc: Verify the MRP controller field is not empty.
+- rule_id: IS_MARC_DISMM_NOT_NULL
+  name: MAT0400_MRPTypePopulated
+  table: MARC
+  dama_dimension: Completeness
+  is_dimension: Completeness
+  archetype: not_null
+  severity: Medium
+  description: Verify the MRP type field is not empty.
+  fields:
+  - DISMM
+  assertion:
+    node: cmp
+    field: DISMM
+    op: is_not_null
+  executable: true
+  provenance:
+    source: information_steward
+    original_name: MAT0400_MRPTypePopulated
+    original_expression: 'BEGIN RETURN
+
+      $P_I_MrpType IS NOT NULL
+
+      AND $P_I_MrpType != '''';
+
+      END'
+    rule_doc: Verify the MRP type field is not empty.
+- rule_id: IS_MARC_KZECH_DOMAIN_IN
+  name: MAT0850_BatchEntryIsValid
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Accuracy
+  archetype: domain_in
+  severity: Medium
+  description: Verify the batch entry value for a material master is valid according
+    to the appropriate reference domain or value range.
+  fields:
+  - KZECH
+  assertion:
+    node: cmp
+    field: KZECH
+    op: in
+    value:
+    - '1'
+    - '2'
+    - '3'
+  executable: false
+  binding_notes: field not present in current schema projection
+  provenance:
+    source: information_steward
+    original_name: MAT0850_BatchEntryIsValid
+    original_expression: "BEGIN RETURN\n   $P_I_BatchEntryDomain IN ('1', '2', '3');\n\
+      END"
+    rule_doc: Verify the batch entry value for a material master is valid according
+      to the appropriate reference domain or value range.
+- rule_id: IS_MARC_STEUC_REFERENCE_EXISTS
+  name: MAT0900_ControlCodeRef
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: 'Verify the control code value exists in the Import Processing: Control
+    Code table.'
+  fields:
+  - STEUC
+  assertion:
+    node: cmp
+    field: STEUC
+    op: in
+  executable: false
+  binding_notes: no self-defined domain for field; resolve from check table on the
+    real-data path
+  provenance:
+    source: information_steward
+    original_name: MAT0900_ControlCodeRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T604F', 'STEUC',\
+      \ $P_I_ControlCode);\nEND"
+    reference_table: T604F
+    rule_doc: 'Verify the control code value exists in the Import Processing: Control
+      Code table.'
+- rule_id: IS_MARC_SBDKZ_DOMAIN_IN
+  name: MAT0470_IndividualOrCollectiveIsValid
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Accuracy
+  archetype: domain_in
+  severity: Medium
+  description: Verify the individual or collective requirements value for a Material
+    master is valid according to the appropriate reference domain or value range.
+  fields:
+  - SBDKZ
+  assertion:
+    node: cmp
+    field: SBDKZ
+    op: in
+    value:
+    - '1'
+    - '2'
+  executable: false
+  binding_notes: field not present in current schema projection
+  provenance:
+    source: information_steward
+    original_name: MAT0470_IndividualOrCollectiveIsValid
+    original_expression: "BEGIN RETURN\n$P_I_IndividualOrCollective IS NULL\n   $P_I_IndividualOrCollective\
+      \ IN ('1', '2');\nEND"
+    rule_doc: Verify the individual or collective requirements value for a Material
+      master is valid according to the appropriate reference domain or value range.
+- rule_id: IS_MARC_MISKZ_DOMAIN_IN
+  name: MAT0520_MixedMRPIndicatorIsValid
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Accuracy
+  archetype: domain_in
+  severity: Medium
+  description: Verify the mixed MRP value for a Material master is valid according
+    to the appropriate reference domain or value range.
+  fields:
+  - MISKZ
+  assertion:
+    node: cmp
+    field: MISKZ
+    op: in
+    value:
+    - '1'
+    - '2'
+    - '3'
+  executable: false
+  binding_notes: field not present in current schema projection
+  provenance:
+    source: information_steward
+    original_name: MAT0520_MixedMRPIndicatorIsValid
+    original_expression: "BEGIN RETURN\n   $P_I_MixedMRP IN ('1','2', '3');\nEND"
+    rule_doc: Verify the mixed MRP value for a Material master is valid according
+      to the appropriate reference domain or value range.
+- rule_id: IS_MARC_FABKZ_DOMAIN_IN
+  name: MAT0910_JITSchedulingIndicatorIsValid
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Accuracy
+  archetype: domain_in
+  severity: Medium
+  description: Verify the JIT scheduling indicator value for a Material master is
+    valid according to the appropriate reference domain or value range.
+  fields:
+  - FABKZ
+  assertion:
+    node: cmp
+    field: FABKZ
+    op: in
+    value:
+    - '1'
+  executable: false
+  binding_notes: field not present in current schema projection
+  provenance:
+    source: information_steward
+    original_name: MAT0910_JITSchedulingIndicatorIsValid
+    original_expression: "BEGIN RETURN\n   $P_I_JITSchedulingInd IN ('1');\nEND"
+    rule_doc: Verify the JIT scheduling indicator value for a Material master is valid
+      according to the appropriate reference domain or value range.
+- rule_id: IS_MARC_ALTSL_DOMAIN_IN
+  name: MAT0490_SelectionMethodIsValid
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Accuracy
+  archetype: domain_in
+  severity: Medium
+  description: Verify the selection method value for a Material master is valid according
+    to the appropriate reference domain or value range.
+  fields:
+  - ALTSL
+  assertion:
+    node: cmp
+    field: ALTSL
+    op: in
+    value:
+    - '1'
+    - '2'
+    - '3'
+  executable: false
+  binding_notes: field not present in current schema projection
+  provenance:
+    source: information_steward
+    original_name: MAT0490_SelectionMethodIsValid
+    original_expression: "BEGIN RETURN\n   $P_I_SelectionMethod IN ('1', '2', '3');\n\
+      END"
+    rule_doc: Verify the selection method value for a Material master is valid according
+      to the appropriate reference domain or value range.
+- rule_id: IS_MARC_RWPRO_REFERENCE_EXISTS
+  name: MAT0720_CoverageProfileRef
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify the coverage profile value exists in the Range of Coverage Profile
+    table.
+  fields:
+  - RWPRO
+  assertion:
+    node: cmp
+    field: RWPRO
+    op: in
+  executable: false
+  binding_notes: no self-defined domain for field; resolve from check table on the
+    real-data path
+  provenance:
+    source: information_steward
+    original_name: MAT0720_CoverageProfileRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T438R', 'RWPRO',\
+      \ $P_I_CoverageProfile);\nEND"
+    reference_table: T438R
+    rule_doc: Verify the coverage profile value exists in the Range of Coverage Profile
+      table.
+- rule_id: IS_MARC_DISGR_REFERENCE_EXISTS
+  name: MAT0030_MRPGroupRef
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify the MRP group value exists in the Control Parameter for MRP
+    -Material Level table.
+  fields:
+  - DISGR
+  assertion:
+    node: cmp
+    field: DISGR
+    op: in
+  executable: false
+  binding_notes: no self-defined domain for field; resolve from check table on the
+    real-data path
+  provenance:
+    source: information_steward
+    original_name: MAT0030_MRPGroupRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T438M', 'MTART',\
+      \ $P_I_MRPGroup);\nEND"
+    reference_table: T438M
+    rule_doc: Verify the MRP group value exists in the Control Parameter for MRP -Material
+      Level table.
+- rule_id: IS_MARC_AHDIS_DOMAIN_IN
+  name: MAT0940_MRPDependentReqtIsValid
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Accuracy
+  archetype: domain_in
+  severity: Medium
+  description: Verify the MRP dependent requirement value for a Material master is
+    valid according to the appropriate reference domain or value range.
+  fields:
+  - AHDIS
+  assertion:
+    node: cmp
+    field: AHDIS
+    op: in
+    value:
+    - '1'
+  executable: false
+  binding_notes: field not present in current schema projection
+  provenance:
+    source: information_steward
+    original_name: MAT0940_MRPDependentReqtIsValid
+    original_expression: "BEGIN RETURN\n   $P_I_MRPDependent IN ('1');\nEND"
+    rule_doc: Verify the MRP dependent requirement value for a Material master is
+      valid according to the appropriate reference domain or value range.
+- rule_id: IS_MARC_UCHKZ_DOMAIN_IN
+  name: MAT0970_OBManagementIsValid
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Accuracy
+  archetype: domain_in
+  severity: Medium
+  description: Verify the OB management value for a Material master is valid according
+    to the appropriate reference domain or value range.
+  fields:
+  - UCHKZ
+  assertion:
+    node: cmp
+    field: UCHKZ
+    op: in
+    value:
+    - '1'
+  executable: false
+  binding_notes: field not present in current schema projection
+  provenance:
+    source: information_steward
+    original_name: MAT0970_OBManagementIsValid
+    original_expression: "BEGIN RETURN\n   $P_I_OBManagement IN ('1');\nEND"
+    rule_doc: Verify the OB management value for a Material master is valid according
+      to the appropriate reference domain or value range.
+- rule_id: IS_MARC_LOGGR_REFERENCE_EXISTS
+  name: MAT0880_LogHandlingGroupRef
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify the log handling group value exists in the Logistics Handling
+    Group for Workload Calculation table.
+  fields:
+  - LOGGR
+  assertion:
+    node: cmp
+    field: LOGGR
+    op: in
+  executable: false
+  binding_notes: no self-defined domain for field; resolve from check table on the
+    real-data path
+  provenance:
+    source: information_steward
+    original_name: MAT0880_LogHandlingGroupRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TLOG', 'LOGGR',\
+      \ $P_I_LogHandlingGroup);\nEND"
+    reference_table: TLOG
+    rule_doc: Verify the log handling group value exists in the Logistics Handling
+      Group for Workload Calculation table.
+- rule_id: IS_MARC_PLNNR_REFERENCE_EXISTS
+  name: ZB_G13_MATL_GroupRef
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Rule to check if Group value exists.
+  fields:
+  - PLNNR
+  assertion:
+    node: cmp
+    field: PLNNR
+    op: in
+  executable: false
+  binding_notes: no self-defined domain for field; resolve from check table on the
+    real-data path
+  provenance:
+    source: information_steward
+    original_name: ZB_G13_MATL_GroupRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'M_PLKSA', 'PLNNR',\
+      \ $P_I_Group);\nEND"
+    reference_table: M_PLKSA
+    rule_doc: Rule to check if Group value exists.
+- rule_id: IS_MARC_EKGRP_REFERENCE_EXISTS
+  name: MAT0390_PurchasingGroupRef
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify the purchasing group value exists in the Purchasing Groups table.
+  fields:
+  - EKGRP
+  assertion:
+    node: cmp
+    field: EKGRP
+    op: in
+    value:
+    - '001'
+    - '002'
+    - '003'
+    - Z00
+    - Z01
+    - Z02
+    - Z03
+    - Z04
+    - Z05
+    - Z06
+    - Z07
+    - Z08
+    - Z09
+    - Z10
+    - Z11
+    - Z12
+    - Z13
+    - Z14
+    - Z15
+    - Z16
+    - Z17
+    - Z18
+    - Z19
+    - Z20
+    - Z21
+    - Z22
+    - Z23
+    - Z24
+    - Z25
+    - Z26
+    - Z27
+    - Z28
+    - Z29
+    - Z30
+    - Z40
+    - Z90
+    - Z91
+  executable: true
+  provenance:
+    source: information_steward
+    original_name: MAT0390_PurchasingGroupRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T024', 'EKGRP',\
+      \ $P_I_PurchasingGroup);\nEND"
+    reference_table: T024
+    rule_doc: Verify the purchasing group value exists in the Purchasing Groups table.
+- rule_id: IS_MARC_DPLPU_DOMAIN_IN
+  name: MAT0930_PushDistributionIsValid
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Accuracy
+  archetype: domain_in
+  severity: Medium
+  description: Verify the push distribution value for a Material master is valid according
+    to the appropriate reference domain or value range.
+  fields:
+  - DPLPU
+  assertion:
+    node: cmp
+    field: DPLPU
+    op: in
+    value:
+    - P
+    - X
+  executable: false
+  binding_notes: field not present in current schema projection
+  provenance:
+    source: information_steward
+    original_name: MAT0930_PushDistributionIsValid
+    original_expression: "BEGIN RETURN\n   $P_I_PushDistribution IN ('P', 'X');\n\
+      END"
+    rule_doc: Verify the push distribution value for a Material master is valid according
+      to the appropriate reference domain or value range.
+- rule_id: IS_MARC_OCMPF_REFERENCE_EXISTS
+  name: MAT0960_OverallProfileRef
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify the overall profile value exists in the Total Change Profile
+    for Order Change Management table.
+  fields:
+  - OCMPF
+  assertion:
+    node: cmp
+    field: OCMPF
+    op: in
+  executable: false
+  binding_notes: no self-defined domain for field; resolve from check table on the
+    real-data path
+  provenance:
+    source: information_steward
+    original_name: MAT0960_OverallProfileRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TCO48', 'GPROFILE',\
+      \ $P_I_OverallProfile);\nEND"
+    reference_table: TCO48
+    rule_doc: Verify the overall profile value exists in the Total Change Profile
+      for Order Change Management table.
+- rule_id: IS_MARC_DISPO_REFERENCE_EXISTS
+  name: MAT0430_MRPControllerRef
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify the MRP controller value exists in the MRP Controllers table.
+  fields:
+  - DISPO
+  assertion:
+    node: cmp
+    field: DISPO
+    op: in
+  executable: false
+  binding_notes: no self-defined domain for field; resolve from check table on the
+    real-data path
+  provenance:
+    source: information_steward
+    original_name: MAT0430_MRPControllerRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T024D', 'DISPO',\
+      \ $P_I_MRPController);\nEND"
+    reference_table: T024D
+    rule_doc: Verify the MRP controller value exists in the MRP Controllers table.
+- rule_id: IS_MARC_VRMOD_DOMAIN_IN
+  name: MAT0680_ConsumptionModeIsValid
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Accuracy
+  archetype: domain_in
+  severity: Medium
+  description: Verify the consumption mode value for a Material master is valid according
+    to the appropriate reference domain or value range.
+  fields:
+  - VRMOD
+  assertion:
+    node: cmp
+    field: VRMOD
+    op: in
+    value:
+    - '1'
+    - '2'
+    - '3'
+    - '4'
+  executable: false
+  binding_notes: field not present in current schema projection
+  provenance:
+    source: information_steward
+    original_name: MAT0680_ConsumptionModeIsValid
+    original_expression: "BEGIN RETURN\n   $P_I_ConsuptionMode IN ('1','2', '3', '4');\n\
+      END"
+    rule_doc: Verify the consumption mode value for a Material master is valid according
+      to the appropriate reference domain or value range.
+- rule_id: IS_MARC_STRGR_REFERENCE_EXISTS
+  name: MAT0800_StrategyGroupRef
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify the strategy group value exists in the Planning Strategy Group
+    table.
+  fields:
+  - STRGR
+  assertion:
+    node: cmp
+    field: STRGR
+    op: in
+  executable: false
+  binding_notes: no self-defined domain for field; resolve from check table on the
+    real-data path
+  provenance:
+    source: information_steward
+    original_name: MAT0800_StrategyGroupRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T461P', 'STRGR',\
+      \ $P_I_StrategyGroup);\nEND"
+    reference_table: T461P
+    rule_doc: Verify the strategy group value exists in the Planning Strategy Group
+      table.
+- rule_id: IS_MARC_BESKZ_DOMAIN_IN
+  name: MAT0460_ProcurementTypeIsValid
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Accuracy
+  archetype: domain_in
+  severity: Medium
+  description: Verify the procurement type value for a Material master is valid according
+    to the appropriate reference domain or value range.
+  fields:
+  - BESKZ
+  assertion:
+    node: cmp
+    field: BESKZ
+    op: in
+    value:
+    - E
+    - F
+    - X
+  executable: true
+  provenance:
+    source: information_steward
+    original_name: MAT0460_ProcurementTypeIsValid
+    original_expression: "BEGIN RETURN\n   $P_I_ProcurementType IN ('E', 'F', 'X');\n\
+      END"
+    rule_doc: Verify the procurement type value for a Material master is valid according
+      to the appropriate reference domain or value range.
+- rule_id: IS_MARC_BWTTY_REFERENCE_EXISTS
+  name: MAT0350_ValuationCategoryRef
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify the valuation category value exists in the Global Valuation
+    Categories table.
+  fields:
+  - BWTTY
+  assertion:
+    node: cmp
+    field: BWTTY
+    op: in
+  executable: false
+  binding_notes: no self-defined domain for field; resolve from check table on the
+    real-data path
+  provenance:
+    source: information_steward
+    original_name: MAT0350_ValuationCategoryRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T149C', 'BWTTY',\
+      \ $P_I_ValuationCategory);\nEND"
+    reference_table: T149C
+    rule_doc: Verify the valuation category value exists in the Global Valuation Categories
+      table.
+- rule_id: IS_MARC_PERKZ_DOMAIN_IN
+  name: MAT0440_PeriodIndicatorIsValid
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Accuracy
+  archetype: domain_in
+  severity: Medium
+  description: Verify the period indicator value for a Material master is valid according
+    to the appropriate reference domain or value range.
+  fields:
+  - PERKZ
+  assertion:
+    node: cmp
+    field: PERKZ
+    op: in
+    value:
+    - P
+    - M
+    - W
+    - T
+  executable: true
+  provenance:
+    source: information_steward
+    original_name: MAT0440_PeriodIndicatorIsValid
+    original_expression: "BEGIN RETURN\n   $P_I_PeriodInd IN ('P','M', 'W', 'T');\n\
+      END"
+    rule_doc: Verify the period indicator value for a Material master is valid according
+      to the appropriate reference domain or value range.
+- rule_id: IS_MARC_MTVER_REFERENCE_EXISTS
+  name: MAT0660_ExportOrImportGroupRef
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: 'Verify the export or import group value exists in the foreign Trade:
+    Material Pricing Groups in Export table.'
+  fields:
+  - MTVER
+  assertion:
+    node: cmp
+    field: MTVER
+    op: in
+  executable: false
+  binding_notes: no self-defined domain for field; resolve from check table on the
+    real-data path
+  provenance:
+    source: information_steward
+    original_name: MAT0660_ExportOrImportGroupRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TVFM', 'MTVER',\
+      \ $P_I_ExportImportGroup);\nEND"
+    reference_table: TVFM
+    rule_doc: 'Verify the export or import group value exists in the foreign Trade:
+      Material Pricing Groups in Export table.'
+- rule_id: IS_MARC_SSQSS_REFERENCE_EXISTS
+  name: MAT0560_QMControlKeyRef
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify the QM control key value exists in the Control of QM in Procurement
+    table.
+  fields:
+  - SSQSS
+  assertion:
+    node: cmp
+    field: SSQSS
+    op: in
+  executable: false
+  binding_notes: no self-defined domain for field; resolve from check table on the
+    real-data path
+  provenance:
+    source: information_steward
+    original_name: MAT0560_QMControlKeyRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TQ08', 'QM_PUR',\
+      \ $P_I_QMControlKey);\nEND"
+    reference_table: TQ08
+    rule_doc: Verify the QM control key value exists in the Control of QM in Procurement
+      table.
+- rule_id: IS_MARC_LAGPR_REFERENCE_EXISTS
+  name: MAT0480_StorageCostsIndicatorRef
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify the storage costs Indicator value exists in the Warehouse Costs
+    for MRP Lot Size table.
+  fields:
+  - LAGPR
+  assertion:
+    node: cmp
+    field: LAGPR
+    op: in
+  executable: false
+  binding_notes: no self-defined domain for field; resolve from check table on the
+    real-data path
+  provenance:
+    source: information_steward
+    original_name: MAT0480_StorageCostsIndicatorRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T439L', 'LAGPR',\
+      \ $P_I_StorageCostsIndicator);\nEND"
+    reference_table: T439L
+    rule_doc: Verify the storage costs Indicator value exists in the Warehouse Costs
+      for MRP Lot Size table.
+- rule_id: IS_MARC_RGEKZ_DOMAIN_IN
+  name: MAT0550_BackflushIsValid
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Accuracy
+  archetype: domain_in
+  severity: Medium
+  description: Verify the backflush value for a Material master is valid according
+    to the appropriate reference domain or value range.
+  fields:
+  - RGEKZ
+  assertion:
+    node: cmp
+    field: RGEKZ
+    op: in
+    value:
+    - '1'
+    - '2'
+  executable: false
+  binding_notes: field not present in current schema projection
+  provenance:
+    source: information_steward
+    original_name: MAT0550_BackflushIsValid
+    original_expression: "BEGIN RETURN\n   $P_I_BackFlushDomain IN ('1', '2');\nEND"
+    rule_doc: Verify the backflush value for a Material master is valid according
+      to the appropriate reference domain or value range.
+- rule_id: IS_MARC_$LOADGRP_REFERENCE_EXISTS
+  name: 012_MATL_LOADING GROUP
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Completeness
+  archetype: reference_exists
+  severity: Medium
+  description: 'THIS RULE IS FOR LOADING GROUP FOR MATERIAL MASTER IN SALES VIEW
+
+    FILED: MARC – LADGR (TLGR)
+
+
+    Verify the loading group in MM sales view exists in tabls TLGR.'
+  fields:
+  - $LOADGRP
+  assertion:
+    node: cmp
+    field: $LOADGRP
+    op: in
+  executable: false
+  binding_notes: no self-defined domain for field; resolve from check table on the
+    real-data path
+  provenance:
+    source: information_steward
+    original_name: 012_MATL_LOADING GROUP
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TLGR', 'LADGR',\
+      \ );\nEND"
+    reference_table: TLGR
+    rule_doc: 'THIS RULE IS FOR LOADING GROUP FOR MATERIAL MASTER IN SALES VIEW
+
+      FILED: MARC – LADGR (TLGR)
+
+
+      Verify the loading group in MM sales view exists in tabls TLGR.'
+- rule_id: IS_MARC_$SCHEDULEMARGINKEY_REFERENCE_EXISTS
+  name: 013_MATL_SCHEDLE MARGINKEY
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Completeness
+  archetype: reference_exists
+  severity: Medium
+  description: 'THIS RULE IS FOR SCHEDULE MARGIN KEY.
+
+    FIELD: MARC – FHORI(T436A)
+
+
+    Verify the schedule margin key exists in table T436A.'
+  fields:
+  - $SCHEDULEMARGINKEY
+  assertion:
+    node: cmp
+    field: $SCHEDULEMARGINKEY
+    op: in
+  executable: false
+  binding_notes: no self-defined domain for field; resolve from check table on the
+    real-data path
+  provenance:
+    source: information_steward
+    original_name: 013_MATL_SCHEDLE MARGINKEY
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T436A', 'FHORI',\
+      \ );\nEND"
+    reference_table: T436A
+    rule_doc: 'THIS RULE IS FOR SCHEDULE MARGIN KEY.
+
+      FIELD: MARC – FHORI(T436A)
+
+
+      Verify the schedule margin key exists in table T436A.'
+- rule_id: IS_MARC_MINBE_DOMAIN_IN
+  name: 031_MATL_REORDERPOINT
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Accuracy
+  archetype: domain_in
+  severity: Medium
+  description: 'THIS RULE IS FOR REORDER POINT IN MRP 1 VIEW. FIELD MARC – MINBE.
+
+    SABIC RULE THIS WILL USE ONLY IN CASE F MRP TYPE VB AND ZB ELSE IT SHOULD BE BLANK.'
+  fields:
+  - MINBE
+  assertion:
+    node: cmp
+    field: MINBE
+    op: in
+    value:
+    - VB
+    - ZB
+  executable: true
+  provenance:
+    source: information_steward
+    original_name: 031_MATL_REORDERPOINT
+    original_expression: 'BEGIN
+
+      return ($P_I_MRPType in (''VB'',''ZB'') and $P_I_ReorderPoint is not null) or
+      $P_I_ReorderPoint is null;
+
+      END'
+    rule_doc: 'THIS RULE IS FOR REORDER POINT IN MRP 1 VIEW. FIELD MARC – MINBE.
+
+      SABIC RULE THIS WILL USE ONLY IN CASE F MRP TYPE VB AND ZB ELSE IT SHOULD BE
+      BLANK.'
+- rule_id: IS_MARC_PRCTR_REFERENCE_EXISTS
+  name: 052_MATL_PROFIT_CENTER_IS_WITHIN_LIST
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Completeness
+  archetype: reference_exists
+  severity: Medium
+  description: THIS RULE CHECK IF PROFIT CENTER IS WITHIN PROFIT CENTER LIST (CEPC)
+  fields:
+  - PRCTR
+  assertion:
+    node: cmp
+    field: PRCTR
+    op: in
+    value:
+    - MDG_1001
+    - QCHECK
+    - T-PCB98
+    - US10_PC11
+    - US10_PLC
+    - US10_PLM
+    - US10_PLR
+    - US10_TGY1
+    - US10_Y4_1
+    - YB101
+    - YB110
+    - YB111
+    - YB600
+    - YB700
+    - YB900
+    - YB904
+  executable: true
+  provenance:
+    source: information_steward
+    original_name: 052_MATL_PROFIT_CENTER_IS_WITHIN_LIST
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'CEPC', 'PRCTR',\
+      \ lpad($P_I_ProfitCenter, 10, '0');\nEND"
+    reference_table: CEPC
+    rule_doc: THIS RULE CHECK IF PROFIT CENTER IS WITHIN PROFIT CENTER LIST (CEPC)
+- rule_id: IS_MARC_WERKS_REFERENCE_EXISTS
+  name: 077_MATL_Plant
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Completeness
+  archetype: reference_exists
+  severity: Medium
+  description: Verify plant exists in table T001L
+  fields:
+  - WERKS
+  assertion:
+    node: cmp
+    field: WERKS
+    op: in
+    value:
+    - '0001'
+    - '0003'
+    - '1010'
+    - '1011'
+    - '1012'
+    - '1710'
+    - '1711'
+    - '1712'
+    - '1720'
+    - FOBP
+    - FORP
+  executable: true
+  provenance:
+    source: information_steward
+    original_name: 077_MATL_Plant
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T001L', 'WERKS',\
+      \ $P_I_Plant);\nEND"
+    reference_table: T001L
+    rule_doc: Verify plant exists in table T001L
+- rule_id: IS_MARC_$MATNR_REFERENCE_EXISTS
+  name: 354_PM_MATNR_TL
+  table: MARC
+  dama_dimension: Validity
+  is_dimension: Accuracy
+  archetype: reference_exists
+  severity: Medium
+  description: MARC-TL
+  fields:
+  - $MATNR
+  assertion:
+    node: cmp
+    field: $MATNR
+    op: in
+  executable: false
+  binding_notes: no self-defined domain for field; resolve from check table on the
+    real-data path
+  provenance:
+    source: information_steward
+    original_name: 354_PM_MATNR_TL
+    original_expression: 'BEGIN RETURN
+
+      exists(''Fanar_Misc_Lookups'', ''EP_MISC_LOOKUPS.MARA'', ''MATNR'', $MATNR)
+      OR $MATNR IS NULL OR length(rtrim(ltrim($MATNR,'' ''), '' '')) = 0;
+
+      END'
+    reference_table: MARA
+    rule_doc: MARC-TL

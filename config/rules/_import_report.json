@@ -1,0 +1,101 @@
+{
+  "tables": {
+    "MARA": {
+      "imported": 34,
+      "executable": 14,
+      "dormant": 20,
+      "by_archetype": {
+        "not_null": 7,
+        "reference_exists": 24,
+        "domain_in": 3
+      },
+      "by_dama_dimension": {
+        "Completeness": 7,
+        "Validity": 27
+      }
+    },
+    "MARC": {
+      "imported": 72,
+      "executable": 21,
+      "dormant": 51,
+      "by_archetype": {
+        "reference_exists": 46,
+        "domain_in": 19,
+        "not_null": 7
+      },
+      "by_dama_dimension": {
+        "Validity": 65,
+        "Completeness": 7
+      }
+    },
+    "MAKT": {
+      "imported": 1,
+      "executable": 1,
+      "dormant": 0,
+      "by_archetype": {
+        "not_null": 1
+      },
+      "by_dama_dimension": {
+        "Completeness": 1
+      }
+    }
+  },
+  "deferred_count": 11,
+  "deferred": [
+    {
+      "table": "MARC",
+      "name": "002_MATL_MAXIMUM_STOCK_LEVEL",
+      "reason": "multi-field or unparseable field binding"
+    },
+    {
+      "table": "MARC",
+      "name": "008_MATL_MRPCONTROLLER",
+      "reason": "multi-field or unparseable field binding"
+    },
+    {
+      "table": "MARA",
+      "name": "011_MATL_PERIOD.IND FORSLED",
+      "reason": "multi-field or unparseable field binding"
+    },
+    {
+      "table": "MARC",
+      "name": "043_MATL_PROCUREMENT TYPE",
+      "reason": "multi-field or unparseable field binding"
+    },
+    {
+      "table": "MARC",
+      "name": "046_MATL_LOT_SIZE",
+      "reason": "multi-field or unparseable field binding"
+    },
+    {
+      "table": "MARA",
+      "name": "053_MATL_TRANSPORT GROUP",
+      "reason": "multi-field or unparseable field binding"
+    },
+    {
+      "table": "MARC",
+      "name": "067_MATL_SPECIAL PROCUREMENTTYPE",
+      "reason": "multi-field or unparseable field binding"
+    },
+    {
+      "table": "MARC",
+      "name": "069_MATL_TIME UNIT",
+      "reason": "multi-field or unparseable field binding"
+    },
+    {
+      "table": "MARC",
+      "name": "073_MATL_MRP TYPE",
+      "reason": "multi-field or unparseable field binding"
+    },
+    {
+      "table": "MARC",
+      "name": "079_MATL_AVAILABILITY CHECK",
+      "reason": "multi-field or unparseable field binding"
+    },
+    {
+      "table": "MARC",
+      "name": "082_MATL_FIXED_LOTSIZE",
+      "reason": "format_regex expression not auto-parsed in first cut"
+    }
+  ]
+}
