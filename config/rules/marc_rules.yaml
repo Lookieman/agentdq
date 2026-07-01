@@ -1,5 +1,5 @@
 table: MARC
-rule_count: 72
+rule_count: 71
 rules:
 - rule_id: IS_MARC_QSSYS_REFERENCE_EXISTS
   name: MAT0780_TargetQMSystemRef
@@ -1848,39 +1848,6 @@ rules:
 
 
       Verify the schedule margin key exists in table T436A.'
-- rule_id: IS_MARC_MINBE_DOMAIN_IN
-  name: 031_MATL_REORDERPOINT
-  table: MARC
-  dama_dimension: Validity
-  is_dimension: Accuracy
-  archetype: domain_in
-  severity: Medium
-  description: 'THIS RULE IS FOR REORDER POINT IN MRP 1 VIEW. FIELD MARC – MINBE.
-
-    SABIC RULE THIS WILL USE ONLY IN CASE F MRP TYPE VB AND ZB ELSE IT SHOULD BE BLANK.'
-  fields:
-  - MINBE
-  assertion:
-    node: cmp
-    field: MINBE
-    op: in
-    value:
-    - VB
-    - ZB
-  executable: true
-  provenance:
-    source: information_steward
-    original_name: 031_MATL_REORDERPOINT
-    original_expression: 'BEGIN
-
-      return ($P_I_MRPType in (''VB'',''ZB'') and $P_I_ReorderPoint is not null) or
-      $P_I_ReorderPoint is null;
-
-      END'
-    rule_doc: 'THIS RULE IS FOR REORDER POINT IN MRP 1 VIEW. FIELD MARC – MINBE.
-
-      SABIC RULE THIS WILL USE ONLY IN CASE F MRP TYPE VB AND ZB ELSE IT SHOULD BE
-      BLANK.'
 - rule_id: IS_MARC_PRCTR_REFERENCE_EXISTS
   name: 052_MATL_PROFIT_CENTER_IS_WITHIN_LIST
   table: MARC

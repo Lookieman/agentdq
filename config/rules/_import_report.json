@@ -15,16 +15,16 @@
       }
     },
     "MARC": {
-      "imported": 72,
-      "executable": 21,
+      "imported": 71,
+      "executable": 20,
       "dormant": 51,
       "by_archetype": {
         "reference_exists": 46,
-        "domain_in": 19,
+        "domain_in": 18,
         "not_null": 7
       },
       "by_dama_dimension": {
-        "Validity": 65,
+        "Validity": 64,
         "Completeness": 7
       }
     },
@@ -40,12 +40,12 @@
       }
     }
   },
-  "deferred_count": 11,
+  "deferred_count": 12,
   "deferred": [
     {
       "table": "MARC",
       "name": "002_MATL_MAXIMUM_STOCK_LEVEL",
-      "reason": "multi-field or unparseable field binding"
+      "reason": "cross_field expression not auto-parsed in first cut"
     },
     {
       "table": "MARC",
@@ -59,13 +59,18 @@
     },
     {
       "table": "MARC",
+      "name": "031_MATL_REORDERPOINT",
+      "reason": "cross_field expression not auto-parsed in first cut"
+    },
+    {
+      "table": "MARC",
       "name": "043_MATL_PROCUREMENT TYPE",
       "reason": "multi-field or unparseable field binding"
     },
     {
       "table": "MARC",
       "name": "046_MATL_LOT_SIZE",
-      "reason": "multi-field or unparseable field binding"
+      "reason": "cross_field expression not auto-parsed in first cut"
     },
     {
       "table": "MARA",
@@ -95,7 +100,7 @@
     {
       "table": "MARC",
       "name": "082_MATL_FIXED_LOTSIZE",
-      "reason": "format_regex expression not auto-parsed in first cut"
+      "reason": "cross_field expression not auto-parsed in first cut"
     }
   ]
 }

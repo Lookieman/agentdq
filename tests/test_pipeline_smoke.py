@@ -1,4 +1,8 @@
 # v0.1 | 27-Jun-2026 | Initial end-to-end smoke test for the data foundation
+# v0.2 | 27-Jun-2026 | Follow rename of loaders to extract_loader and rule_loader
+# v0.3 | 27-Jun-2026 | Add executor-vs-ground-truth test
+# v0.4 | 27-Jun-2026 | Add agents-and-scorecard test
+# v0.5 | 27-Jun-2026 | Add assess() shared-function test
 
 """End-to-end smoke test for the AgentDQ data foundation.
 
@@ -37,7 +41,7 @@ RULES_AVAILABLE: bool = (RULES_DIR / "marc_rules.yaml").exists()
 @pytest.mark.skipif(not RAW_AVAILABLE, reason="real extracts not present in data/raw")
 def test_loader_preserves_zeros_and_distinguishes_composite_key() -> None:
     """The loader keeps leading zeros and MATNR alone is not unique in MARC."""
-    from src.data.loader import load_sap_table
+    from src.data.extract_loader import load_sap_table  # v0.2
 
     marc = load_sap_table(str(RAW_DIR / "MARC_EX_DATA.xlsx"), header_anchor="MATNR")
 
@@ -183,7 +187,7 @@ def test_injector_ground_truth_is_clean() -> None:
     from src.data.defect_injector import inject_defects
     from src.data.generator import generate_dataset
     from src.data.schema import load_schemas
-    from src.rules.loader import load_rules
+    from src.rules.rule_loader import load_rules  # v0.2
 
     schemas = load_schemas(str(SCHEMA_DIR), TABLES)
     rules = load_rules(str(RULES_DIR))
@@ -225,7 +229,7 @@ def test_injector_reproducible_and_scenarios_scale() -> None:
     from src.data.defect_injector import inject_defects
     from src.data.generator import generate_dataset
     from src.data.schema import load_schemas
-    from src.rules.loader import load_rules
+    from src.rules.rule_loader import load_rules  # v0.2
 
     schemas = load_schemas(str(SCHEMA_DIR), TABLES)
     rules = load_rules(str(RULES_DIR))
@@ -238,3 +242,97 @@ def test_injector_reproducible_and_scenarios_scale() -> None:
     _, healthy, _ = inject_defects(baseline, schemas, rules, scenario="healthy", seed=7)
     _, critical, _ = inject_defects(baseline, schemas, rules, scenario="critical", seed=7)
     assert len(critical) > len(healthy)
+
+
+@pytest.mark.skipif(
+    not (PROFILES_AVAILABLE and RULES_AVAILABLE),
+    reason="profiles or rules not available",
+)
+def test_executor_reproduces_ground_truth() -> None:
+    """The executor's findings match the injected labels exactly (deterministic dims)."""
+    from src.data.defect_injector import inject_defects
+    from src.data.generator import generate_dataset
+    from src.data.schema import load_schemas
+    from src.rules.executor import execute_ruleset
+    from src.rules.rule_loader import load_rules
+
+    schemas = load_schemas(str(SCHEMA_DIR), TABLES)
+    all_rules = load_rules(str(RULES_DIR))
+    baseline = generate_dataset(str(SCHEMA_DIR), str(PROFILE_DIR), TABLES, n_materials=1500, seed=42)
+    frames, labels, manifest = inject_defects(baseline, schemas, all_rules, scenario="degraded", seed=42)
+
+    scope = manifest["evaluation_scope"]
+    active_ids = set(scope["completeness_rules"] + scope["validity_rules"] + scope["consistency_rules"])
+    active_rules = [rule for rule in all_rules if rule.rule_id in active_ids]
+    findings = execute_ruleset(active_rules, frames, schemas)
+
+    dimension: str = ""
+    for dimension in ("Completeness", "Validity", "Consistency"):
+        found = {(f.rule_id, f.record_id) for f in findings if f.dimension.value == dimension}
+        labelled = {(d.rule_id, d.record_key) for d in labels if d.dimension.value == dimension}
+        assert found == labelled, f"{dimension}: executor findings do not match ground truth"
+
+
+@pytest.mark.skipif(
+    not (PROFILES_AVAILABLE and RULES_AVAILABLE),
+    reason="profiles or rules not available",
+)
+def test_agents_and_scorecard() -> None:
+    """The two agents produce findings that score perfectly and a sane scorecard."""
+    from src.agents.completeness import CompletenessAgent
+    from src.agents.validity import ValidityAgent
+    from src.data.defect_injector import inject_defects
+    from src.data.generator import generate_dataset
+    from src.data.schema import load_schemas
+    from src.reporting.scorecard import compute_scorecard, evaluate_against_labels
+    from src.rules.rule_loader import load_rules
+
+    schemas = load_schemas(str(SCHEMA_DIR), TABLES)
+    rules = load_rules(str(RULES_DIR))
+    baseline = generate_dataset(str(SCHEMA_DIR), str(PROFILE_DIR), TABLES, n_materials=1500, seed=42)
+    frames, labels, _ = inject_defects(baseline, schemas, rules, scenario="degraded", seed=42)
+
+    findings = []
+    for agent in (CompletenessAgent(), ValidityAgent()):
+        findings.extend(agent.run(frames, schemas, rules).findings)
+
+    scorecard = compute_scorecard(findings, frames, ["Completeness", "Validity"])
+    assert 0.0 <= scorecard.overall_score_pct <= 100.0
+    assert scorecard.total_findings == len(findings)
+
+    evaluation = evaluate_against_labels(findings, labels, ["Completeness", "Validity"])
+    for dimension in ("Completeness", "Validity"):
+        assert evaluation[dimension].precision == 1.0
+        assert evaluation[dimension].recall == 1.0
+
+
+@pytest.mark.skipif(
+    not (PROFILES_AVAILABLE and RULES_AVAILABLE),
+    reason="profiles or rules not available",
+)
+def test_assess_shared_function() -> None:
+    """assess() returns a populated result with an evaluation when labels exist."""
+    import tempfile
+
+    from src.data.defect_injector import inject_defects
+    from src.data.generator import generate_dataset
+    from src.data.schema import load_schemas
+    from src.reporting.assessment import assess
+    from src.rules.rule_loader import load_rules
+
+    schemas = load_schemas(str(SCHEMA_DIR), TABLES)
+    rules = load_rules(str(RULES_DIR))
+    baseline = generate_dataset(str(SCHEMA_DIR), str(PROFILE_DIR), TABLES, n_materials=800, seed=42)
+    frames, labels, manifest = inject_defects(baseline, schemas, rules, scenario="degraded", seed=42)
+
+    with tempfile.TemporaryDirectory() as tmp:
+        from src.data.defect_injector import _persist
+
+        _persist(frames, labels, manifest, __import__("pathlib").Path(tmp))
+        result = assess(tmp, str(SCHEMA_DIR), str(RULES_DIR), TABLES, "parquet")
+
+    assert result.total_records > 0
+    assert result.scorecard.total_findings > 0
+    assert result.has_ground_truth is True
+    assert result.evaluation is not None
+    assert result.evaluation["Completeness"].recall == 1.0

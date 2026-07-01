@@ -1,6 +1,7 @@
 # v0.1 | 27-Jun-2026 | Initial CAL data profiler
 # v0.2 | 27-Jun-2026 | Add composite primary keys and a key-uniqueness check;
 #                      switch loader call to header_anchor
+# v0.3 | 27-Jun-2026 | Follow rename of data loader to extract_loader
 
 """Profiler for SAP master data extracts.
 
@@ -30,7 +31,7 @@ from typing import Optional
 import pandas as pd
 from pydantic import BaseModel, Field
 
-from src.data.loader import load_sap_table
+from src.data.extract_loader import load_sap_table  # v0.3
 
 
 # Field used only to locate the header row in the SE16N preamble (see loader).

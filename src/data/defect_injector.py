@@ -1,5 +1,7 @@
 # v0.1 | 27-Jun-2026 | Initial controlled defect injector with ground-truth labels
 # v0.2 | 27-Jun-2026 | Inject uniqueness twins onto the clean canvas before field-level injection
+# v0.3 | 27-Jun-2026 | Follow rename of rules loader to rule_loader
+# v0.4 | 27-Jun-2026 | Never corrupt or null a primary-key field in any dimension
 
 """Controlled defect injector for the synthetic baseline.
 
@@ -56,7 +58,7 @@ from src.contracts import (
     RuleSpec,
 )
 from src.data.schema import TableSchema, load_schemas
-from src.rules.loader import load_rules
+from src.rules.rule_loader import load_rules  # v0.3
 
 
 # Per-dimension defect rate presets (fraction of eligible records per dimension).
@@ -148,11 +150,14 @@ def _group_rules(rules: list[RuleSpec], schemas: dict[str, TableSchema]) -> dict
         if not rule.executable:
             continue
         schema = schemas.get(rule.table)  # v0.3
+        is_key_field = schema is not None and rule.fields[0] in schema.primary_key  # v0.4
         if rule.archetype == RuleArchetype.NOT_NULL:
-            if schema is not None and rule.fields[0] in schema.primary_key:  # v0.3
-                continue  # v0.3
+            if is_key_field:  # v0.4
+                continue  # v0.4
             completeness.append(rule)
         elif rule.archetype in (RuleArchetype.DOMAIN_IN, RuleArchetype.REFERENCE_EXISTS):
+            if is_key_field:  # v0.4
+                continue  # v0.4 - never corrupt a key value; it breaks record identity
             if isinstance(rule.assertion, Comparison) and rule.assertion.value:
                 validity.append(rule)
         elif rule.archetype == RuleArchetype.CROSS_FIELD and _is_implies(rule):
