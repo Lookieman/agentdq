@@ -1,0 +1,6002 @@
+version: 1
+templates:
+- template_id: TPL-IS_MAKT_MAKTX_NOT_NULL
+  source_rule_id: IS_MAKT_MAKTX_NOT_NULL
+  rule_spec:
+    rule_id: IS_MAKT_MAKTX_NOT_NULL
+    name: MAT1000_DescriptionPopulated
+    table: MAKT
+    dama_dimension: Completeness
+    is_dimension: Completeness
+    archetype: not_null
+    severity: High
+    description: Verify the material description field is not empty.
+    fields:
+    - MAKTX
+    assertion:
+      node: cmp
+      field: MAKTX
+      op: is_not_null
+    executable: true
+    provenance:
+      source: information_steward
+      original_name: MAT1000_DescriptionPopulated
+      original_expression: 'BEGIN RETURN
+
+        $P_I_Description IS NOT NULL
+
+        AND $P_I_Description != '''';
+
+        END'
+      rule_doc: Verify the material description field is not empty.
+  provenance:
+    is_rule_id: IS_MAKT_MAKTX_NOT_NULL
+    original_expression: 'BEGIN RETURN
+
+      $P_I_Description IS NOT NULL
+
+      AND $P_I_Description != '''';
+
+      END'
+    nl_description: Verify the material description field is not empty.
+    dimension: Completeness
+  binding:
+    target_table: MAKT
+    target_field: MAKTX
+    field_role: description_text
+  applicability:
+    population_min: 0.98
+  parameterisation: []
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARA_TRAGR_NOT_NULL
+  source_rule_id: IS_MARA_TRAGR_NOT_NULL
+  rule_spec:
+    rule_id: IS_MARA_TRAGR_NOT_NULL
+    name: MAT0160_TransportationGroupPopulated
+    table: MARA
+    dama_dimension: Completeness
+    is_dimension: Completeness
+    archetype: not_null
+    severity: Medium
+    description: Verify the transportation group field Is not empty.
+    fields:
+    - TRAGR
+    assertion:
+      node: cmp
+      field: TRAGR
+      op: is_not_null
+    executable: true
+    provenance:
+      source: information_steward
+      original_name: MAT0160_TransportationGroupPopulated
+      original_expression: 'BEGIN RETURN
+
+        $P_I_TransportationGroup IS NOT NULL
+
+        AND $P_I_TransportationGroup != '''';
+
+        END'
+      rule_doc: Verify the transportation group field Is not empty.
+  provenance:
+    is_rule_id: IS_MARA_TRAGR_NOT_NULL
+    original_expression: 'BEGIN RETURN
+
+      $P_I_TransportationGroup IS NOT NULL
+
+      AND $P_I_TransportationGroup != '''';
+
+      END'
+    nl_description: Verify the transportation group field Is not empty.
+    dimension: Completeness
+  binding:
+    target_table: MARA
+    target_field: TRAGR
+    field_role: null
+  applicability:
+    population_min: 0.98
+  parameterisation: []
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARA_RAUBE_REFERENCE_EXISTS
+  source_rule_id: IS_MARA_RAUBE_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARA_RAUBE_REFERENCE_EXISTS
+    name: MAT0140_StorageConditionRef
+    table: MARA
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Verify the storage condition value exists in the Storage Conditions
+      for Materials table.
+    fields:
+    - RAUBE
+    assertion:
+      node: cmp
+      field: RAUBE
+      op: in
+      value:
+      - '01'
+      - '10'
+      - YE
+    executable: true
+    provenance:
+      source: information_steward
+      original_name: MAT0140_StorageConditionRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T142', 'RAUBE',\
+        \ $P_I_StorageCondition);\nEND"
+      reference_table: T142
+      rule_doc: Verify the storage condition value exists in the Storage Conditions
+        for Materials table.
+  provenance:
+    is_rule_id: IS_MARA_RAUBE_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T142', 'RAUBE',\
+      \ $P_I_StorageCondition);\nEND"
+    nl_description: Verify the storage condition value exists in the Storage Conditions
+      for Materials table.
+    dimension: Validity
+  binding:
+    target_table: MARA
+    target_field: RAUBE
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    distinct_count_min: 1
+    distinct_count_max: 9
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARA_RBNRM_REFERENCE_EXISTS
+  source_rule_id: IS_MARA_RBNRM_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARA_RBNRM_REFERENCE_EXISTS
+    name: MAT0240_CatalogProfileRef
+    table: MARA
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Verify the catalog profile value exists in the Technical Report table.
+    fields:
+    - RBNRM
+    assertion:
+      node: cmp
+      field: RBNRM
+      op: in
+    executable: false
+    binding_notes: no self-defined domain for field; resolve from check table on the
+      real-data path
+    provenance:
+      source: information_steward
+      original_name: MAT0240_CatalogProfileRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T352B', 'RBNR',\
+        \ $P_I_CatalogProfile);\nEND"
+      reference_table: T352B
+      rule_doc: Verify the catalog profile value exists in the Technical Report table.
+  provenance:
+    is_rule_id: IS_MARA_RBNRM_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T352B', 'RBNR',\
+      \ $P_I_CatalogProfile);\nEND"
+    nl_description: Verify the catalog profile value exists in the Technical Report
+      table.
+    dimension: Validity
+  binding:
+    target_table: MARA
+    target_field: RBNRM
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARA_SERLV_DOMAIN_IN
+  source_rule_id: IS_MARA_SERLV_DOMAIN_IN
+  rule_spec:
+    rule_id: IS_MARA_SERLV_DOMAIN_IN
+    name: MAT0280_SerialNumberLevelIsValid
+    table: MARA
+    dama_dimension: Validity
+    is_dimension: Accuracy
+    archetype: domain_in
+    severity: Medium
+    description: Verify the serial number level value is valid according to the appropriate
+      reference domain or value range.
+    fields:
+    - SERLV
+    assertion:
+      node: cmp
+      field: SERLV
+      op: in
+      value:
+      - '1'
+    executable: false
+    binding_notes: field not present in current schema projection
+    provenance:
+      source: information_steward
+      original_name: MAT0280_SerialNumberLevelIsValid
+      original_expression: "BEGIN RETURN\n   $P_I_SerialNoDomain IN ('1');\nEND"
+      rule_doc: Verify the serial number level value is valid according to the appropriate
+        reference domain or value range.
+  provenance:
+    is_rule_id: IS_MARA_SERLV_DOMAIN_IN
+    original_expression: "BEGIN RETURN\n   $P_I_SerialNoDomain IN ('1');\nEND"
+    nl_description: Verify the serial number level value is valid according to the
+      appropriate reference domain or value range.
+    dimension: Validity
+  binding:
+    target_table: MARA
+    target_field: SERLV
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    distinct_count_min: 1
+    distinct_count_max: 6
+  parameterisation:
+  - name: domain_values
+    source: template_fixed
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARA_SATNR_REFERENCE_EXISTS
+  source_rule_id: IS_MARA_SATNR_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARA_SATNR_REFERENCE_EXISTS
+    name: MAT1370_CrossPlantCMRef
+    table: MARA
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Verify the cross plant CM value exists in the Material Master Data
+      table.
+    fields:
+    - SATNR
+    assertion:
+      node: cmp
+      field: SATNR
+      op: in
+    executable: false
+    binding_notes: no self-defined domain for field; resolve from check table on the
+      real-data path
+    provenance:
+      source: information_steward
+      original_name: MAT1370_CrossPlantCMRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'MARA', 'MATNR',\
+        \ $P_I_XPlantCM);\nEND"
+      reference_table: MARA
+      rule_doc: Verify the cross plant CM value exists in the Material Master Data
+        table.
+  provenance:
+    is_rule_id: IS_MARA_SATNR_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'MARA', 'MATNR',\
+      \ $P_I_XPlantCM);\nEND"
+    nl_description: Verify the cross plant CM value exists in the Material Master
+      Data table.
+    dimension: Validity
+  binding:
+    target_table: MARA
+    target_field: SATNR
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARA_MBRSH_REFERENCE_EXISTS
+  source_rule_id: IS_MARA_MBRSH_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARA_MBRSH_REFERENCE_EXISTS
+    name: MAT0050_IndustrySectorRef
+    table: MARA
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Verify the industry sector value exists in the Industries for Materials
+      table.
+    fields:
+    - MBRSH
+    assertion:
+      node: cmp
+      field: MBRSH
+      op: in
+      value:
+      - '1'
+      - A
+      - C
+      - M
+      - P
+    executable: true
+    provenance:
+      source: information_steward
+      original_name: MAT0050_IndustrySectorRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T137', 'MBRSH',\
+        \ $P_I_IndustrySector);\nEND"
+      reference_table: T137
+      rule_doc: Verify the industry sector value exists in the Industries for Materials
+        table.
+  provenance:
+    is_rule_id: IS_MARA_MBRSH_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T137', 'MBRSH',\
+      \ $P_I_IndustrySector);\nEND"
+    nl_description: Verify the industry sector value exists in the Industries for
+      Materials table.
+    dimension: Validity
+  binding:
+    target_table: MARA
+    target_field: MBRSH
+    field_role: industry_sector
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    distinct_count_min: 1
+    distinct_count_max: 15
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARA_LABOR_REFERENCE_EXISTS
+  source_rule_id: IS_MARA_LABOR_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARA_LABOR_REFERENCE_EXISTS
+    name: MAT0110_LaboratoryOfficeRef
+    table: MARA
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Verify the laboratory / office value exists in the Laboratory/Office
+      for Material table.
+    fields:
+    - LABOR
+    assertion:
+      node: cmp
+      field: LABOR
+      op: in
+    executable: false
+    binding_notes: no self-defined domain for field; resolve from check table on the
+      real-data path
+    provenance:
+      source: information_steward
+      original_name: MAT0110_LaboratoryOfficeRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T024L', 'LABOR',\
+        \ $P_I_LabOffice);\nEND"
+      reference_table: T024L
+      rule_doc: Verify the laboratory / office value exists in the Laboratory/Office
+        for Material table.
+  provenance:
+    is_rule_id: IS_MARA_LABOR_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T024L', 'LABOR',\
+      \ $P_I_LabOffice);\nEND"
+    nl_description: Verify the laboratory / office value exists in the Laboratory/Office
+      for Material table.
+    dimension: Validity
+  binding:
+    target_table: MARA
+    target_field: LABOR
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARA_MTPOS_MARA_REFERENCE_EXISTS
+  source_rule_id: IS_MARA_MTPOS_MARA_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARA_MTPOS_MARA_REFERENCE_EXISTS
+    name: MAT0310_GeneralItemCategoryGroupRef
+    table: MARA
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: 'Verify the general item category group value exists in the Materials:
+      Item Category Groups in Material Master table.'
+    fields:
+    - MTPOS_MARA
+    assertion:
+      node: cmp
+      field: MTPOS_MARA
+      op: in
+    executable: false
+    binding_notes: no self-defined domain for field; resolve from check table on the
+      real-data path
+    provenance:
+      source: information_steward
+      original_name: MAT0310_GeneralItemCategoryGroupRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TPTM', 'MTPOS',\
+        \ $P_I_GenItemCatGroup);\nEND"
+      reference_table: TPTM
+      rule_doc: 'Verify the general item category group value exists in the Materials:
+        Item Category Groups in Material Master table.'
+  provenance:
+    is_rule_id: IS_MARA_MTPOS_MARA_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TPTM', 'MTPOS',\
+      \ $P_I_GenItemCatGroup);\nEND"
+    nl_description: 'Verify the general item category group value exists in the Materials:
+      Item Category Groups in Material Master table.'
+    dimension: Validity
+  binding:
+    target_table: MARA
+    target_field: MTPOS_MARA
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARA_MATNR_NOT_NULL
+  source_rule_id: IS_MARA_MATNR_NOT_NULL
+  rule_spec:
+    rule_id: IS_MARA_MATNR_NOT_NULL
+    name: MAT000_MaterialNumberPopulated
+    table: MARA
+    dama_dimension: Completeness
+    is_dimension: Completeness
+    archetype: not_null
+    severity: High
+    description: Verify the material number is not empty.
+    fields:
+    - MATNR
+    assertion:
+      node: cmp
+      field: MATNR
+      op: is_not_null
+    executable: true
+    provenance:
+      source: information_steward
+      original_name: MAT000_MaterialNumberPopulated
+      original_expression: 'BEGIN RETURN
+
+        $P_I_Material IS NOT NULL
+
+        AND $P_I_Material != '''';
+
+        END'
+      rule_doc: Verify the material number is not empty.
+  provenance:
+    is_rule_id: IS_MARA_MATNR_NOT_NULL
+    original_expression: 'BEGIN RETURN
+
+      $P_I_Material IS NOT NULL
+
+      AND $P_I_Material != '''';
+
+      END'
+    nl_description: Verify the material number is not empty.
+    dimension: Completeness
+  binding:
+    target_table: MARA
+    target_field: MATNR
+    field_role: material_identifier
+  applicability:
+    population_min: 0.98
+  parameterisation: []
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARA_MEINS_REFERENCE_EXISTS
+  source_rule_id: IS_MARA_MEINS_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARA_MEINS_REFERENCE_EXISTS
+    name: MAT0090_BaseUnitofMeasureRef
+    table: MARA
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Verify the base unit of measure value exists in the Assign Internal
+      To Language-Dependent Unit table.
+    fields:
+    - MEINS
+    assertion:
+      node: cmp
+      field: MEINS
+      op: in
+      value:
+      - BAG
+      - BOT
+      - CCM
+      - EA
+      - H
+      - KG
+      - KM
+      - L
+      - LE
+      - M2
+      - M3
+      - ST
+      - STD
+      - WCH
+    executable: true
+    provenance:
+      source: information_steward
+      original_name: MAT0090_BaseUnitofMeasureRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T006A', 'MSEHI',\
+        \ $P_I_BaseUOM);\nEND"
+      reference_table: T006A
+      rule_doc: Verify the base unit of measure value exists in the Assign Internal
+        To Language-Dependent Unit table.
+  provenance:
+    is_rule_id: IS_MARA_MEINS_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T006A', 'MSEHI',\
+      \ $P_I_BaseUOM);\nEND"
+    nl_description: Verify the base unit of measure value exists in the Assign Internal
+      To Language-Dependent Unit table.
+    dimension: Validity
+  binding:
+    target_table: MARA
+    target_field: MEINS
+    field_role: unit_of_measure
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    distinct_count_min: 1
+    distinct_count_max: 42
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARA_IPRKZ_REFERENCE_EXISTS
+  source_rule_id: IS_MARA_IPRKZ_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARA_IPRKZ_REFERENCE_EXISTS
+    name: MAT0290_PeriodIndicatorforSLEDRef
+    table: MARA
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Verify the period indicator for SLED value exists in the Language-Dependent
+      Texts for SLED Period Indicator table.
+    fields:
+    - IPRKZ
+    assertion:
+      node: cmp
+      field: IPRKZ
+      op: in
+    executable: false
+    binding_notes: no self-defined domain for field; resolve from check table on the
+      real-data path
+    provenance:
+      source: information_steward
+      original_name: MAT0290_PeriodIndicatorforSLEDRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'PRDKZT', 'IPRKZ',\
+        \ $P_I_PeriodIndForSLED);\nEND"
+      reference_table: PRDKZT
+      rule_doc: Verify the period indicator for SLED value exists in the Language-Dependent
+        Texts for SLED Period Indicator table.
+  provenance:
+    is_rule_id: IS_MARA_IPRKZ_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'PRDKZT', 'IPRKZ',\
+      \ $P_I_PeriodIndForSLED);\nEND"
+    nl_description: Verify the period indicator for SLED value exists in the Language-Dependent
+      Texts for SLED Period Indicator table.
+    dimension: Validity
+  binding:
+    target_table: MARA
+    target_field: IPRKZ
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARA_MEINS_NOT_NULL
+  source_rule_id: IS_MARA_MEINS_NOT_NULL
+  rule_spec:
+    rule_id: IS_MARA_MEINS_NOT_NULL
+    name: MAT0080_BaseUnitOfMeasurePopulated
+    table: MARA
+    dama_dimension: Completeness
+    is_dimension: Completeness
+    archetype: not_null
+    severity: High
+    description: Verify the base unit of measure field is not empty.
+    fields:
+    - MEINS
+    assertion:
+      node: cmp
+      field: MEINS
+      op: is_not_null
+    executable: true
+    provenance:
+      source: information_steward
+      original_name: MAT0080_BaseUnitOfMeasurePopulated
+      original_expression: 'BEGIN RETURN
+
+        $P_I_BaseUOM IS NOT NULL
+
+        AND $P_I_BaseUOM != '''';
+
+        END'
+      rule_doc: Verify the base unit of measure field is not empty.
+  provenance:
+    is_rule_id: IS_MARA_MEINS_NOT_NULL
+    original_expression: 'BEGIN RETURN
+
+      $P_I_BaseUOM IS NOT NULL
+
+      AND $P_I_BaseUOM != '''';
+
+      END'
+    nl_description: Verify the base unit of measure field is not empty.
+    dimension: Completeness
+  binding:
+    target_table: MARA
+    target_field: MEINS
+    field_role: unit_of_measure
+  applicability:
+    population_min: 0.98
+  parameterisation: []
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARA_ETIFO_REFERENCE_EXISTS
+  source_rule_id: IS_MARA_ETIFO_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARA_ETIFO_REFERENCE_EXISTS
+    name: MAT0210_LabFormRef
+    table: MARA
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Verify the lab form value exists in the Check Table for Label Shape
+      table.
+    fields:
+    - ETIFO
+    assertion:
+      node: cmp
+      field: ETIFO
+      op: in
+    executable: false
+    binding_notes: no self-defined domain for field; resolve from check table on the
+      real-data path
+    provenance:
+      source: information_steward
+      original_name: MAT0210_LabFormRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T6WP4', 'ETIFO',\
+        \ $P_I_LabForm);\nEND"
+      reference_table: T6WP4
+      rule_doc: Verify the lab form value exists in the Check Table for Label Shape
+        table.
+  provenance:
+    is_rule_id: IS_MARA_ETIFO_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T6WP4', 'ETIFO',\
+      \ $P_I_LabForm);\nEND"
+    nl_description: Verify the lab form value exists in the Check Table for Label
+      Shape table.
+    dimension: Validity
+  binding:
+    target_table: MARA
+    target_field: ETIFO
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARA_NRFHG_DOMAIN_IN
+  source_rule_id: IS_MARA_NRFHG_DOMAIN_IN
+  rule_spec:
+    rule_id: IS_MARA_NRFHG_DOMAIN_IN
+    name: MAT0260_QualforFreeGoodsDiscIsValid
+    table: MARA
+    dama_dimension: Validity
+    is_dimension: Accuracy
+    archetype: domain_in
+    severity: Medium
+    description: Verify the qualify for free goods discount value is valid according
+      to the appropriate reference domain or value range.
+    fields:
+    - NRFHG
+    assertion:
+      node: cmp
+      field: NRFHG
+      op: in
+      value:
+      - '1'
+      - '2'
+      - '3'
+    executable: false
+    binding_notes: field not present in current schema projection
+    provenance:
+      source: information_steward
+      original_name: MAT0260_QualforFreeGoodsDiscIsValid
+      original_expression: "BEGIN RETURN\n   $P_I_QualForFreeGoodsDis IN ('1', '2',\
+        \ '3');\nEND"
+      rule_doc: Verify the qualify for free goods discount value is valid according
+        to the appropriate reference domain or value range.
+  provenance:
+    is_rule_id: IS_MARA_NRFHG_DOMAIN_IN
+    original_expression: "BEGIN RETURN\n   $P_I_QualForFreeGoodsDis IN ('1', '2',\
+      \ '3');\nEND"
+    nl_description: Verify the qualify for free goods discount value is valid according
+      to the appropriate reference domain or value range.
+    dimension: Validity
+  binding:
+    target_table: MARA
+    target_field: NRFHG
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    distinct_count_min: 1
+    distinct_count_max: 9
+  parameterisation:
+  - name: domain_values
+    source: template_fixed
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARA_MFRNR_REFERENCE_EXISTS
+  source_rule_id: IS_MARA_MFRNR_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARA_MFRNR_REFERENCE_EXISTS
+    name: MAT0270_ManufacturerRef
+    table: MARA
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Verify the manufacturer value exists in the Vendor Master (General
+      Section) table.
+    fields:
+    - MFRNR
+    assertion:
+      node: cmp
+      field: MFRNR
+      op: in
+    executable: false
+    binding_notes: no self-defined domain for field; resolve from check table on the
+      real-data path
+    provenance:
+      source: information_steward
+      original_name: MAT0270_ManufacturerRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'LFA1', 'LIFNR',\
+        \ $P_I_Manufacturer);\nEND"
+      reference_table: LFA1
+      rule_doc: Verify the manufacturer value exists in the Vendor Master (General
+        Section) table.
+  provenance:
+    is_rule_id: IS_MARA_MFRNR_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'LFA1', 'LIFNR',\
+      \ $P_I_Manufacturer);\nEND"
+    nl_description: Verify the manufacturer value exists in the Vendor Master (General
+      Section) table.
+    dimension: Validity
+  binding:
+    target_table: MARA
+    target_field: MFRNR
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARA_KOSCH_REFERENCE_EXISTS
+  source_rule_id: IS_MARA_KOSCH_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARA_KOSCH_REFERENCE_EXISTS
+    name: MAT0250_ProductAllocationRef
+    table: MARA
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: 'Verify the product allocation value exists in the Product Allocation:
+      Definition Procedure table.'
+    fields:
+    - KOSCH
+    assertion:
+      node: cmp
+      field: KOSCH
+      op: in
+    executable: false
+    binding_notes: no self-defined domain for field; resolve from check table on the
+      real-data path
+    provenance:
+      source: information_steward
+      original_name: MAT0250_ProductAllocationRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T190S', 'KOSCH',\
+        \ $P_I_ProductAllocation);\nEND"
+      reference_table: T190S
+      rule_doc: 'Verify the product allocation value exists in the Product Allocation:
+        Definition Procedure table.'
+  provenance:
+    is_rule_id: IS_MARA_KOSCH_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T190S', 'KOSCH',\
+      \ $P_I_ProductAllocation);\nEND"
+    nl_description: 'Verify the product allocation value exists in the Product Allocation:
+      Definition Procedure table.'
+    dimension: Validity
+  binding:
+    target_table: MARA
+    target_field: KOSCH
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARA_MATKL_REFERENCE_EXISTS
+  source_rule_id: IS_MARA_MATKL_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARA_MATKL_REFERENCE_EXISTS
+    name: MAT0070_MaterialGroupRef
+    table: MARA
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Verify the material group value exists in the Material Groups table.
+    fields:
+    - MATKL
+    assertion:
+      node: cmp
+      field: MATKL
+      op: in
+      value:
+      - '01'
+      - '02'
+      - '190102'
+      - '211502'
+      - DIGIVEHI
+      - FL80
+      - L001
+      - L002
+      - L003
+      - L004
+      - L005
+      - L006
+      - L008
+      - P001
+      - P002
+      - SUBS
+      - YBFA05
+      - YBMM00
+      - YBMM01
+      - YBPM01
+      - Z991
+      - Z992
+      - ZBRAKES
+      - ZCRUISE
+      - ZFORK
+      - ZFRAME
+      - ZGEARS
+      - ZHANDLE
+      - ZMTN
+      - ZPEDAL
+      - ZRACING
+      - ZSEAT
+      - ZSHOCK
+      - ZTRAIN
+      - ZWHEEL
+      - ZYOUTH
+    executable: true
+    provenance:
+      source: information_steward
+      original_name: MAT0070_MaterialGroupRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T023', 'MATKL',\
+        \ $P_I_MaterialGroup);\nEND"
+      reference_table: T023
+      rule_doc: Verify the material group value exists in the Material Groups table.
+  provenance:
+    is_rule_id: IS_MARA_MATKL_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T023', 'MATKL',\
+      \ $P_I_MaterialGroup);\nEND"
+    nl_description: Verify the material group value exists in the Material Groups
+      table.
+    dimension: Validity
+  binding:
+    target_table: MARA
+    target_field: MATKL
+    field_role: material_group
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    distinct_count_min: 1
+    distinct_count_max: 108
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARA_EKWSL_REFERENCE_EXISTS
+  source_rule_id: IS_MARA_EKWSL_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARA_EKWSL_REFERENCE_EXISTS
+    name: MAT0120_PurchasingValueKeyRef
+    table: MARA
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Verify the purchasing value key exists in the Purchasing Value Key
+      table.
+    fields:
+    - EKWSL
+    assertion:
+      node: cmp
+      field: EKWSL
+      op: in
+    executable: false
+    binding_notes: no self-defined domain for field; resolve from check table on the
+      real-data path
+    provenance:
+      source: information_steward
+      original_name: MAT0120_PurchasingValueKeyRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T405', 'EKWSL',\
+        \ $P_I_PurchasingValueKey);\nEND"
+      reference_table: T405
+      rule_doc: Verify the purchasing value key exists in the Purchasing Value Key
+        table.
+  provenance:
+    is_rule_id: IS_MARA_EKWSL_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T405', 'EKWSL',\
+      \ $P_I_PurchasingValueKey);\nEND"
+    nl_description: Verify the purchasing value key exists in the Purchasing Value
+      Key table.
+    dimension: Validity
+  binding:
+    target_table: MARA
+    target_field: EKWSL
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARA_MAGRV_REFERENCE_EXISTS
+  source_rule_id: IS_MARA_MAGRV_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARA_MAGRV_REFERENCE_EXISTS
+    name: MAT0230_MaterialGroupPackagingMatlsRef
+    table: MARA
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: 'Verify the material group packaging materials value exists in the
+      Material Group: Packaging Materials table.'
+    fields:
+    - MAGRV
+    assertion:
+      node: cmp
+      field: MAGRV
+      op: in
+      value:
+      - PKGR
+    executable: true
+    provenance:
+      source: information_steward
+      original_name: MAT0230_MaterialGroupPackagingMatlsRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TVEGR', 'MAGRV',\
+        \ $P_I_MatGrpPackMatls);\nEND"
+      reference_table: TVEGR
+      rule_doc: 'Verify the material group packaging materials value exists in the
+        Material Group: Packaging Materials table.'
+  provenance:
+    is_rule_id: IS_MARA_MAGRV_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TVEGR', 'MAGRV',\
+      \ $P_I_MatGrpPackMatls);\nEND"
+    nl_description: 'Verify the material group packaging materials value exists in
+      the Material Group: Packaging Materials table.'
+    dimension: Validity
+  binding:
+    target_table: MARA
+    target_field: MAGRV
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    distinct_count_min: 1
+    distinct_count_max: 6
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARA_STOFF_REFERENCE_EXISTS
+  source_rule_id: IS_MARA_STOFF_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARA_STOFF_REFERENCE_EXISTS
+    name: MAT0180_HazardousMaterialNumberRef
+    table: MARA
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Verify the hazardous material number value exists in the Hazardous
+      Materials table.
+    fields:
+    - STOFF
+    assertion:
+      node: cmp
+      field: STOFF
+      op: in
+    executable: false
+    binding_notes: no self-defined domain for field; resolve from check table on the
+      real-data path
+    provenance:
+      source: information_steward
+      original_name: MAT0180_HazardousMaterialNumberRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'MGEF', 'STOFF',\
+        \ $P_I_HazmatRequirements);\nEND"
+      reference_table: MGEF
+      rule_doc: Verify the hazardous material number value exists in the Hazardous
+        Materials table.
+  provenance:
+    is_rule_id: IS_MARA_STOFF_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'MGEF', 'STOFF',\
+      \ $P_I_HazmatRequirements);\nEND"
+    nl_description: Verify the hazardous material number value exists in the Hazardous
+      Materials table.
+    dimension: Validity
+  binding:
+    target_table: MARA
+    target_field: STOFF
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARA_SPART_REFERENCE_EXISTS
+  source_rule_id: IS_MARA_SPART_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARA_SPART_REFERENCE_EXISTS
+    name: MAT0190_DivisionRef
+    table: MARA
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: 'Verify the material division value exists in the Organizational
+      Unit: Sales Divisions table.'
+    fields:
+    - SPART
+    assertion:
+      node: cmp
+      field: SPART
+      op: in
+      value:
+      - '00'
+      - '01'
+    executable: true
+    provenance:
+      source: information_steward
+      original_name: MAT0190_DivisionRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TSPA', 'SPART',\
+        \ $P_I_Division);\nEND"
+      reference_table: TSPA
+      rule_doc: 'Verify the material division value exists in the Organizational Unit:
+        Sales Divisions table.'
+  provenance:
+    is_rule_id: IS_MARA_SPART_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TSPA', 'SPART',\
+      \ $P_I_Division);\nEND"
+    nl_description: 'Verify the material division value exists in the Organizational
+      Unit: Sales Divisions table.'
+    dimension: Validity
+  binding:
+    target_table: MARA
+    target_field: SPART
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    distinct_count_min: 1
+    distinct_count_max: 7
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARA_WRKST_REFERENCE_EXISTS
+  source_rule_id: IS_MARA_WRKST_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARA_WRKST_REFERENCE_EXISTS
+    name: MAT0100_BasicMaterialRef
+    table: MARA
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Verify the basic material value exists in the Check Table for Basic
+      Material Field table.
+    fields:
+    - WRKST
+    assertion:
+      node: cmp
+      field: WRKST
+      op: in
+    executable: false
+    binding_notes: no self-defined domain for field; resolve from check table on the
+      real-data path
+    provenance:
+      source: information_steward
+      original_name: MAT0100_BasicMaterialRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TWSPR', 'WRKST',\
+        \ $P_I_BasicMaterial);\nEND"
+      reference_table: TWSPR
+      rule_doc: Verify the basic material value exists in the Check Table for Basic
+        Material Field table.
+  provenance:
+    is_rule_id: IS_MARA_WRKST_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TWSPR', 'WRKST',\
+      \ $P_I_BasicMaterial);\nEND"
+    nl_description: Verify the basic material value exists in the Check Table for
+      Basic Material Field table.
+    dimension: Validity
+  binding:
+    target_table: MARA
+    target_field: WRKST
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARA_TEMPB_REFERENCE_EXISTS
+  source_rule_id: IS_MARA_TEMPB_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARA_TEMPB_REFERENCE_EXISTS
+    name: MAT0150_TemperatureConditionRef
+    table: MARA
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Verify the temperature condition value exists in the Temperature
+      Conditions for Storing Materials table.
+    fields:
+    - TEMPB
+    assertion:
+      node: cmp
+      field: TEMPB
+      op: in
+    executable: false
+    binding_notes: no self-defined domain for field; resolve from check table on the
+      real-data path
+    provenance:
+      source: information_steward
+      original_name: MAT0150_TemperatureConditionRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T143', 'TEMPB',\
+        \ $P_I_TemperatureCondition);\nEND"
+      reference_table: T143
+      rule_doc: Verify the temperature condition value exists in the Temperature Conditions
+        for Storing Materials table.
+  provenance:
+    is_rule_id: IS_MARA_TEMPB_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T143', 'TEMPB',\
+      \ $P_I_TemperatureCondition);\nEND"
+    nl_description: Verify the temperature condition value exists in the Temperature
+      Conditions for Storing Materials table.
+    dimension: Validity
+  binding:
+    target_table: MARA
+    target_field: TEMPB
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARA_RMATP_REFERENCE_EXISTS
+  source_rule_id: IS_MARA_RMATP_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARA_RMATP_REFERENCE_EXISTS
+    name: MAT0320_ReferenceMatlForPackagingRef
+    table: MARA
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Verify the reference material for packaging value exists in the General
+      Material Data table.
+    fields:
+    - RMATP
+    assertion:
+      node: cmp
+      field: RMATP
+      op: in
+    executable: false
+    binding_notes: no self-defined domain for field; resolve from check table on the
+      real-data path
+    provenance:
+      source: information_steward
+      original_name: MAT0320_ReferenceMatlForPackagingRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'MARA', 'MATNR',\
+        \ $P_I_RefMatPackaging);\nEND"
+      reference_table: MARA
+      rule_doc: Verify the reference material for packaging value exists in the General
+        Material Data table.
+  provenance:
+    is_rule_id: IS_MARA_RMATP_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'MARA', 'MATNR',\
+      \ $P_I_RefMatPackaging);\nEND"
+    nl_description: Verify the reference material for packaging value exists in the
+      General Material Data table.
+    dimension: Validity
+  binding:
+    target_table: MARA
+    target_field: RMATP
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARA_ETIAR_REFERENCE_EXISTS
+  source_rule_id: IS_MARA_ETIAR_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARA_ETIAR_REFERENCE_EXISTS
+    name: MAT0200_LabelTypeRef
+    table: MARA
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Verify the label type value exists in the Check Table for Labelling
+      Type table.
+    fields:
+    - ETIAR
+    assertion:
+      node: cmp
+      field: ETIAR
+      op: in
+    executable: false
+    binding_notes: no self-defined domain for field; resolve from check table on the
+      real-data path
+    provenance:
+      source: information_steward
+      original_name: MAT0200_LabelTypeRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T6WP3', 'ETIAR',\
+        \ $P_I_LabelType);\nEND"
+      reference_table: T6WP3
+      rule_doc: Verify the label type value exists in the Check Table for Labelling
+        Type table.
+  provenance:
+    is_rule_id: IS_MARA_ETIAR_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T6WP3', 'ETIAR',\
+      \ $P_I_LabelType);\nEND"
+    nl_description: Verify the label type value exists in the Check Table for Labelling
+      Type table.
+    dimension: Validity
+  binding:
+    target_table: MARA
+    target_field: ETIAR
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARA_MATKL_NOT_NULL
+  source_rule_id: IS_MARA_MATKL_NOT_NULL
+  rule_spec:
+    rule_id: IS_MARA_MATKL_NOT_NULL
+    name: MAT0060_MaterialGroupPopulated
+    table: MARA
+    dama_dimension: Completeness
+    is_dimension: Completeness
+    archetype: not_null
+    severity: Medium
+    description: Verify the material group field is not empty.
+    fields:
+    - MATKL
+    assertion:
+      node: cmp
+      field: MATKL
+      op: is_not_null
+    executable: true
+    provenance:
+      source: information_steward
+      original_name: MAT0060_MaterialGroupPopulated
+      original_expression: 'BEGIN RETURN
+
+        $P_I_MaterialGroup IS NOT NULL
+
+        AND $P_I_MaterialGroup != '''';
+
+        END'
+      rule_doc: Verify the material group field is not empty.
+  provenance:
+    is_rule_id: IS_MARA_MATKL_NOT_NULL
+    original_expression: 'BEGIN RETURN
+
+      $P_I_MaterialGroup IS NOT NULL
+
+      AND $P_I_MaterialGroup != '''';
+
+      END'
+    nl_description: Verify the material group field is not empty.
+    dimension: Completeness
+  binding:
+    target_table: MARA
+    target_field: MATKL
+    field_role: material_group
+  applicability:
+    population_min: 0.98
+  parameterisation: []
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARA_MTART_REFERENCE_EXISTS
+  source_rule_id: IS_MARA_MTART_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARA_MTART_REFERENCE_EXISTS
+    name: MAT0020_MaterialTypeRef
+    table: MARA
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Verify the material type value exists in the Material Types table.
+    fields:
+    - MTART
+    assertion:
+      node: cmp
+      field: MTART
+      op: in
+      value:
+      - BUND
+      - DIEN
+      - ERSA
+      - FERT
+      - FHMI
+      - HALB
+      - HAWA
+      - HIBE
+      - IBAU
+      - KMAT
+      - LEIH
+      - MAT
+      - NLAG
+      - PIPE
+      - ROH
+      - SERV
+      - SUBS
+      - SWNV
+      - UNFR
+      - UNSF
+      - VEHI
+      - VERP
+    executable: true
+    provenance:
+      source: information_steward
+      original_name: MAT0020_MaterialTypeRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T134', 'MTART',\
+        \ $P_I_MaterialType);\nEND"
+      reference_table: T134
+      rule_doc: Verify the material type value exists in the Material Types table.
+  provenance:
+    is_rule_id: IS_MARA_MTART_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T134', 'MTART',\
+      \ $P_I_MaterialType);\nEND"
+    nl_description: Verify the material type value exists in the Material Types table.
+    dimension: Validity
+  binding:
+    target_table: MARA
+    target_field: MTART
+    field_role: material_type
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    distinct_count_min: 1
+    distinct_count_max: 66
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARA_BEHVO_REFERENCE_EXISTS
+  source_rule_id: IS_MARA_BEHVO_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARA_BEHVO_REFERENCE_EXISTS
+    name: MAT0130_ContainerRequirementsRef
+    table: MARA
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Verify the container requirements value exists in the Container Requirements
+      for Storing Materials table.
+    fields:
+    - BEHVO
+    assertion:
+      node: cmp
+      field: BEHVO
+      op: in
+    executable: false
+    binding_notes: no self-defined domain for field; resolve from check table on the
+      real-data path
+    provenance:
+      source: information_steward
+      original_name: MAT0130_ContainerRequirementsRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T144', 'BEHVO',\
+        \ $P_I_ContainerRequirements);\nEND"
+      reference_table: T144
+      rule_doc: Verify the container requirements value exists in the Container Requirements
+        for Storing Materials table.
+  provenance:
+    is_rule_id: IS_MARA_BEHVO_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T144', 'BEHVO',\
+      \ $P_I_ContainerRequirements);\nEND"
+    nl_description: Verify the container requirements value exists in the Container
+      Requirements for Storing Materials table.
+    dimension: Validity
+  binding:
+    target_table: MARA
+    target_field: BEHVO
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARA_NUMTP_REFERENCE_EXISTS
+  source_rule_id: IS_MARA_NUMTP_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARA_NUMTP_REFERENCE_EXISTS
+    name: MAT0220_EANCategoryRef
+    table: MARA
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Verify the EAN category value exists in the international Article
+      Number (EAN) Categories table.
+    fields:
+    - NUMTP
+    assertion:
+      node: cmp
+      field: NUMTP
+      op: in
+    executable: false
+    binding_notes: no self-defined domain for field; resolve from check table on the
+      real-data path
+    provenance:
+      source: information_steward
+      original_name: MAT0220_EANCategoryRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TNTP', 'NUMTP',\
+        \ $P_I_EANCategory);\nEND"
+      reference_table: TNTP
+      rule_doc: Verify the EAN category value exists in the international Article
+        Number (EAN) Categories table.
+  provenance:
+    is_rule_id: IS_MARA_NUMTP_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TNTP', 'NUMTP',\
+      \ $P_I_EANCategory);\nEND"
+    nl_description: Verify the EAN category value exists in the international Article
+      Number (EAN) Categories table.
+    dimension: Validity
+  binding:
+    target_table: MARA
+    target_field: NUMTP
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARA_TRAGR_REFERENCE_EXISTS
+  source_rule_id: IS_MARA_TRAGR_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARA_TRAGR_REFERENCE_EXISTS
+    name: MAT0170_TransportationGroupRef
+    table: MARA
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: 'Verify the transportation group value exists in the Delivery Scheduling:
+      Transportation Groups table.'
+    fields:
+    - TRAGR
+    assertion:
+      node: cmp
+      field: TRAGR
+      op: in
+      value:
+      - '0001'
+      - '0004'
+    executable: true
+    provenance:
+      source: information_steward
+      original_name: MAT0170_TransportationGroupRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TTGR', 'TRAGR',\
+        \ $P_I_TransportationGroup);\nEND"
+      reference_table: TTGR
+      rule_doc: 'Verify the transportation group value exists in the Delivery Scheduling:
+        Transportation Groups table.'
+  provenance:
+    is_rule_id: IS_MARA_TRAGR_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TTGR', 'TRAGR',\
+      \ $P_I_TransportationGroup);\nEND"
+    nl_description: 'Verify the transportation group value exists in the Delivery
+      Scheduling: Transportation Groups table.'
+    dimension: Validity
+  binding:
+    target_table: MARA
+    target_field: TRAGR
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    distinct_count_min: 1
+    distinct_count_max: 7
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARA_MTART_NOT_NULL
+  source_rule_id: IS_MARA_MTART_NOT_NULL
+  rule_spec:
+    rule_id: IS_MARA_MTART_NOT_NULL
+    name: MAT0010_MaterialTypePopulated
+    table: MARA
+    dama_dimension: Completeness
+    is_dimension: Completeness
+    archetype: not_null
+    severity: High
+    description: Verify the material type field is not empty.
+    fields:
+    - MTART
+    assertion:
+      node: cmp
+      field: MTART
+      op: is_not_null
+    executable: true
+    provenance:
+      source: information_steward
+      original_name: MAT0010_MaterialTypePopulated
+      original_expression: 'BEGIN RETURN
+
+        $P_I_MaterialType IS NOT NULL
+
+        AND $P_I_MaterialType != '''';
+
+        END'
+      rule_doc: Verify the material type field is not empty.
+  provenance:
+    is_rule_id: IS_MARA_MTART_NOT_NULL
+    original_expression: 'BEGIN RETURN
+
+      $P_I_MaterialType IS NOT NULL
+
+      AND $P_I_MaterialType != '''';
+
+      END'
+    nl_description: Verify the material type field is not empty.
+    dimension: Completeness
+  binding:
+    target_table: MARA
+    target_field: MTART
+    field_role: material_type
+  applicability:
+    population_min: 0.98
+  parameterisation: []
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARA_MBRSH_NOT_NULL
+  source_rule_id: IS_MARA_MBRSH_NOT_NULL
+  rule_spec:
+    rule_id: IS_MARA_MBRSH_NOT_NULL
+    name: MAT0040_IndustrySectorPopulated
+    table: MARA
+    dama_dimension: Completeness
+    is_dimension: Completeness
+    archetype: not_null
+    severity: High
+    description: Verify the industry sector field is not empty
+    fields:
+    - MBRSH
+    assertion:
+      node: cmp
+      field: MBRSH
+      op: is_not_null
+    executable: true
+    provenance:
+      source: information_steward
+      original_name: MAT0040_IndustrySectorPopulated
+      original_expression: 'BEGIN RETURN
+
+        $P_I_IndustrySector IS NOT NULL
+
+        AND $P_I_IndustrySector != '''';
+
+        END'
+      rule_doc: Verify the industry sector field is not empty
+  provenance:
+    is_rule_id: IS_MARA_MBRSH_NOT_NULL
+    original_expression: 'BEGIN RETURN
+
+      $P_I_IndustrySector IS NOT NULL
+
+      AND $P_I_IndustrySector != '''';
+
+      END'
+    nl_description: Verify the industry sector field is not empty
+    dimension: Completeness
+  binding:
+    target_table: MARA
+    target_field: MBRSH
+    field_role: industry_sector
+  applicability:
+    population_min: 0.98
+  parameterisation: []
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARA_RDMHD_DOMAIN_IN
+  source_rule_id: IS_MARA_RDMHD_DOMAIN_IN
+  rule_spec:
+    rule_id: IS_MARA_RDMHD_DOMAIN_IN
+    name: MAT0300_RoundingRuleSLEDIsValid
+    table: MARA
+    dama_dimension: Validity
+    is_dimension: Accuracy
+    archetype: domain_in
+    severity: Medium
+    description: Verify the rounding rule for calculating shelf life expiration date
+      (SLED) of a material is valid according to the appropriate reference domain
+      or value range.
+    fields:
+    - RDMHD
+    assertion:
+      node: cmp
+      field: RDMHD
+      op: in
+      value:
+      - '-'
+      - +
+      - F
+    executable: false
+    binding_notes: field not present in current schema projection
+    provenance:
+      source: information_steward
+      original_name: MAT0300_RoundingRuleSLEDIsValid
+      original_expression: "BEGIN RETURN\n   $P_I_RoundingRuleSLED IN ('-', '+', 'F');\n\
+        END"
+      rule_doc: Verify the rounding rule for calculating shelf life expiration date
+        (SLED) of a material is valid according to the appropriate reference domain
+        or value range.
+  provenance:
+    is_rule_id: IS_MARA_RDMHD_DOMAIN_IN
+    original_expression: "BEGIN RETURN\n   $P_I_RoundingRuleSLED IN ('-', '+', 'F');\n\
+      END"
+    nl_description: Verify the rounding rule for calculating shelf life expiration
+      date (SLED) of a material is valid according to the appropriate reference domain
+      or value range.
+    dimension: Validity
+  binding:
+    target_table: MARA
+    target_field: RDMHD
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    distinct_count_min: 1
+    distinct_count_max: 9
+  parameterisation:
+  - name: domain_values
+    source: template_fixed
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARA_$MATNR_NOT_NULL
+  source_rule_id: IS_MARA_$MATNR_NOT_NULL
+  rule_spec:
+    rule_id: IS_MARA_$MATNR_NOT_NULL
+    name: 425_LE_Packaging Materials_Check Mandat Fields
+    table: MARA
+    dama_dimension: Completeness
+    is_dimension: Completeness
+    archetype: not_null
+    severity: Medium
+    description: Check if all mandatory fields of table MARA are maintained.
+    fields:
+    - $MATNR
+    assertion:
+      node: cmp
+      field: $MATNR
+      op: is_not_null
+    executable: false
+    binding_notes: field not present in current schema projection
+    provenance:
+      source: information_steward
+      original_name: 425_LE_Packaging Materials_Check Mandat Fields
+      original_expression: 'BEGIN RETURN
+
+        $MATNR IS NOT NULL
+
+        AND $MTART IS NOT NULL
+
+        AND $MBRSH IS NOT NULL
+
+        AND $MATKL IS NOT NULL
+
+        AND $MEINS IS NOT NULL
+
+        AND $GEWEI IS NOT NULL
+
+        AND $VOLEH IS NOT NULL
+
+        AND $MEABM IS NOT NULL
+
+        AND $ERGEI IS NOT NULL
+
+        AND $ERVOE IS NOT NULL
+
+        AND $MTPOS_MARA IS NOT NULL;
+
+        END'
+      rule_doc: Check if all mandatory fields of table MARA are maintained.
+  provenance:
+    is_rule_id: IS_MARA_$MATNR_NOT_NULL
+    original_expression: 'BEGIN RETURN
+
+      $MATNR IS NOT NULL
+
+      AND $MTART IS NOT NULL
+
+      AND $MBRSH IS NOT NULL
+
+      AND $MATKL IS NOT NULL
+
+      AND $MEINS IS NOT NULL
+
+      AND $GEWEI IS NOT NULL
+
+      AND $VOLEH IS NOT NULL
+
+      AND $MEABM IS NOT NULL
+
+      AND $ERGEI IS NOT NULL
+
+      AND $ERVOE IS NOT NULL
+
+      AND $MTPOS_MARA IS NOT NULL;
+
+      END'
+    nl_description: Check if all mandatory fields of table MARA are maintained.
+    dimension: Completeness
+  binding:
+    target_table: MARA
+    target_field: $MATNR
+    field_role: null
+  applicability:
+    population_min: 0.98
+  parameterisation: []
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_QSSYS_REFERENCE_EXISTS
+  source_rule_id: IS_MARC_QSSYS_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARC_QSSYS_REFERENCE_EXISTS
+    name: MAT0780_TargetQMSystemRef
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Verify the Target QM System value exists in the QM system definition
+      table.
+    fields:
+    - QSSYS
+    assertion:
+      node: cmp
+      field: QSSYS
+      op: in
+    executable: false
+    binding_notes: no self-defined domain for field; resolve from check table on the
+      real-data path
+    provenance:
+      source: information_steward
+      original_name: MAT0780_TargetQMSystemRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TQ02', 'QSSYS',\
+        \ $P_I_TargetQMSystem);\nEND"
+      reference_table: TQ02
+      rule_doc: Verify the Target QM System value exists in the QM system definition
+        table.
+  provenance:
+    is_rule_id: IS_MARC_QSSYS_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TQ02', 'QSSYS',\
+      \ $P_I_TargetQMSystem);\nEND"
+    nl_description: Verify the Target QM System value exists in the QM system definition
+      table.
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: QSSYS
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_DPLFS_DOMAIN_IN
+  source_rule_id: IS_MARC_DPLFS_DOMAIN_IN
+  rule_spec:
+    rule_id: IS_MARC_DPLFS_DOMAIN_IN
+    name: MAT0920_FairShareRuleIsValid
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Accuracy
+    archetype: domain_in
+    severity: Medium
+    description: Verify the fair share rule value is valid according to the appropriate
+      reference domain or value range.
+    fields:
+    - DPLFS
+    assertion:
+      node: cmp
+      field: DPLFS
+      op: in
+      value:
+      - A
+      - B
+      - X
+    executable: false
+    binding_notes: field not present in current schema projection
+    provenance:
+      source: information_steward
+      original_name: MAT0920_FairShareRuleIsValid
+      original_expression: "BEGIN RETURN\n   $P_I_FairShare_Rule IN ('A', 'B', 'X');\n\
+        END"
+      rule_doc: Verify the fair share rule value is valid according to the appropriate
+        reference domain or value range.
+  provenance:
+    is_rule_id: IS_MARC_DPLFS_DOMAIN_IN
+    original_expression: "BEGIN RETURN\n   $P_I_FairShare_Rule IN ('A', 'B', 'X');\n\
+      END"
+    nl_description: Verify the fair share rule value is valid according to the appropriate
+      reference domain or value range.
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: DPLFS
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    distinct_count_min: 1
+    distinct_count_max: 9
+  parameterisation:
+  - name: domain_values
+    source: template_fixed
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_PLNTY_REFERENCE_EXISTS
+  source_rule_id: IS_MARC_PLNTY_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARC_PLNTY_REFERENCE_EXISTS
+    name: MAT0820_TaskListTypeRef
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Verify the task list type value exists in the Task List Types table.
+    fields:
+    - PLNTY
+    assertion:
+      node: cmp
+      field: PLNTY
+      op: in
+    executable: false
+    binding_notes: no self-defined domain for field; resolve from check table on the
+      real-data path
+    provenance:
+      source: information_steward
+      original_name: MAT0820_TaskListTypeRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TCA01', 'PLNTY',\
+        \ $P_I_TaskListType);\nEND"
+      reference_table: TCA01
+      rule_doc: Verify the task list type value exists in the Task List Types table.
+  provenance:
+    is_rule_id: IS_MARC_PLNTY_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TCA01', 'PLNTY',\
+      \ $P_I_TaskListType);\nEND"
+    nl_description: Verify the task list type value exists in the Task List Types
+      table.
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: PLNTY
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_MTVFP_NOT_NULL
+  source_rule_id: IS_MARC_MTVFP_NOT_NULL
+  rule_spec:
+    rule_id: IS_MARC_MTVFP_NOT_NULL
+    name: MAT0600_AvailabilityCheckPopulated
+    table: MARC
+    dama_dimension: Completeness
+    is_dimension: Completeness
+    archetype: not_null
+    severity: Medium
+    description: Verify the availability check field is not empty.
+    fields:
+    - MTVFP
+    assertion:
+      node: cmp
+      field: MTVFP
+      op: is_not_null
+    executable: true
+    provenance:
+      source: information_steward
+      original_name: MAT0600_AvailabilityCheckPopulated
+      original_expression: 'BEGIN RETURN
+
+        $P_I_AvailabilityCheck IS NOT NULL
+
+        AND $P_I_AvailabilityCheck != '''';
+
+        END'
+      rule_doc: Verify the availability check field is not empty.
+  provenance:
+    is_rule_id: IS_MARC_MTVFP_NOT_NULL
+    original_expression: 'BEGIN RETURN
+
+      $P_I_AvailabilityCheck IS NOT NULL
+
+      AND $P_I_AvailabilityCheck != '''';
+
+      END'
+    nl_description: Verify the availability check field is not empty.
+    dimension: Completeness
+  binding:
+    target_table: MARC
+    target_field: MTVFP
+    field_role: null
+  applicability:
+    population_min: 0.98
+  parameterisation: []
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_DISMM_REFERENCE_EXISTS
+  source_rule_id: IS_MARC_DISMM_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARC_DISMM_REFERENCE_EXISTS
+    name: MAT0410_MRPTypeRef
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Verify the MRP Type value exists in the MRP Type table.
+    fields:
+    - DISMM
+    assertion:
+      node: cmp
+      field: DISMM
+      op: in
+      value:
+      - D1
+      - M0
+      - ND
+      - P1
+      - PD
+      - VB
+    executable: true
+    provenance:
+      source: information_steward
+      original_name: MAT0410_MRPTypeRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T438A', 'DISMM',\
+        \ $P_I_MRPType);\nEND"
+      reference_table: T438A
+      rule_doc: Verify the MRP Type value exists in the MRP Type table.
+  provenance:
+    is_rule_id: IS_MARC_DISMM_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T438A', 'DISMM',\
+      \ $P_I_MRPType);\nEND"
+    nl_description: Verify the MRP Type value exists in the MRP Type table.
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: DISMM
+    field_role: mrp_type
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    distinct_count_min: 1
+    distinct_count_max: 18
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_FHORI_REFERENCE_EXISTS
+  source_rule_id: IS_MARC_FHORI_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARC_FHORI_REFERENCE_EXISTS
+    name: MAT0540_SchedulingMarginKeyRef
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Verify the scheduling margin key value exists in the Floats for Scheduling
+      table.
+    fields:
+    - FHORI
+    assertion:
+      node: cmp
+      field: FHORI
+      op: in
+      value:
+      - '000'
+      - '001'
+      - '002'
+    executable: true
+    provenance:
+      source: information_steward
+      original_name: MAT0540_SchedulingMarginKeyRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T436A', 'FHORI',\
+        \ $P_I_SchedulingMarginKey);\nEND"
+      reference_table: T436A
+      rule_doc: Verify the scheduling margin key value exists in the Floats for Scheduling
+        table.
+  provenance:
+    is_rule_id: IS_MARC_FHORI_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T436A', 'FHORI',\
+      \ $P_I_SchedulingMarginKey);\nEND"
+    nl_description: Verify the scheduling margin key value exists in the Floats for
+      Scheduling table.
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: FHORI
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    distinct_count_min: 1
+    distinct_count_max: 9
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_LADGR_NOT_NULL
+  source_rule_id: IS_MARC_LADGR_NOT_NULL
+  rule_spec:
+    rule_id: IS_MARC_LADGR_NOT_NULL
+    name: MAT0570_LoadingGroupPopulated
+    table: MARC
+    dama_dimension: Completeness
+    is_dimension: Completeness
+    archetype: not_null
+    severity: Medium
+    description: Verify the loading group field is not empty.
+    fields:
+    - LADGR
+    assertion:
+      node: cmp
+      field: LADGR
+      op: is_not_null
+    executable: true
+    provenance:
+      source: information_steward
+      original_name: MAT0570_LoadingGroupPopulated
+      original_expression: 'BEGIN RETURN
+
+        $P_I_LoadingGroup IS NOT NULL
+
+        AND $P_I_LoadingGroup != '''';
+
+        END'
+      rule_doc: Verify the loading group field is not empty.
+  provenance:
+    is_rule_id: IS_MARC_LADGR_NOT_NULL
+    original_expression: 'BEGIN RETURN
+
+      $P_I_LoadingGroup IS NOT NULL
+
+      AND $P_I_LoadingGroup != '''';
+
+      END'
+    nl_description: Verify the loading group field is not empty.
+    dimension: Completeness
+  binding:
+    target_table: MARC
+    target_field: LADGR
+    field_role: null
+  applicability:
+    population_min: 0.98
+  parameterisation: []
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_STLAN_REFERENCE_EXISTS
+  source_rule_id: IS_MARC_STLAN_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARC_STLAN_REFERENCE_EXISTS
+    name: MAT0690_BOMUsageRef
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Verify the BOM usage value exists in the BOM Usage - Item Statuses
+      table.
+    fields:
+    - STLAN
+    assertion:
+      node: cmp
+      field: STLAN
+      op: in
+    executable: false
+    binding_notes: no self-defined domain for field; resolve from check table on the
+      real-data path
+    provenance:
+      source: information_steward
+      original_name: MAT0690_BOMUsageRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T416', 'STLAN',\
+        \ $P_I_BOMUsage);\nEND"
+      reference_table: T416
+      rule_doc: Verify the BOM usage value exists in the BOM Usage - Item Statuses
+        table.
+  provenance:
+    is_rule_id: IS_MARC_STLAN_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T416', 'STLAN',\
+      \ $P_I_BOMUsage);\nEND"
+    nl_description: Verify the BOM usage value exists in the BOM Usage - Item Statuses
+      table.
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: STLAN
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_PERIV_REFERENCE_EXISTS
+  source_rule_id: IS_MARC_PERIV_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARC_PERIV_REFERENCE_EXISTS
+    name: MAT0620_FIYearVariantRef
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Verify the material fiscal year variant exists in the Fiscal Year
+      Variants table.
+    fields:
+    - PERIV
+    assertion:
+      node: cmp
+      field: PERIV
+      op: in
+    executable: false
+    binding_notes: no self-defined domain for field; resolve from check table on the
+      real-data path
+    provenance:
+      source: information_steward
+      original_name: MAT0620_FIYearVariantRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T009', 'PERIV',\
+        \ $P_I_FIYearVariant);\nEND"
+      reference_table: T009
+      rule_doc: Verify the material fiscal year variant exists in the Fiscal Year
+        Variants table.
+  provenance:
+    is_rule_id: IS_MARC_PERIV_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T009', 'PERIV',\
+      \ $P_I_FIYearVariant);\nEND"
+    nl_description: Verify the material fiscal year variant exists in the Fiscal Year
+      Variants table.
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: PERIV
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_ABCIN_REFERENCE_EXISTS
+  source_rule_id: IS_MARC_ABCIN_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARC_ABCIN_REFERENCE_EXISTS
+    name: MAT0730_CCPhysicalInventoryIndicatorRef
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Verify the physical inventory indicator value for cycle counting
+      exists in reference table T159C.
+    fields:
+    - ABCIN
+    assertion:
+      node: cmp
+      field: ABCIN
+      op: in
+    executable: false
+    binding_notes: no self-defined domain for field; resolve from check table on the
+      real-data path
+    provenance:
+      source: information_steward
+      original_name: MAT0730_CCPhysicalInventoryIndicatorRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T159C', 'ABCIN',\
+        \ $P_I_CCPhyInvIndicator);\nEND"
+      reference_table: T159C
+      rule_doc: Verify the physical inventory indicator value for cycle counting exists
+        in reference table T159C.
+  provenance:
+    is_rule_id: IS_MARC_ABCIN_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T159C', 'ABCIN',\
+      \ $P_I_CCPhyInvIndicator);\nEND"
+    nl_description: Verify the physical inventory indicator value for cycle counting
+      exists in reference table T159C.
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: ABCIN
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_MEGRU_REFERENCE_EXISTS
+  source_rule_id: IS_MARC_MEGRU_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARC_MEGRU_REFERENCE_EXISTS
+    name: MAT0860_UnitofMeasureGroupRef
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Verify the unit of measure group value exists in the Unit of Measure
+      Group table.
+    fields:
+    - MEGRU
+    assertion:
+      node: cmp
+      field: MEGRU
+      op: in
+    executable: false
+    binding_notes: no self-defined domain for field; resolve from check table on the
+      real-data path
+    provenance:
+      source: information_steward
+      original_name: MAT0860_UnitofMeasureGroupRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TWMEG', 'MEGRU',\
+        \ $P_I_UnitOfMeasureGroup);\nEND"
+      reference_table: TWMEG
+      rule_doc: Verify the unit of measure group value exists in the Unit of Measure
+        Group table.
+  provenance:
+    is_rule_id: IS_MARC_MEGRU_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TWMEG', 'MEGRU',\
+      \ $P_I_UnitOfMeasureGroup);\nEND"
+    nl_description: Verify the unit of measure group value exists in the Unit of Measure
+      Group table.
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: MEGRU
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_MTVFP_REFERENCE_EXISTS
+  source_rule_id: IS_MARC_MTVFP_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARC_MTVFP_REFERENCE_EXISTS
+    name: MAT0610_AvailabilityCheckRef
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Verify the availability check value exists in the Availability Check
+      Control table.
+    fields:
+    - MTVFP
+    assertion:
+      node: cmp
+      field: MTVFP
+      op: in
+      value:
+      - '01'
+      - '02'
+      - CH
+      - NC
+      - SP
+      - SR
+      - ST
+      - Y1
+      - Y2
+    executable: true
+    provenance:
+      source: information_steward
+      original_name: MAT0610_AvailabilityCheckRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TMVF', 'MTVFP',\
+        \ $P_I_AvailabilityCheck);\nEND"
+      reference_table: TMVF
+      rule_doc: Verify the availability check value exists in the Availability Check
+        Control table.
+  provenance:
+    is_rule_id: IS_MARC_MTVFP_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TMVF', 'MTVFP',\
+      \ $P_I_AvailabilityCheck);\nEND"
+    nl_description: Verify the availability check value exists in the Availability
+      Check Control table.
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: MTVFP
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    distinct_count_min: 1
+    distinct_count_max: 27
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_EKGRP_NOT_NULL
+  source_rule_id: IS_MARC_EKGRP_NOT_NULL
+  rule_spec:
+    rule_id: IS_MARC_EKGRP_NOT_NULL
+    name: MAT0380_PurchasingGroupPopulated
+    table: MARC
+    dama_dimension: Completeness
+    is_dimension: Completeness
+    archetype: not_null
+    severity: Medium
+    description: Verify the purchasing group field is not empty.
+    fields:
+    - EKGRP
+    assertion:
+      node: cmp
+      field: EKGRP
+      op: is_not_null
+    executable: true
+    provenance:
+      source: information_steward
+      original_name: MAT0380_PurchasingGroupPopulated
+      original_expression: 'BEGIN RETURN
+
+        $P_I_PurchasingGroup IS NOT NULL
+
+        AND $P_I_PurchasingGroup != '''';
+
+        END'
+      rule_doc: Verify the purchasing group field is not empty.
+  provenance:
+    is_rule_id: IS_MARC_EKGRP_NOT_NULL
+    original_expression: 'BEGIN RETURN
+
+      $P_I_PurchasingGroup IS NOT NULL
+
+      AND $P_I_PurchasingGroup != '''';
+
+      END'
+    nl_description: Verify the purchasing group field is not empty.
+    dimension: Completeness
+  binding:
+    target_table: MARC
+    target_field: EKGRP
+    field_role: purchasing_group
+  applicability:
+    population_min: 0.98
+  parameterisation: []
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_FHORI_NOT_NULL
+  source_rule_id: IS_MARC_FHORI_NOT_NULL
+  rule_spec:
+    rule_id: IS_MARC_FHORI_NOT_NULL
+    name: MAT0530_SchedulingMarginKeyPopulated
+    table: MARC
+    dama_dimension: Completeness
+    is_dimension: Completeness
+    archetype: not_null
+    severity: Medium
+    description: Verify the scheduling margin key for floats field is not empty.
+    fields:
+    - FHORI
+    assertion:
+      node: cmp
+      field: FHORI
+      op: is_not_null
+    executable: true
+    provenance:
+      source: information_steward
+      original_name: MAT0530_SchedulingMarginKeyPopulated
+      original_expression: 'BEGIN RETURN
+
+        $P_I_SchedKey IS NOT NULL
+
+        AND $P_I_SchedKey != '''';
+
+        END'
+      rule_doc: Verify the scheduling margin key for floats field is not empty.
+  provenance:
+    is_rule_id: IS_MARC_FHORI_NOT_NULL
+    original_expression: 'BEGIN RETURN
+
+      $P_I_SchedKey IS NOT NULL
+
+      AND $P_I_SchedKey != '''';
+
+      END'
+    nl_description: Verify the scheduling margin key for floats field is not empty.
+    dimension: Completeness
+  binding:
+    target_table: MARC
+    target_field: FHORI
+    field_role: null
+  applicability:
+    population_min: 0.98
+  parameterisation: []
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_STAWN_REFERENCE_EXISTS
+  source_rule_id: IS_MARC_STAWN_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARC_STAWN_REFERENCE_EXISTS
+    name: MAT0630_CommodityorImportCodeRef
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Verify the commodity / import code value exists in reference table
+      T604.
+    fields:
+    - STAWN
+    assertion:
+      node: cmp
+      field: STAWN
+      op: in
+    executable: false
+    binding_notes: no self-defined domain for field; resolve from check table on the
+      real-data path
+    provenance:
+      source: information_steward
+      original_name: MAT0630_CommodityorImportCodeRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T604', 'STAWN',\
+        \ $P_I_CommImportCode);\nEND"
+      reference_table: T604
+      rule_doc: Verify the commodity / import code value exists in reference table
+        T604.
+  provenance:
+    is_rule_id: IS_MARC_STAWN_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T604', 'STAWN',\
+      \ $P_I_CommImportCode);\nEND"
+    nl_description: Verify the commodity / import code value exists in reference table
+      T604.
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: STAWN
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_MFRGR_REFERENCE_EXISTS
+  source_rule_id: IS_MARC_MFRGR_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARC_MFRGR_REFERENCE_EXISTS
+    name: MAT0870_MaterialFreightGroupRef
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Verify the material freight group value exists in the Material Freight
+      Groups table.
+    fields:
+    - MFRGR
+    assertion:
+      node: cmp
+      field: MFRGR
+      op: in
+    executable: false
+    binding_notes: no self-defined domain for field; resolve from check table on the
+      real-data path
+    provenance:
+      source: information_steward
+      original_name: MAT0870_MaterialFreightGroupRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TMFG', 'MFRGR',\
+        \ $P_I_FreightGroup);\nEND"
+      reference_table: TMFG
+      rule_doc: Verify the material freight group value exists in the Material Freight
+        Groups table.
+  provenance:
+    is_rule_id: IS_MARC_MFRGR_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TMFG', 'MFRGR',\
+      \ $P_I_FreightGroup);\nEND"
+    nl_description: Verify the material freight group value exists in the Material
+      Freight Groups table.
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: MFRGR
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_SHFLG_DOMAIN_IN
+  source_rule_id: IS_MARC_SHFLG_DOMAIN_IN
+  rule_spec:
+    rule_id: IS_MARC_SHFLG_DOMAIN_IN
+    name: MAT0830_SafetyTimeIndicatorIsValid
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Accuracy
+    archetype: domain_in
+    severity: Medium
+    description: Verify the safety time indicator value is valid according to the
+      appropriate reference domain or value range.
+    fields:
+    - SHFLG
+    assertion:
+      node: cmp
+      field: SHFLG
+      op: in
+      value:
+      - '1'
+      - '2'
+    executable: false
+    binding_notes: field not present in current schema projection
+    provenance:
+      source: information_steward
+      original_name: MAT0830_SafetyTimeIndicatorIsValid
+      original_expression: "BEGIN RETURN\n   $P_I_SafetyTimeInd IN ('1','2');\nEND"
+      rule_doc: Verify the safety time indicator value is valid according to the appropriate
+        reference domain or value range.
+  provenance:
+    is_rule_id: IS_MARC_SHFLG_DOMAIN_IN
+    original_expression: "BEGIN RETURN\n   $P_I_SafetyTimeInd IN ('1','2');\nEND"
+    nl_description: Verify the safety time indicator value is valid according to the
+      appropriate reference domain or value range.
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: SHFLG
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    distinct_count_min: 1
+    distinct_count_max: 7
+  parameterisation:
+  - name: domain_values
+    source: template_fixed
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_HERKL_REFERENCE_EXISTS
+  source_rule_id: IS_MARC_HERKL_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARC_HERKL_REFERENCE_EXISTS
+    name: MAT0640_CountryRef
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Verify the material's country of origin exists in the Countries table.
+    fields:
+    - HERKL
+    assertion:
+      node: cmp
+      field: HERKL
+      op: in
+    executable: false
+    binding_notes: no self-defined domain for field; resolve from check table on the
+      real-data path
+    provenance:
+      source: information_steward
+      original_name: MAT0640_CountryRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T005', 'LAND1',\
+        \ $P_I_Country);\nEND"
+      reference_table: T005
+      rule_doc: Verify the material's country of origin exists in the Countries table.
+  provenance:
+    is_rule_id: IS_MARC_HERKL_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T005', 'LAND1',\
+      \ $P_I_Country);\nEND"
+    nl_description: Verify the material's country of origin exists in the Countries
+      table.
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: HERKL
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_HERKR_REFERENCE_EXISTS
+  source_rule_id: IS_MARC_HERKR_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARC_HERKR_REFERENCE_EXISTS
+    name: MAT0650_RegionRef
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Verify that material's region (state, province, county) exists in
+      the Tax Region table.
+    fields:
+    - HERKR
+    assertion:
+      node: cmp
+      field: HERKR
+      op: in
+    executable: false
+    binding_notes: no self-defined domain for field; resolve from check table on the
+      real-data path
+    provenance:
+      source: information_steward
+      original_name: MAT0650_RegionRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T005S', 'BLAND',\
+        \ $P_I_Region);\nEND"
+      reference_table: T005S
+      rule_doc: Verify that material's region (state, province, county) exists in
+        the Tax Region table.
+  provenance:
+    is_rule_id: IS_MARC_HERKR_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T005S', 'BLAND',\
+      \ $P_I_Region);\nEND"
+    nl_description: Verify that material's region (state, province, county) exists
+      in the Tax Region table.
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: HERKR
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_KZBED_DOMAIN_IN
+  source_rule_id: IS_MARC_KZBED_DOMAIN_IN
+  rule_spec:
+    rule_id: IS_MARC_KZBED_DOMAIN_IN
+    name: MAT0510_RequirementsGroupIsValid
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Accuracy
+    archetype: domain_in
+    severity: Medium
+    description: Verify the requirements group value is valid according to the appropriate
+      reference domain or value range.
+    fields:
+    - KZBED
+    assertion:
+      node: cmp
+      field: KZBED
+      op: in
+      value:
+      - T
+      - '0'
+    executable: false
+    binding_notes: field not present in current schema projection
+    provenance:
+      source: information_steward
+      original_name: MAT0510_RequirementsGroupIsValid
+      original_expression: "BEGIN RETURN\n   $P_I_RequirementGroup IN ('T', '0');\n\
+        END"
+      rule_doc: Verify the requirements group value is valid according to the appropriate
+        reference domain or value range.
+  provenance:
+    is_rule_id: IS_MARC_KZBED_DOMAIN_IN
+    original_expression: "BEGIN RETURN\n   $P_I_RequirementGroup IN ('T', '0');\n\
+      END"
+    nl_description: Verify the requirements group value is valid according to the
+      appropriate reference domain or value range.
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: KZBED
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    distinct_count_min: 1
+    distinct_count_max: 7
+  parameterisation:
+  - name: domain_values
+    source: template_fixed
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_KZPSP_DOMAIN_IN
+  source_rule_id: IS_MARC_KZPSP_DOMAIN_IN
+  rule_spec:
+    rule_id: IS_MARC_KZPSP_DOMAIN_IN
+    name: MAT0950_CrossProjectIsValid
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Accuracy
+    archetype: domain_in
+    severity: Medium
+    description: Verify the cross-project value is valid according to the appropriate
+      reference domain or value range.
+    fields:
+    - KZPSP
+    assertion:
+      node: cmp
+      field: KZPSP
+      op: in
+      value:
+      - '1'
+    executable: false
+    binding_notes: field not present in current schema projection
+    provenance:
+      source: information_steward
+      original_name: MAT0950_CrossProjectIsValid
+      original_expression: "BEGIN RETURN\n   $P_I_CrossProjectDomain IN ('1');\nEND"
+      rule_doc: Verify the cross-project value is valid according to the appropriate
+        reference domain or value range.
+  provenance:
+    is_rule_id: IS_MARC_KZPSP_DOMAIN_IN
+    original_expression: "BEGIN RETURN\n   $P_I_CrossProjectDomain IN ('1');\nEND"
+    nl_description: Verify the cross-project value is valid according to the appropriate
+      reference domain or value range.
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: KZPSP
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    distinct_count_min: 1
+    distinct_count_max: 6
+  parameterisation:
+  - name: domain_values
+    source: template_fixed
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_PRENC_DOMAIN_IN
+  source_rule_id: IS_MARC_PRENC_DOMAIN_IN
+  rule_spec:
+    rule_id: IS_MARC_PRENC_DOMAIN_IN
+    name: MAT0790_ExemptionCertificateIsValid
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Accuracy
+    archetype: domain_in
+    severity: Medium
+    description: Verify the exemption certificate value is valid according to the
+      appropriate reference domain or value range.
+    fields:
+    - PRENC
+    assertion:
+      node: cmp
+      field: PRENC
+      op: in
+      value:
+      - A
+      - B
+      - C
+    executable: false
+    binding_notes: field not present in current schema projection
+    provenance:
+      source: information_steward
+      original_name: MAT0790_ExemptionCertificateIsValid
+      original_expression: "BEGIN RETURN\n   $P_I_ExcemptionCertificate IN ('A', 'B',\
+        \ 'C');\nEND"
+      rule_doc: Verify the exemption certificate value is valid according to the appropriate
+        reference domain or value range.
+  provenance:
+    is_rule_id: IS_MARC_PRENC_DOMAIN_IN
+    original_expression: "BEGIN RETURN\n   $P_I_ExcemptionCertificate IN ('A', 'B',\
+      \ 'C');\nEND"
+    nl_description: Verify the exemption certificate value is valid according to the
+      appropriate reference domain or value range.
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: PRENC
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    distinct_count_min: 1
+    distinct_count_max: 9
+  parameterisation:
+  - name: domain_values
+    source: template_fixed
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_QZGTP_REFERENCE_EXISTS
+  source_rule_id: IS_MARC_QZGTP_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARC_QZGTP_REFERENCE_EXISTS
+    name: MAT0710_CertificateTypeRefeference
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Verify the certificate type value exists in the QM Certificate Categories
+      for Procurement table.
+    fields:
+    - QZGTP
+    assertion:
+      node: cmp
+      field: QZGTP
+      op: in
+    executable: false
+    binding_notes: no self-defined domain for field; resolve from check table on the
+      real-data path
+    provenance:
+      source: information_steward
+      original_name: MAT0710_CertificateTypeRefeference
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TQ05', 'ZGTYP',\
+        \ $P_I_CertificateType);\nEND"
+      reference_table: TQ05
+      rule_doc: Verify the certificate type value exists in the QM Certificate Categories
+        for Procurement table.
+  provenance:
+    is_rule_id: IS_MARC_QZGTP_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TQ05', 'ZGTYP',\
+      \ $P_I_CertificateType);\nEND"
+    nl_description: Verify the certificate type value exists in the QM Certificate
+      Categories for Procurement table.
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: QZGTP
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_WERKS_REFERENCE_EXISTS
+  source_rule_id: IS_MARC_WERKS_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARC_WERKS_REFERENCE_EXISTS
+    name: MAT0340_PlantRef
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Verify the plant value exists in the Plants/Branches table.
+    fields:
+    - WERKS
+    assertion:
+      node: cmp
+      field: WERKS
+      op: in
+      value:
+      - '0001'
+      - '0003'
+      - '1010'
+      - '1011'
+      - '1012'
+      - '1710'
+      - '1711'
+      - '1712'
+      - '1720'
+      - FOBP
+      - FORP
+    executable: true
+    provenance:
+      source: information_steward
+      original_name: MAT0340_PlantRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T001W', 'WERKS',\
+        \ $P_I_Plant);\nEND"
+      reference_table: T001W
+      rule_doc: Verify the plant value exists in the Plants/Branches table.
+  provenance:
+    is_rule_id: IS_MARC_WERKS_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T001W', 'WERKS',\
+      \ $P_I_Plant);\nEND"
+    nl_description: Verify the plant value exists in the Plants/Branches table.
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: WERKS
+    field_role: org_unit_plant
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    distinct_count_min: 1
+    distinct_count_max: 33
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_MDACH_REFERENCE_EXISTS
+  source_rule_id: IS_MARC_MDACH_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARC_MDACH_REFERENCE_EXISTS
+    name: MAT0840_ActionControlRef
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Verify the action control value exists in the Action Control table.
+    fields:
+    - MDACH
+    assertion:
+      node: cmp
+      field: MDACH
+      op: in
+    executable: false
+    binding_notes: no self-defined domain for field; resolve from check table on the
+      real-data path
+    provenance:
+      source: information_steward
+      original_name: MAT0840_ActionControlRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T46AC', 'MDACH',\
+        \ $P_I_ActionControl);\nEND"
+      reference_table: T46AC
+      rule_doc: Verify the action control value exists in the Action Control table.
+  provenance:
+    is_rule_id: IS_MARC_MDACH_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T46AC', 'MDACH',\
+      \ $P_I_ActionControl);\nEND"
+    nl_description: Verify the action control value exists in the Action Control table.
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: MDACH
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_SFEPR_REFERENCE_EXISTS
+  source_rule_id: IS_MARC_SFEPR_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARC_SFEPR_REFERENCE_EXISTS
+    name: MAT0770_REMProfileRef
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Verify the REM profile value exists in the Repetitive Manufacturing
+      Profile  table.
+    fields:
+    - SFEPR
+    assertion:
+      node: cmp
+      field: SFEPR
+      op: in
+    executable: false
+    binding_notes: no self-defined domain for field; resolve from check table on the
+      real-data path
+    provenance:
+      source: information_steward
+      original_name: MAT0770_REMProfileRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T437S', 'SFPRO',\
+        \ $P_I_REMProfile);\nEND"
+      reference_table: T437S
+      rule_doc: Verify the REM profile value exists in the Repetitive Manufacturing
+        Profile  table.
+  provenance:
+    is_rule_id: IS_MARC_SFEPR_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T437S', 'SFPRO',\
+      \ $P_I_REMProfile);\nEND"
+    nl_description: Verify the REM profile value exists in the Repetitive Manufacturing
+      Profile  table.
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: SFEPR
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_MMSTA_REFERENCE_EXISTS
+  source_rule_id: IS_MARC_MMSTA_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARC_MMSTA_REFERENCE_EXISTS
+    name: MAT0360_PlantSpecificMaterialStatusRef
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Verify the plant specific material status value exists in the Material
+      Status From Materials Management/PPC View table.
+    fields:
+    - MMSTA
+    assertion:
+      node: cmp
+      field: MMSTA
+      op: in
+      value:
+      - '01'
+      - '03'
+    executable: true
+    provenance:
+      source: information_steward
+      original_name: MAT0360_PlantSpecificMaterialStatusRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T141', 'MMSTA',\
+        \ $P_I_PlantSpMatlStatus);\nEND"
+      reference_table: T141
+      rule_doc: Verify the plant specific material status value exists in the Material
+        Status From Materials Management/PPC View table.
+  provenance:
+    is_rule_id: IS_MARC_MMSTA_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T141', 'MMSTA',\
+      \ $P_I_PlantSpMatlStatus);\nEND"
+    nl_description: Verify the plant specific material status value exists in the
+      Material Status From Materials Management/PPC View table.
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: MMSTA
+    field_role: status_flag
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    distinct_count_min: 1
+    distinct_count_max: 7
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_LADGR_REFERENCE_EXISTS
+  source_rule_id: IS_MARC_LADGR_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARC_LADGR_REFERENCE_EXISTS
+    name: MAT0580_LoadingGroupRef
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: 'Verify the loading group value exists in the Routes: Loading Groups
+      table.'
+    fields:
+    - LADGR
+    assertion:
+      node: cmp
+      field: LADGR
+      op: in
+      value:
+      - '0001'
+      - '0002'
+      - '0003'
+    executable: true
+    provenance:
+      source: information_steward
+      original_name: MAT0580_LoadingGroupRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TLGR', 'LADGR',\
+        \ $P_I_LoadingGroup);\nEND"
+      reference_table: TLGR
+      rule_doc: 'Verify the loading group value exists in the Routes: Loading Groups
+        table.'
+  provenance:
+    is_rule_id: IS_MARC_LADGR_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TLGR', 'LADGR',\
+      \ $P_I_LoadingGroup);\nEND"
+    nl_description: 'Verify the loading group value exists in the Routes: Loading
+      Groups table.'
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: LADGR
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    distinct_count_min: 1
+    distinct_count_max: 9
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_STDPD_REFERENCE_EXISTS
+  source_rule_id: IS_MARC_STDPD_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARC_STDPD_REFERENCE_EXISTS
+    name: MAT0760_ConfigurableMaterialRef
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Verify the configurable material value exists in the General Material
+      Data table.
+    fields:
+    - STDPD
+    assertion:
+      node: cmp
+      field: STDPD
+      op: in
+    executable: false
+    binding_notes: no self-defined domain for field; resolve from check table on the
+      real-data path
+    provenance:
+      source: information_steward
+      original_name: MAT0760_ConfigurableMaterialRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'MARA', 'MATNR',\
+        \ $P_I_ConfigurableMaterial);\nEND"
+      reference_table: MARA
+      rule_doc: Verify the configurable material value exists in the General Material
+        Data table.
+  provenance:
+    is_rule_id: IS_MARC_STDPD_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'MARA', 'MATNR',\
+      \ $P_I_ConfigurableMaterial);\nEND"
+    nl_description: Verify the configurable material value exists in the General Material
+      Data table.
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: STDPD
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_AWSLS_REFERENCE_EXISTS
+  source_rule_id: IS_MARC_AWSLS_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARC_AWSLS_REFERENCE_EXISTS
+    name: MAT0740_VarianceKeyRef
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: 'Verify the variance key value exists in the Variance Keys: Cost
+      Centers/Costing table.'
+    fields:
+    - AWSLS
+    assertion:
+      node: cmp
+      field: AWSLS
+      op: in
+    executable: false
+    binding_notes: no self-defined domain for field; resolve from check table on the
+      real-data path
+    provenance:
+      source: information_steward
+      original_name: MAT0740_VarianceKeyRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TKV01', 'AWSLS',\
+        \ $P_I_VarianceKey);\nEND"
+      reference_table: TKV01
+      rule_doc: 'Verify the variance key value exists in the Variance Keys: Cost Centers/Costing
+        table.'
+  provenance:
+    is_rule_id: IS_MARC_AWSLS_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TKV01', 'AWSLS',\
+      \ $P_I_VarianceKey);\nEND"
+    nl_description: 'Verify the variance key value exists in the Variance Keys: Cost
+      Centers/Costing table.'
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: AWSLS
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_WERKS_NOT_NULL
+  source_rule_id: IS_MARC_WERKS_NOT_NULL
+  rule_spec:
+    rule_id: IS_MARC_WERKS_NOT_NULL
+    name: MAT0330_PlantPopulated
+    table: MARC
+    dama_dimension: Completeness
+    is_dimension: Completeness
+    archetype: not_null
+    severity: High
+    description: Verify the plant Field is not empty.
+    fields:
+    - WERKS
+    assertion:
+      node: cmp
+      field: WERKS
+      op: is_not_null
+    executable: true
+    provenance:
+      source: information_steward
+      original_name: MAT0330_PlantPopulated
+      original_expression: 'BEGIN RETURN
+
+        $P_I_Plant IS NOT NULL
+
+        AND $P_I_Plant != '''';
+
+        END'
+      rule_doc: Verify the plant Field is not empty.
+  provenance:
+    is_rule_id: IS_MARC_WERKS_NOT_NULL
+    original_expression: 'BEGIN RETURN
+
+      $P_I_Plant IS NOT NULL
+
+      AND $P_I_Plant != '''';
+
+      END'
+    nl_description: Verify the plant Field is not empty.
+    dimension: Completeness
+  binding:
+    target_table: MARC
+    target_field: WERKS
+    field_role: org_unit_plant
+  applicability:
+    population_min: 0.98
+  parameterisation: []
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_MRPPP_REFERENCE_EXISTS
+  source_rule_id: IS_MARC_MRPPP_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARC_MRPPP_REFERENCE_EXISTS
+    name: MAT0670_PlanningCycleRef
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: 'Verify the planning cycle value exists in T439G: PPplanning periods:
+      header table.'
+    fields:
+    - MRPPP
+    assertion:
+      node: cmp
+      field: MRPPP
+      op: in
+    executable: false
+    binding_notes: no self-defined domain for field; resolve from check table on the
+      real-data path
+    provenance:
+      source: information_steward
+      original_name: MAT0670_PlanningCycleRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T439G', 'MRPPP',\
+        \ $P_I_PlanningCycle);\nEND"
+      reference_table: T439G
+      rule_doc: 'Verify the planning cycle value exists in T439G: PPplanning periods:
+        header table.'
+  provenance:
+    is_rule_id: IS_MARC_MRPPP_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T439G', 'MRPPP',\
+      \ $P_I_PlanningCycle);\nEND"
+    nl_description: 'Verify the planning cycle value exists in T439G: PPplanning periods:
+      header table.'
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: MRPPP
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_MAABC_REFERENCE_EXISTS
+  source_rule_id: IS_MARC_MAABC_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARC_MAABC_REFERENCE_EXISTS
+    name: MAT0370_ABCIndicatorRef
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Verify the ABC indicator value exists in the 'Values Table for the
+      ABC indicator for Materials' table.
+    fields:
+    - MAABC
+    assertion:
+      node: cmp
+      field: MAABC
+      op: in
+      value:
+      - A
+      - B
+    executable: true
+    provenance:
+      source: information_steward
+      original_name: MAT0370_ABCIndicatorRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TMABC', 'MAABC',\
+        \ $P_I_ABCIndicator);\nEND"
+      reference_table: TMABC
+      rule_doc: Verify the ABC indicator value exists in the 'Values Table for the
+        ABC indicator for Materials' table.
+  provenance:
+    is_rule_id: IS_MARC_MAABC_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TMABC', 'MAABC',\
+      \ $P_I_ABCIndicator);\nEND"
+    nl_description: Verify the ABC indicator value exists in the 'Values Table for
+      the ABC indicator for Materials' table.
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: MAABC
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    distinct_count_min: 1
+    distinct_count_max: 7
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_USEQU_REFERENCE_EXISTS
+  source_rule_id: IS_MARC_USEQU_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARC_USEQU_REFERENCE_EXISTS
+    name: MAT0590_QuotaArrangementUsageRef
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Verify the quota arrangement usage value exists in the Quota Arrangement
+      Rules table.
+    fields:
+    - USEQU
+    assertion:
+      node: cmp
+      field: USEQU
+      op: in
+    executable: false
+    binding_notes: no self-defined domain for field; resolve from check table on the
+      real-data path
+    provenance:
+      source: information_steward
+      original_name: MAT0590_QuotaArrangementUsageRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TMQ2', 'USEQU',\
+        \ $P_I_QuotaArrangementUsage);\nEND"
+      reference_table: TMQ2
+      rule_doc: Verify the quota arrangement usage value exists in the Quota Arrangement
+        Rules table.
+  provenance:
+    is_rule_id: IS_MARC_USEQU_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TMQ2', 'USEQU',\
+      \ $P_I_QuotaArrangementUsage);\nEND"
+    nl_description: Verify the quota arrangement usage value exists in the Quota Arrangement
+      Rules table.
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: USEQU
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_QMATA_REFERENCE_EXISTS
+  source_rule_id: IS_MARC_QMATA_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARC_QMATA_REFERENCE_EXISTS
+    name: MAT0810_QMMaterialAuthorizationRef
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Verify the QM material authorization value exists in the Material
+      Authorization Groups in Quality Management table.
+    fields:
+    - QMATA
+    assertion:
+      node: cmp
+      field: QMATA
+      op: in
+    executable: false
+    binding_notes: no self-defined domain for field; resolve from check table on the
+      real-data path
+    provenance:
+      source: information_steward
+      original_name: MAT0810_QMMaterialAuthorizationRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TQ01B', 'QMATAUTH',\
+        \ $P_I_QMMatAuth);\nEND"
+      reference_table: TQ01B
+      rule_doc: Verify the QM material authorization value exists in the Material
+        Authorization Groups in Quality Management table.
+  provenance:
+    is_rule_id: IS_MARC_QMATA_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TQ01B', 'QMATAUTH',\
+      \ $P_I_QMMatAuth);\nEND"
+    nl_description: Verify the QM material authorization value exists in the Material
+      Authorization Groups in Quality Management table.
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: QMATA
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_DISLS_REFERENCE_EXISTS
+  source_rule_id: IS_MARC_DISLS_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARC_DISLS_REFERENCE_EXISTS
+    name: MAT0450_LotSizeRef
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Verify the lot size value exists in the MRP Lot Sizes table.
+    fields:
+    - DISLS
+    assertion:
+      node: cmp
+      field: DISLS
+      op: in
+      value:
+      - EX
+      - FX
+      - H1
+      - WB
+    executable: true
+    provenance:
+      source: information_steward
+      original_name: MAT0450_LotSizeRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T439A', 'DISLS',\
+        \ $P_I_LotSize);\nEND"
+      reference_table: T439A
+      rule_doc: Verify the lot size value exists in the MRP Lot Sizes table.
+  provenance:
+    is_rule_id: IS_MARC_DISLS_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T439A', 'DISLS',\
+      \ $P_I_LotSize);\nEND"
+    nl_description: Verify the lot size value exists in the MRP Lot Sizes table.
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: DISLS
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    distinct_count_min: 1
+    distinct_count_max: 12
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_SERNP_REFERENCE_EXISTS
+  source_rule_id: IS_MARC_SERNP_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARC_SERNP_REFERENCE_EXISTS
+    name: MAT0750_SerialNumberProfileRef
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Verify the serial number profile value exists in the Serial Number
+      Management Profiles table.
+    fields:
+    - SERNP
+    assertion:
+      node: cmp
+      field: SERNP
+      op: in
+    executable: false
+    binding_notes: no self-defined domain for field; resolve from check table on the
+      real-data path
+    provenance:
+      source: information_steward
+      original_name: MAT0750_SerialNumberProfileRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T377P', 'SERAIL',\
+        \ $P_I_SerialNoProfile);\nEND"
+      reference_table: T377P
+      rule_doc: Verify the serial number profile value exists in the Serial Number
+        Management Profiles table.
+  provenance:
+    is_rule_id: IS_MARC_SERNP_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T377P', 'SERAIL',\
+      \ $P_I_SerialNoProfile);\nEND"
+    nl_description: Verify the serial number profile value exists in the Serial Number
+      Management Profiles table.
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: SERNP
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_FPRFM_REFERENCE_EXISTS
+  source_rule_id: IS_MARC_FPRFM_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARC_FPRFM_REFERENCE_EXISTS
+    name: MAT0890_DistributionProfileRef
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Verify the distribution profile value exists in the Distribution
+      Profile of Material in DC table.
+    fields:
+    - FPRFM
+    assertion:
+      node: cmp
+      field: FPRFM
+      op: in
+    executable: false
+    binding_notes: no self-defined domain for field; resolve from check table on the
+      real-data path
+    provenance:
+      source: information_steward
+      original_name: MAT0890_DistributionProfileRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TMFPF', 'FPRFM',\
+        \ $P_I_DistributionProfile);\nEND"
+      reference_table: TMFPF
+      rule_doc: Verify the distribution profile value exists in the Distribution Profile
+        of Material in DC table.
+  provenance:
+    is_rule_id: IS_MARC_FPRFM_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TMFPF', 'FPRFM',\
+      \ $P_I_DistributionProfile);\nEND"
+    nl_description: Verify the distribution profile value exists in the Distribution
+      Profile of Material in DC table.
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: FPRFM
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_KZAUS_DOMAIN_IN
+  source_rule_id: IS_MARC_KZAUS_DOMAIN_IN
+  rule_spec:
+    rule_id: IS_MARC_KZAUS_DOMAIN_IN
+    name: MAT0500_DiscontinuationIndIsValid
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Accuracy
+    archetype: domain_in
+    severity: Medium
+    description: Verify the discontinuation indicator value is valid according to
+      the appropriate reference domain or value range.
+    fields:
+    - KZAUS
+    assertion:
+      node: cmp
+      field: KZAUS
+      op: in
+      value:
+      - '1'
+      - '3'
+    executable: false
+    binding_notes: field not present in current schema projection
+    provenance:
+      source: information_steward
+      original_name: MAT0500_DiscontinuationIndIsValid
+      original_expression: "BEGIN RETURN\n   $P_I_DiscontinuationInd IN ('1', '3');\n\
+        END"
+      rule_doc: Verify the discontinuation indicator value is valid according to the
+        appropriate reference domain or value range.
+  provenance:
+    is_rule_id: IS_MARC_KZAUS_DOMAIN_IN
+    original_expression: "BEGIN RETURN\n   $P_I_DiscontinuationInd IN ('1', '3');\n\
+      END"
+    nl_description: Verify the discontinuation indicator value is valid according
+      to the appropriate reference domain or value range.
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: KZAUS
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    distinct_count_min: 1
+    distinct_count_max: 7
+  parameterisation:
+  - name: domain_values
+    source: template_fixed
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_DISPO_NOT_NULL
+  source_rule_id: IS_MARC_DISPO_NOT_NULL
+  rule_spec:
+    rule_id: IS_MARC_DISPO_NOT_NULL
+    name: MAT0420_MRPControllerPopulated
+    table: MARC
+    dama_dimension: Completeness
+    is_dimension: Completeness
+    archetype: not_null
+    severity: Medium
+    description: Verify the MRP controller field is not empty.
+    fields:
+    - DISPO
+    assertion:
+      node: cmp
+      field: DISPO
+      op: is_not_null
+    executable: true
+    provenance:
+      source: information_steward
+      original_name: MAT0420_MRPControllerPopulated
+      original_expression: 'BEGIN RETURN
+
+        $P_I_MrpController IS NOT NULL
+
+        AND $P_I_MrpController != '''';
+
+        END'
+      rule_doc: Verify the MRP controller field is not empty.
+  provenance:
+    is_rule_id: IS_MARC_DISPO_NOT_NULL
+    original_expression: 'BEGIN RETURN
+
+      $P_I_MrpController IS NOT NULL
+
+      AND $P_I_MrpController != '''';
+
+      END'
+    nl_description: Verify the MRP controller field is not empty.
+    dimension: Completeness
+  binding:
+    target_table: MARC
+    target_field: DISPO
+    field_role: mrp_controller
+  applicability:
+    population_min: 0.98
+  parameterisation: []
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_DISMM_NOT_NULL
+  source_rule_id: IS_MARC_DISMM_NOT_NULL
+  rule_spec:
+    rule_id: IS_MARC_DISMM_NOT_NULL
+    name: MAT0400_MRPTypePopulated
+    table: MARC
+    dama_dimension: Completeness
+    is_dimension: Completeness
+    archetype: not_null
+    severity: Medium
+    description: Verify the MRP type field is not empty.
+    fields:
+    - DISMM
+    assertion:
+      node: cmp
+      field: DISMM
+      op: is_not_null
+    executable: true
+    provenance:
+      source: information_steward
+      original_name: MAT0400_MRPTypePopulated
+      original_expression: 'BEGIN RETURN
+
+        $P_I_MrpType IS NOT NULL
+
+        AND $P_I_MrpType != '''';
+
+        END'
+      rule_doc: Verify the MRP type field is not empty.
+  provenance:
+    is_rule_id: IS_MARC_DISMM_NOT_NULL
+    original_expression: 'BEGIN RETURN
+
+      $P_I_MrpType IS NOT NULL
+
+      AND $P_I_MrpType != '''';
+
+      END'
+    nl_description: Verify the MRP type field is not empty.
+    dimension: Completeness
+  binding:
+    target_table: MARC
+    target_field: DISMM
+    field_role: mrp_type
+  applicability:
+    population_min: 0.98
+  parameterisation: []
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_KZECH_DOMAIN_IN
+  source_rule_id: IS_MARC_KZECH_DOMAIN_IN
+  rule_spec:
+    rule_id: IS_MARC_KZECH_DOMAIN_IN
+    name: MAT0850_BatchEntryIsValid
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Accuracy
+    archetype: domain_in
+    severity: Medium
+    description: Verify the batch entry value for a material master is valid according
+      to the appropriate reference domain or value range.
+    fields:
+    - KZECH
+    assertion:
+      node: cmp
+      field: KZECH
+      op: in
+      value:
+      - '1'
+      - '2'
+      - '3'
+    executable: false
+    binding_notes: field not present in current schema projection
+    provenance:
+      source: information_steward
+      original_name: MAT0850_BatchEntryIsValid
+      original_expression: "BEGIN RETURN\n   $P_I_BatchEntryDomain IN ('1', '2', '3');\n\
+        END"
+      rule_doc: Verify the batch entry value for a material master is valid according
+        to the appropriate reference domain or value range.
+  provenance:
+    is_rule_id: IS_MARC_KZECH_DOMAIN_IN
+    original_expression: "BEGIN RETURN\n   $P_I_BatchEntryDomain IN ('1', '2', '3');\n\
+      END"
+    nl_description: Verify the batch entry value for a material master is valid according
+      to the appropriate reference domain or value range.
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: KZECH
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    distinct_count_min: 1
+    distinct_count_max: 9
+  parameterisation:
+  - name: domain_values
+    source: template_fixed
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_STEUC_REFERENCE_EXISTS
+  source_rule_id: IS_MARC_STEUC_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARC_STEUC_REFERENCE_EXISTS
+    name: MAT0900_ControlCodeRef
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: 'Verify the control code value exists in the Import Processing: Control
+      Code table.'
+    fields:
+    - STEUC
+    assertion:
+      node: cmp
+      field: STEUC
+      op: in
+    executable: false
+    binding_notes: no self-defined domain for field; resolve from check table on the
+      real-data path
+    provenance:
+      source: information_steward
+      original_name: MAT0900_ControlCodeRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T604F', 'STEUC',\
+        \ $P_I_ControlCode);\nEND"
+      reference_table: T604F
+      rule_doc: 'Verify the control code value exists in the Import Processing: Control
+        Code table.'
+  provenance:
+    is_rule_id: IS_MARC_STEUC_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T604F', 'STEUC',\
+      \ $P_I_ControlCode);\nEND"
+    nl_description: 'Verify the control code value exists in the Import Processing:
+      Control Code table.'
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: STEUC
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_SBDKZ_DOMAIN_IN
+  source_rule_id: IS_MARC_SBDKZ_DOMAIN_IN
+  rule_spec:
+    rule_id: IS_MARC_SBDKZ_DOMAIN_IN
+    name: MAT0470_IndividualOrCollectiveIsValid
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Accuracy
+    archetype: domain_in
+    severity: Medium
+    description: Verify the individual or collective requirements value for a Material
+      master is valid according to the appropriate reference domain or value range.
+    fields:
+    - SBDKZ
+    assertion:
+      node: cmp
+      field: SBDKZ
+      op: in
+      value:
+      - '1'
+      - '2'
+    executable: false
+    binding_notes: field not present in current schema projection
+    provenance:
+      source: information_steward
+      original_name: MAT0470_IndividualOrCollectiveIsValid
+      original_expression: "BEGIN RETURN\n$P_I_IndividualOrCollective IS NULL\n  \
+        \ $P_I_IndividualOrCollective IN ('1', '2');\nEND"
+      rule_doc: Verify the individual or collective requirements value for a Material
+        master is valid according to the appropriate reference domain or value range.
+  provenance:
+    is_rule_id: IS_MARC_SBDKZ_DOMAIN_IN
+    original_expression: "BEGIN RETURN\n$P_I_IndividualOrCollective IS NULL\n   $P_I_IndividualOrCollective\
+      \ IN ('1', '2');\nEND"
+    nl_description: Verify the individual or collective requirements value for a Material
+      master is valid according to the appropriate reference domain or value range.
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: SBDKZ
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    distinct_count_min: 1
+    distinct_count_max: 7
+  parameterisation:
+  - name: domain_values
+    source: template_fixed
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_MISKZ_DOMAIN_IN
+  source_rule_id: IS_MARC_MISKZ_DOMAIN_IN
+  rule_spec:
+    rule_id: IS_MARC_MISKZ_DOMAIN_IN
+    name: MAT0520_MixedMRPIndicatorIsValid
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Accuracy
+    archetype: domain_in
+    severity: Medium
+    description: Verify the mixed MRP value for a Material master is valid according
+      to the appropriate reference domain or value range.
+    fields:
+    - MISKZ
+    assertion:
+      node: cmp
+      field: MISKZ
+      op: in
+      value:
+      - '1'
+      - '2'
+      - '3'
+    executable: false
+    binding_notes: field not present in current schema projection
+    provenance:
+      source: information_steward
+      original_name: MAT0520_MixedMRPIndicatorIsValid
+      original_expression: "BEGIN RETURN\n   $P_I_MixedMRP IN ('1','2', '3');\nEND"
+      rule_doc: Verify the mixed MRP value for a Material master is valid according
+        to the appropriate reference domain or value range.
+  provenance:
+    is_rule_id: IS_MARC_MISKZ_DOMAIN_IN
+    original_expression: "BEGIN RETURN\n   $P_I_MixedMRP IN ('1','2', '3');\nEND"
+    nl_description: Verify the mixed MRP value for a Material master is valid according
+      to the appropriate reference domain or value range.
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: MISKZ
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    distinct_count_min: 1
+    distinct_count_max: 9
+  parameterisation:
+  - name: domain_values
+    source: template_fixed
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_FABKZ_DOMAIN_IN
+  source_rule_id: IS_MARC_FABKZ_DOMAIN_IN
+  rule_spec:
+    rule_id: IS_MARC_FABKZ_DOMAIN_IN
+    name: MAT0910_JITSchedulingIndicatorIsValid
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Accuracy
+    archetype: domain_in
+    severity: Medium
+    description: Verify the JIT scheduling indicator value for a Material master is
+      valid according to the appropriate reference domain or value range.
+    fields:
+    - FABKZ
+    assertion:
+      node: cmp
+      field: FABKZ
+      op: in
+      value:
+      - '1'
+    executable: false
+    binding_notes: field not present in current schema projection
+    provenance:
+      source: information_steward
+      original_name: MAT0910_JITSchedulingIndicatorIsValid
+      original_expression: "BEGIN RETURN\n   $P_I_JITSchedulingInd IN ('1');\nEND"
+      rule_doc: Verify the JIT scheduling indicator value for a Material master is
+        valid according to the appropriate reference domain or value range.
+  provenance:
+    is_rule_id: IS_MARC_FABKZ_DOMAIN_IN
+    original_expression: "BEGIN RETURN\n   $P_I_JITSchedulingInd IN ('1');\nEND"
+    nl_description: Verify the JIT scheduling indicator value for a Material master
+      is valid according to the appropriate reference domain or value range.
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: FABKZ
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    distinct_count_min: 1
+    distinct_count_max: 6
+  parameterisation:
+  - name: domain_values
+    source: template_fixed
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_ALTSL_DOMAIN_IN
+  source_rule_id: IS_MARC_ALTSL_DOMAIN_IN
+  rule_spec:
+    rule_id: IS_MARC_ALTSL_DOMAIN_IN
+    name: MAT0490_SelectionMethodIsValid
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Accuracy
+    archetype: domain_in
+    severity: Medium
+    description: Verify the selection method value for a Material master is valid
+      according to the appropriate reference domain or value range.
+    fields:
+    - ALTSL
+    assertion:
+      node: cmp
+      field: ALTSL
+      op: in
+      value:
+      - '1'
+      - '2'
+      - '3'
+    executable: false
+    binding_notes: field not present in current schema projection
+    provenance:
+      source: information_steward
+      original_name: MAT0490_SelectionMethodIsValid
+      original_expression: "BEGIN RETURN\n   $P_I_SelectionMethod IN ('1', '2', '3');\n\
+        END"
+      rule_doc: Verify the selection method value for a Material master is valid according
+        to the appropriate reference domain or value range.
+  provenance:
+    is_rule_id: IS_MARC_ALTSL_DOMAIN_IN
+    original_expression: "BEGIN RETURN\n   $P_I_SelectionMethod IN ('1', '2', '3');\n\
+      END"
+    nl_description: Verify the selection method value for a Material master is valid
+      according to the appropriate reference domain or value range.
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: ALTSL
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    distinct_count_min: 1
+    distinct_count_max: 9
+  parameterisation:
+  - name: domain_values
+    source: template_fixed
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_RWPRO_REFERENCE_EXISTS
+  source_rule_id: IS_MARC_RWPRO_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARC_RWPRO_REFERENCE_EXISTS
+    name: MAT0720_CoverageProfileRef
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Verify the coverage profile value exists in the Range of Coverage
+      Profile table.
+    fields:
+    - RWPRO
+    assertion:
+      node: cmp
+      field: RWPRO
+      op: in
+    executable: false
+    binding_notes: no self-defined domain for field; resolve from check table on the
+      real-data path
+    provenance:
+      source: information_steward
+      original_name: MAT0720_CoverageProfileRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T438R', 'RWPRO',\
+        \ $P_I_CoverageProfile);\nEND"
+      reference_table: T438R
+      rule_doc: Verify the coverage profile value exists in the Range of Coverage
+        Profile table.
+  provenance:
+    is_rule_id: IS_MARC_RWPRO_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T438R', 'RWPRO',\
+      \ $P_I_CoverageProfile);\nEND"
+    nl_description: Verify the coverage profile value exists in the Range of Coverage
+      Profile table.
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: RWPRO
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_DISGR_REFERENCE_EXISTS
+  source_rule_id: IS_MARC_DISGR_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARC_DISGR_REFERENCE_EXISTS
+    name: MAT0030_MRPGroupRef
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Verify the MRP group value exists in the Control Parameter for MRP
+      -Material Level table.
+    fields:
+    - DISGR
+    assertion:
+      node: cmp
+      field: DISGR
+      op: in
+    executable: false
+    binding_notes: no self-defined domain for field; resolve from check table on the
+      real-data path
+    provenance:
+      source: information_steward
+      original_name: MAT0030_MRPGroupRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T438M', 'MTART',\
+        \ $P_I_MRPGroup);\nEND"
+      reference_table: T438M
+      rule_doc: Verify the MRP group value exists in the Control Parameter for MRP
+        -Material Level table.
+  provenance:
+    is_rule_id: IS_MARC_DISGR_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T438M', 'MTART',\
+      \ $P_I_MRPGroup);\nEND"
+    nl_description: Verify the MRP group value exists in the Control Parameter for
+      MRP -Material Level table.
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: DISGR
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_AHDIS_DOMAIN_IN
+  source_rule_id: IS_MARC_AHDIS_DOMAIN_IN
+  rule_spec:
+    rule_id: IS_MARC_AHDIS_DOMAIN_IN
+    name: MAT0940_MRPDependentReqtIsValid
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Accuracy
+    archetype: domain_in
+    severity: Medium
+    description: Verify the MRP dependent requirement value for a Material master
+      is valid according to the appropriate reference domain or value range.
+    fields:
+    - AHDIS
+    assertion:
+      node: cmp
+      field: AHDIS
+      op: in
+      value:
+      - '1'
+    executable: false
+    binding_notes: field not present in current schema projection
+    provenance:
+      source: information_steward
+      original_name: MAT0940_MRPDependentReqtIsValid
+      original_expression: "BEGIN RETURN\n   $P_I_MRPDependent IN ('1');\nEND"
+      rule_doc: Verify the MRP dependent requirement value for a Material master is
+        valid according to the appropriate reference domain or value range.
+  provenance:
+    is_rule_id: IS_MARC_AHDIS_DOMAIN_IN
+    original_expression: "BEGIN RETURN\n   $P_I_MRPDependent IN ('1');\nEND"
+    nl_description: Verify the MRP dependent requirement value for a Material master
+      is valid according to the appropriate reference domain or value range.
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: AHDIS
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    distinct_count_min: 1
+    distinct_count_max: 6
+  parameterisation:
+  - name: domain_values
+    source: template_fixed
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_UCHKZ_DOMAIN_IN
+  source_rule_id: IS_MARC_UCHKZ_DOMAIN_IN
+  rule_spec:
+    rule_id: IS_MARC_UCHKZ_DOMAIN_IN
+    name: MAT0970_OBManagementIsValid
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Accuracy
+    archetype: domain_in
+    severity: Medium
+    description: Verify the OB management value for a Material master is valid according
+      to the appropriate reference domain or value range.
+    fields:
+    - UCHKZ
+    assertion:
+      node: cmp
+      field: UCHKZ
+      op: in
+      value:
+      - '1'
+    executable: false
+    binding_notes: field not present in current schema projection
+    provenance:
+      source: information_steward
+      original_name: MAT0970_OBManagementIsValid
+      original_expression: "BEGIN RETURN\n   $P_I_OBManagement IN ('1');\nEND"
+      rule_doc: Verify the OB management value for a Material master is valid according
+        to the appropriate reference domain or value range.
+  provenance:
+    is_rule_id: IS_MARC_UCHKZ_DOMAIN_IN
+    original_expression: "BEGIN RETURN\n   $P_I_OBManagement IN ('1');\nEND"
+    nl_description: Verify the OB management value for a Material master is valid
+      according to the appropriate reference domain or value range.
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: UCHKZ
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    distinct_count_min: 1
+    distinct_count_max: 6
+  parameterisation:
+  - name: domain_values
+    source: template_fixed
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_LOGGR_REFERENCE_EXISTS
+  source_rule_id: IS_MARC_LOGGR_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARC_LOGGR_REFERENCE_EXISTS
+    name: MAT0880_LogHandlingGroupRef
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Verify the log handling group value exists in the Logistics Handling
+      Group for Workload Calculation table.
+    fields:
+    - LOGGR
+    assertion:
+      node: cmp
+      field: LOGGR
+      op: in
+    executable: false
+    binding_notes: no self-defined domain for field; resolve from check table on the
+      real-data path
+    provenance:
+      source: information_steward
+      original_name: MAT0880_LogHandlingGroupRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TLOG', 'LOGGR',\
+        \ $P_I_LogHandlingGroup);\nEND"
+      reference_table: TLOG
+      rule_doc: Verify the log handling group value exists in the Logistics Handling
+        Group for Workload Calculation table.
+  provenance:
+    is_rule_id: IS_MARC_LOGGR_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TLOG', 'LOGGR',\
+      \ $P_I_LogHandlingGroup);\nEND"
+    nl_description: Verify the log handling group value exists in the Logistics Handling
+      Group for Workload Calculation table.
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: LOGGR
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_PLNNR_REFERENCE_EXISTS
+  source_rule_id: IS_MARC_PLNNR_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARC_PLNNR_REFERENCE_EXISTS
+    name: ZB_G13_MATL_GroupRef
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Rule to check if Group value exists.
+    fields:
+    - PLNNR
+    assertion:
+      node: cmp
+      field: PLNNR
+      op: in
+    executable: false
+    binding_notes: no self-defined domain for field; resolve from check table on the
+      real-data path
+    provenance:
+      source: information_steward
+      original_name: ZB_G13_MATL_GroupRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'M_PLKSA', 'PLNNR',\
+        \ $P_I_Group);\nEND"
+      reference_table: M_PLKSA
+      rule_doc: Rule to check if Group value exists.
+  provenance:
+    is_rule_id: IS_MARC_PLNNR_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'M_PLKSA', 'PLNNR',\
+      \ $P_I_Group);\nEND"
+    nl_description: Rule to check if Group value exists.
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: PLNNR
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_EKGRP_REFERENCE_EXISTS
+  source_rule_id: IS_MARC_EKGRP_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARC_EKGRP_REFERENCE_EXISTS
+    name: MAT0390_PurchasingGroupRef
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Verify the purchasing group value exists in the Purchasing Groups
+      table.
+    fields:
+    - EKGRP
+    assertion:
+      node: cmp
+      field: EKGRP
+      op: in
+      value:
+      - '001'
+      - '002'
+      - '003'
+      - Z00
+      - Z01
+      - Z02
+      - Z03
+      - Z04
+      - Z05
+      - Z06
+      - Z07
+      - Z08
+      - Z09
+      - Z10
+      - Z11
+      - Z12
+      - Z13
+      - Z14
+      - Z15
+      - Z16
+      - Z17
+      - Z18
+      - Z19
+      - Z20
+      - Z21
+      - Z22
+      - Z23
+      - Z24
+      - Z25
+      - Z26
+      - Z27
+      - Z28
+      - Z29
+      - Z30
+      - Z40
+      - Z90
+      - Z91
+    executable: true
+    provenance:
+      source: information_steward
+      original_name: MAT0390_PurchasingGroupRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T024', 'EKGRP',\
+        \ $P_I_PurchasingGroup);\nEND"
+      reference_table: T024
+      rule_doc: Verify the purchasing group value exists in the Purchasing Groups
+        table.
+  provenance:
+    is_rule_id: IS_MARC_EKGRP_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T024', 'EKGRP',\
+      \ $P_I_PurchasingGroup);\nEND"
+    nl_description: Verify the purchasing group value exists in the Purchasing Groups
+      table.
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: EKGRP
+    field_role: purchasing_group
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    distinct_count_min: 1
+    distinct_count_max: 111
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_DPLPU_DOMAIN_IN
+  source_rule_id: IS_MARC_DPLPU_DOMAIN_IN
+  rule_spec:
+    rule_id: IS_MARC_DPLPU_DOMAIN_IN
+    name: MAT0930_PushDistributionIsValid
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Accuracy
+    archetype: domain_in
+    severity: Medium
+    description: Verify the push distribution value for a Material master is valid
+      according to the appropriate reference domain or value range.
+    fields:
+    - DPLPU
+    assertion:
+      node: cmp
+      field: DPLPU
+      op: in
+      value:
+      - P
+      - X
+    executable: false
+    binding_notes: field not present in current schema projection
+    provenance:
+      source: information_steward
+      original_name: MAT0930_PushDistributionIsValid
+      original_expression: "BEGIN RETURN\n   $P_I_PushDistribution IN ('P', 'X');\n\
+        END"
+      rule_doc: Verify the push distribution value for a Material master is valid
+        according to the appropriate reference domain or value range.
+  provenance:
+    is_rule_id: IS_MARC_DPLPU_DOMAIN_IN
+    original_expression: "BEGIN RETURN\n   $P_I_PushDistribution IN ('P', 'X');\n\
+      END"
+    nl_description: Verify the push distribution value for a Material master is valid
+      according to the appropriate reference domain or value range.
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: DPLPU
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    distinct_count_min: 1
+    distinct_count_max: 7
+  parameterisation:
+  - name: domain_values
+    source: template_fixed
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_OCMPF_REFERENCE_EXISTS
+  source_rule_id: IS_MARC_OCMPF_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARC_OCMPF_REFERENCE_EXISTS
+    name: MAT0960_OverallProfileRef
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Verify the overall profile value exists in the Total Change Profile
+      for Order Change Management table.
+    fields:
+    - OCMPF
+    assertion:
+      node: cmp
+      field: OCMPF
+      op: in
+    executable: false
+    binding_notes: no self-defined domain for field; resolve from check table on the
+      real-data path
+    provenance:
+      source: information_steward
+      original_name: MAT0960_OverallProfileRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TCO48', 'GPROFILE',\
+        \ $P_I_OverallProfile);\nEND"
+      reference_table: TCO48
+      rule_doc: Verify the overall profile value exists in the Total Change Profile
+        for Order Change Management table.
+  provenance:
+    is_rule_id: IS_MARC_OCMPF_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TCO48', 'GPROFILE',\
+      \ $P_I_OverallProfile);\nEND"
+    nl_description: Verify the overall profile value exists in the Total Change Profile
+      for Order Change Management table.
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: OCMPF
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_DISPO_REFERENCE_EXISTS
+  source_rule_id: IS_MARC_DISPO_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARC_DISPO_REFERENCE_EXISTS
+    name: MAT0430_MRPControllerRef
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Verify the MRP controller value exists in the MRP Controllers table.
+    fields:
+    - DISPO
+    assertion:
+      node: cmp
+      field: DISPO
+      op: in
+    executable: false
+    binding_notes: no self-defined domain for field; resolve from check table on the
+      real-data path
+    provenance:
+      source: information_steward
+      original_name: MAT0430_MRPControllerRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T024D', 'DISPO',\
+        \ $P_I_MRPController);\nEND"
+      reference_table: T024D
+      rule_doc: Verify the MRP controller value exists in the MRP Controllers table.
+  provenance:
+    is_rule_id: IS_MARC_DISPO_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T024D', 'DISPO',\
+      \ $P_I_MRPController);\nEND"
+    nl_description: Verify the MRP controller value exists in the MRP Controllers
+      table.
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: DISPO
+    field_role: mrp_controller
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_VRMOD_DOMAIN_IN
+  source_rule_id: IS_MARC_VRMOD_DOMAIN_IN
+  rule_spec:
+    rule_id: IS_MARC_VRMOD_DOMAIN_IN
+    name: MAT0680_ConsumptionModeIsValid
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Accuracy
+    archetype: domain_in
+    severity: Medium
+    description: Verify the consumption mode value for a Material master is valid
+      according to the appropriate reference domain or value range.
+    fields:
+    - VRMOD
+    assertion:
+      node: cmp
+      field: VRMOD
+      op: in
+      value:
+      - '1'
+      - '2'
+      - '3'
+      - '4'
+    executable: false
+    binding_notes: field not present in current schema projection
+    provenance:
+      source: information_steward
+      original_name: MAT0680_ConsumptionModeIsValid
+      original_expression: "BEGIN RETURN\n   $P_I_ConsuptionMode IN ('1','2', '3',\
+        \ '4');\nEND"
+      rule_doc: Verify the consumption mode value for a Material master is valid according
+        to the appropriate reference domain or value range.
+  provenance:
+    is_rule_id: IS_MARC_VRMOD_DOMAIN_IN
+    original_expression: "BEGIN RETURN\n   $P_I_ConsuptionMode IN ('1','2', '3', '4');\n\
+      END"
+    nl_description: Verify the consumption mode value for a Material master is valid
+      according to the appropriate reference domain or value range.
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: VRMOD
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    distinct_count_min: 1
+    distinct_count_max: 12
+  parameterisation:
+  - name: domain_values
+    source: template_fixed
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_STRGR_REFERENCE_EXISTS
+  source_rule_id: IS_MARC_STRGR_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARC_STRGR_REFERENCE_EXISTS
+    name: MAT0800_StrategyGroupRef
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Verify the strategy group value exists in the Planning Strategy Group
+      table.
+    fields:
+    - STRGR
+    assertion:
+      node: cmp
+      field: STRGR
+      op: in
+    executable: false
+    binding_notes: no self-defined domain for field; resolve from check table on the
+      real-data path
+    provenance:
+      source: information_steward
+      original_name: MAT0800_StrategyGroupRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T461P', 'STRGR',\
+        \ $P_I_StrategyGroup);\nEND"
+      reference_table: T461P
+      rule_doc: Verify the strategy group value exists in the Planning Strategy Group
+        table.
+  provenance:
+    is_rule_id: IS_MARC_STRGR_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T461P', 'STRGR',\
+      \ $P_I_StrategyGroup);\nEND"
+    nl_description: Verify the strategy group value exists in the Planning Strategy
+      Group table.
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: STRGR
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_BESKZ_DOMAIN_IN
+  source_rule_id: IS_MARC_BESKZ_DOMAIN_IN
+  rule_spec:
+    rule_id: IS_MARC_BESKZ_DOMAIN_IN
+    name: MAT0460_ProcurementTypeIsValid
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Accuracy
+    archetype: domain_in
+    severity: Medium
+    description: Verify the procurement type value for a Material master is valid
+      according to the appropriate reference domain or value range.
+    fields:
+    - BESKZ
+    assertion:
+      node: cmp
+      field: BESKZ
+      op: in
+      value:
+      - E
+      - F
+      - X
+    executable: true
+    provenance:
+      source: information_steward
+      original_name: MAT0460_ProcurementTypeIsValid
+      original_expression: "BEGIN RETURN\n   $P_I_ProcurementType IN ('E', 'F', 'X');\n\
+        END"
+      rule_doc: Verify the procurement type value for a Material master is valid according
+        to the appropriate reference domain or value range.
+  provenance:
+    is_rule_id: IS_MARC_BESKZ_DOMAIN_IN
+    original_expression: "BEGIN RETURN\n   $P_I_ProcurementType IN ('E', 'F', 'X');\n\
+      END"
+    nl_description: Verify the procurement type value for a Material master is valid
+      according to the appropriate reference domain or value range.
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: BESKZ
+    field_role: procurement_type
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    distinct_count_min: 1
+    distinct_count_max: 9
+  parameterisation:
+  - name: domain_values
+    source: template_fixed
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_BWTTY_REFERENCE_EXISTS
+  source_rule_id: IS_MARC_BWTTY_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARC_BWTTY_REFERENCE_EXISTS
+    name: MAT0350_ValuationCategoryRef
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Verify the valuation category value exists in the Global Valuation
+      Categories table.
+    fields:
+    - BWTTY
+    assertion:
+      node: cmp
+      field: BWTTY
+      op: in
+    executable: false
+    binding_notes: no self-defined domain for field; resolve from check table on the
+      real-data path
+    provenance:
+      source: information_steward
+      original_name: MAT0350_ValuationCategoryRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T149C', 'BWTTY',\
+        \ $P_I_ValuationCategory);\nEND"
+      reference_table: T149C
+      rule_doc: Verify the valuation category value exists in the Global Valuation
+        Categories table.
+  provenance:
+    is_rule_id: IS_MARC_BWTTY_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T149C', 'BWTTY',\
+      \ $P_I_ValuationCategory);\nEND"
+    nl_description: Verify the valuation category value exists in the Global Valuation
+      Categories table.
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: BWTTY
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_PERKZ_DOMAIN_IN
+  source_rule_id: IS_MARC_PERKZ_DOMAIN_IN
+  rule_spec:
+    rule_id: IS_MARC_PERKZ_DOMAIN_IN
+    name: MAT0440_PeriodIndicatorIsValid
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Accuracy
+    archetype: domain_in
+    severity: Medium
+    description: Verify the period indicator value for a Material master is valid
+      according to the appropriate reference domain or value range.
+    fields:
+    - PERKZ
+    assertion:
+      node: cmp
+      field: PERKZ
+      op: in
+      value:
+      - P
+      - M
+      - W
+      - T
+    executable: true
+    provenance:
+      source: information_steward
+      original_name: MAT0440_PeriodIndicatorIsValid
+      original_expression: "BEGIN RETURN\n   $P_I_PeriodInd IN ('P','M', 'W', 'T');\n\
+        END"
+      rule_doc: Verify the period indicator value for a Material master is valid according
+        to the appropriate reference domain or value range.
+  provenance:
+    is_rule_id: IS_MARC_PERKZ_DOMAIN_IN
+    original_expression: "BEGIN RETURN\n   $P_I_PeriodInd IN ('P','M', 'W', 'T');\n\
+      END"
+    nl_description: Verify the period indicator value for a Material master is valid
+      according to the appropriate reference domain or value range.
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: PERKZ
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    distinct_count_min: 1
+    distinct_count_max: 12
+  parameterisation:
+  - name: domain_values
+    source: template_fixed
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_MTVER_REFERENCE_EXISTS
+  source_rule_id: IS_MARC_MTVER_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARC_MTVER_REFERENCE_EXISTS
+    name: MAT0660_ExportOrImportGroupRef
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: 'Verify the export or import group value exists in the foreign Trade:
+      Material Pricing Groups in Export table.'
+    fields:
+    - MTVER
+    assertion:
+      node: cmp
+      field: MTVER
+      op: in
+    executable: false
+    binding_notes: no self-defined domain for field; resolve from check table on the
+      real-data path
+    provenance:
+      source: information_steward
+      original_name: MAT0660_ExportOrImportGroupRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TVFM', 'MTVER',\
+        \ $P_I_ExportImportGroup);\nEND"
+      reference_table: TVFM
+      rule_doc: 'Verify the export or import group value exists in the foreign Trade:
+        Material Pricing Groups in Export table.'
+  provenance:
+    is_rule_id: IS_MARC_MTVER_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TVFM', 'MTVER',\
+      \ $P_I_ExportImportGroup);\nEND"
+    nl_description: 'Verify the export or import group value exists in the foreign
+      Trade: Material Pricing Groups in Export table.'
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: MTVER
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_SSQSS_REFERENCE_EXISTS
+  source_rule_id: IS_MARC_SSQSS_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARC_SSQSS_REFERENCE_EXISTS
+    name: MAT0560_QMControlKeyRef
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Verify the QM control key value exists in the Control of QM in Procurement
+      table.
+    fields:
+    - SSQSS
+    assertion:
+      node: cmp
+      field: SSQSS
+      op: in
+    executable: false
+    binding_notes: no self-defined domain for field; resolve from check table on the
+      real-data path
+    provenance:
+      source: information_steward
+      original_name: MAT0560_QMControlKeyRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TQ08', 'QM_PUR',\
+        \ $P_I_QMControlKey);\nEND"
+      reference_table: TQ08
+      rule_doc: Verify the QM control key value exists in the Control of QM in Procurement
+        table.
+  provenance:
+    is_rule_id: IS_MARC_SSQSS_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TQ08', 'QM_PUR',\
+      \ $P_I_QMControlKey);\nEND"
+    nl_description: Verify the QM control key value exists in the Control of QM in
+      Procurement table.
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: SSQSS
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_LAGPR_REFERENCE_EXISTS
+  source_rule_id: IS_MARC_LAGPR_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARC_LAGPR_REFERENCE_EXISTS
+    name: MAT0480_StorageCostsIndicatorRef
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Consistency
+    archetype: reference_exists
+    severity: Medium
+    description: Verify the storage costs Indicator value exists in the Warehouse
+      Costs for MRP Lot Size table.
+    fields:
+    - LAGPR
+    assertion:
+      node: cmp
+      field: LAGPR
+      op: in
+    executable: false
+    binding_notes: no self-defined domain for field; resolve from check table on the
+      real-data path
+    provenance:
+      source: information_steward
+      original_name: MAT0480_StorageCostsIndicatorRef
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T439L', 'LAGPR',\
+        \ $P_I_StorageCostsIndicator);\nEND"
+      reference_table: T439L
+      rule_doc: Verify the storage costs Indicator value exists in the Warehouse Costs
+        for MRP Lot Size table.
+  provenance:
+    is_rule_id: IS_MARC_LAGPR_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T439L', 'LAGPR',\
+      \ $P_I_StorageCostsIndicator);\nEND"
+    nl_description: Verify the storage costs Indicator value exists in the Warehouse
+      Costs for MRP Lot Size table.
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: LAGPR
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_RGEKZ_DOMAIN_IN
+  source_rule_id: IS_MARC_RGEKZ_DOMAIN_IN
+  rule_spec:
+    rule_id: IS_MARC_RGEKZ_DOMAIN_IN
+    name: MAT0550_BackflushIsValid
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Accuracy
+    archetype: domain_in
+    severity: Medium
+    description: Verify the backflush value for a Material master is valid according
+      to the appropriate reference domain or value range.
+    fields:
+    - RGEKZ
+    assertion:
+      node: cmp
+      field: RGEKZ
+      op: in
+      value:
+      - '1'
+      - '2'
+    executable: false
+    binding_notes: field not present in current schema projection
+    provenance:
+      source: information_steward
+      original_name: MAT0550_BackflushIsValid
+      original_expression: "BEGIN RETURN\n   $P_I_BackFlushDomain IN ('1', '2');\n\
+        END"
+      rule_doc: Verify the backflush value for a Material master is valid according
+        to the appropriate reference domain or value range.
+  provenance:
+    is_rule_id: IS_MARC_RGEKZ_DOMAIN_IN
+    original_expression: "BEGIN RETURN\n   $P_I_BackFlushDomain IN ('1', '2');\nEND"
+    nl_description: Verify the backflush value for a Material master is valid according
+      to the appropriate reference domain or value range.
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: RGEKZ
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    distinct_count_min: 1
+    distinct_count_max: 7
+  parameterisation:
+  - name: domain_values
+    source: template_fixed
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_$LOADGRP_REFERENCE_EXISTS
+  source_rule_id: IS_MARC_$LOADGRP_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARC_$LOADGRP_REFERENCE_EXISTS
+    name: 012_MATL_LOADING GROUP
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Completeness
+    archetype: reference_exists
+    severity: Medium
+    description: 'THIS RULE IS FOR LOADING GROUP FOR MATERIAL MASTER IN SALES VIEW
+
+      FILED: MARC – LADGR (TLGR)
+
+
+      Verify the loading group in MM sales view exists in tabls TLGR.'
+    fields:
+    - $LOADGRP
+    assertion:
+      node: cmp
+      field: $LOADGRP
+      op: in
+    executable: false
+    binding_notes: no self-defined domain for field; resolve from check table on the
+      real-data path
+    provenance:
+      source: information_steward
+      original_name: 012_MATL_LOADING GROUP
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TLGR', 'LADGR',\
+        \ );\nEND"
+      reference_table: TLGR
+      rule_doc: 'THIS RULE IS FOR LOADING GROUP FOR MATERIAL MASTER IN SALES VIEW
+
+        FILED: MARC – LADGR (TLGR)
+
+
+        Verify the loading group in MM sales view exists in tabls TLGR.'
+  provenance:
+    is_rule_id: IS_MARC_$LOADGRP_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'TLGR', 'LADGR',\
+      \ );\nEND"
+    nl_description: 'THIS RULE IS FOR LOADING GROUP FOR MATERIAL MASTER IN SALES VIEW
+
+      FILED: MARC – LADGR (TLGR)
+
+
+      Verify the loading group in MM sales view exists in tabls TLGR.'
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: $LOADGRP
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_$SCHEDULEMARGINKEY_REFERENCE_EXISTS
+  source_rule_id: IS_MARC_$SCHEDULEMARGINKEY_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARC_$SCHEDULEMARGINKEY_REFERENCE_EXISTS
+    name: 013_MATL_SCHEDLE MARGINKEY
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Completeness
+    archetype: reference_exists
+    severity: Medium
+    description: 'THIS RULE IS FOR SCHEDULE MARGIN KEY.
+
+      FIELD: MARC – FHORI(T436A)
+
+
+      Verify the schedule margin key exists in table T436A.'
+    fields:
+    - $SCHEDULEMARGINKEY
+    assertion:
+      node: cmp
+      field: $SCHEDULEMARGINKEY
+      op: in
+    executable: false
+    binding_notes: no self-defined domain for field; resolve from check table on the
+      real-data path
+    provenance:
+      source: information_steward
+      original_name: 013_MATL_SCHEDLE MARGINKEY
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T436A', 'FHORI',\
+        \ );\nEND"
+      reference_table: T436A
+      rule_doc: 'THIS RULE IS FOR SCHEDULE MARGIN KEY.
+
+        FIELD: MARC – FHORI(T436A)
+
+
+        Verify the schedule margin key exists in table T436A.'
+  provenance:
+    is_rule_id: IS_MARC_$SCHEDULEMARGINKEY_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T436A', 'FHORI',\
+      \ );\nEND"
+    nl_description: 'THIS RULE IS FOR SCHEDULE MARGIN KEY.
+
+      FIELD: MARC – FHORI(T436A)
+
+
+      Verify the schedule margin key exists in table T436A.'
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: $SCHEDULEMARGINKEY
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_PRCTR_REFERENCE_EXISTS
+  source_rule_id: IS_MARC_PRCTR_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARC_PRCTR_REFERENCE_EXISTS
+    name: 052_MATL_PROFIT_CENTER_IS_WITHIN_LIST
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Completeness
+    archetype: reference_exists
+    severity: Medium
+    description: THIS RULE CHECK IF PROFIT CENTER IS WITHIN PROFIT CENTER LIST (CEPC)
+    fields:
+    - PRCTR
+    assertion:
+      node: cmp
+      field: PRCTR
+      op: in
+      value:
+      - MDG_1001
+      - QCHECK
+      - T-PCB98
+      - US10_PC11
+      - US10_PLC
+      - US10_PLM
+      - US10_PLR
+      - US10_TGY1
+      - US10_Y4_1
+      - YB101
+      - YB110
+      - YB111
+      - YB600
+      - YB700
+      - YB900
+      - YB904
+    executable: true
+    provenance:
+      source: information_steward
+      original_name: 052_MATL_PROFIT_CENTER_IS_WITHIN_LIST
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'CEPC', 'PRCTR',\
+        \ lpad($P_I_ProfitCenter, 10, '0');\nEND"
+      reference_table: CEPC
+      rule_doc: THIS RULE CHECK IF PROFIT CENTER IS WITHIN PROFIT CENTER LIST (CEPC)
+  provenance:
+    is_rule_id: IS_MARC_PRCTR_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'CEPC', 'PRCTR',\
+      \ lpad($P_I_ProfitCenter, 10, '0');\nEND"
+    nl_description: THIS RULE CHECK IF PROFIT CENTER IS WITHIN PROFIT CENTER LIST
+      (CEPC)
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: PRCTR
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    distinct_count_min: 1
+    distinct_count_max: 48
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_WERKS_REFERENCE_EXISTS
+  source_rule_id: IS_MARC_WERKS_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARC_WERKS_REFERENCE_EXISTS
+    name: 077_MATL_Plant
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Completeness
+    archetype: reference_exists
+    severity: Medium
+    description: Verify plant exists in table T001L
+    fields:
+    - WERKS
+    assertion:
+      node: cmp
+      field: WERKS
+      op: in
+      value:
+      - '0001'
+      - '0003'
+      - '1010'
+      - '1011'
+      - '1012'
+      - '1710'
+      - '1711'
+      - '1712'
+      - '1720'
+      - FOBP
+      - FORP
+    executable: true
+    provenance:
+      source: information_steward
+      original_name: 077_MATL_Plant
+      original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T001L', 'WERKS',\
+        \ $P_I_Plant);\nEND"
+      reference_table: T001L
+      rule_doc: Verify plant exists in table T001L
+  provenance:
+    is_rule_id: IS_MARC_WERKS_REFERENCE_EXISTS
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T001L', 'WERKS',\
+      \ $P_I_Plant);\nEND"
+    nl_description: Verify plant exists in table T001L
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: WERKS
+    field_role: org_unit_plant
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    distinct_count_min: 1
+    distinct_count_max: 33
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null
+- template_id: TPL-IS_MARC_$MATNR_REFERENCE_EXISTS
+  source_rule_id: IS_MARC_$MATNR_REFERENCE_EXISTS
+  rule_spec:
+    rule_id: IS_MARC_$MATNR_REFERENCE_EXISTS
+    name: 354_PM_MATNR_TL
+    table: MARC
+    dama_dimension: Validity
+    is_dimension: Accuracy
+    archetype: reference_exists
+    severity: Medium
+    description: MARC-TL
+    fields:
+    - $MATNR
+    assertion:
+      node: cmp
+      field: $MATNR
+      op: in
+    executable: false
+    binding_notes: no self-defined domain for field; resolve from check table on the
+      real-data path
+    provenance:
+      source: information_steward
+      original_name: 354_PM_MATNR_TL
+      original_expression: 'BEGIN RETURN
+
+        exists(''Fanar_Misc_Lookups'', ''EP_MISC_LOOKUPS.MARA'', ''MATNR'', $MATNR)
+        OR $MATNR IS NULL OR length(rtrim(ltrim($MATNR,'' ''), '' '')) = 0;
+
+        END'
+      reference_table: MARA
+      rule_doc: MARC-TL
+  provenance:
+    is_rule_id: IS_MARC_$MATNR_REFERENCE_EXISTS
+    original_expression: 'BEGIN RETURN
+
+      exists(''Fanar_Misc_Lookups'', ''EP_MISC_LOOKUPS.MARA'', ''MATNR'', $MATNR)
+      OR $MATNR IS NULL OR length(rtrim(ltrim($MATNR,'' ''), '' '')) = 0;
+
+      END'
+    nl_description: MARC-TL
+    dimension: Validity
+  binding:
+    target_table: MARC
+    target_field: $MATNR
+    field_role: null
+  applicability:
+    type_hint: categorical_string
+    population_min: 0.9
+    reference_match_min: 0.9
+  parameterisation:
+  - name: domain_values
+    source: reference
+  prior_strength:
+    strength: strong
+    strength_source: default
+    strength_reason: proven_template
+    set_by: null
+    set_at: null
+    note: null

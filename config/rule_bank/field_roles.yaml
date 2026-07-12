@@ -1,0 +1,116 @@
+# AgentDQ - Field-Role Vocabulary
+# ---------------------------------------------------------------------------
+# v1.0 | 05-Jul-2026 | Initial creation. Controlled 16-role enum + `unknown`,
+#                      seeded from the field coverage of the 107 imported IS
+#                      rules across MARA / MARC / MAKT.
+# ---------------------------------------------------------------------------
+# This is a CONTROLLED list. The Profiling Agent and the Rule Suggestion Agent
+# SELECT a role from this file; they never invent new roles. Humans extend it.
+# `reference_table` names the reference list a role's values are validated
+# against (null when the domain is small and template-fixed, e.g. BESKZ).
+#
+# The `id` values here are the shared vocabulary joined against a template's
+# binding.field_role. Keep them stable; renaming a role breaks the join.
+
+version: 1
+
+roles:
+  - id: material_identifier
+    description: Primary material number identifying a material master record.
+    sap_examples: [MATNR]
+    reference_table: null
+    notes: Key field. Protected from defect injection; drives record identity.
+
+  - id: org_unit_plant
+    description: Plant / organisational unit a plant-level record belongs to.
+    sap_examples: [WERKS]
+    reference_table: T001W
+    notes: Component of the MARC / MARD composite key.
+
+  - id: material_type
+    description: Material type classification driving conditional mandatoriness.
+    sap_examples: [MTART]
+    reference_table: T134
+    notes: Frequent scope antecedent (e.g. FERT requires a procurement type).
+
+  - id: material_group
+    description: Grouping of materials with similar attributes.
+    sap_examples: [MATKL]
+    reference_table: T023
+
+  - id: industry_sector
+    description: Industry sector classification of the material.
+    sap_examples: [MBRSH]
+    reference_table: T137
+
+  - id: unit_of_measure
+    description: Unit in which a material quantity is expressed.
+    sap_examples: [MEINS]
+    reference_table: T006
+    notes: Values validate against ISO / T006 units of measure.
+
+  - id: language_key
+    description: Language key qualifying a text record.
+    sap_examples: [SPRAS]
+    reference_table: T002
+
+  - id: description_text
+    description: Free-text description of a material.
+    sap_examples: [MAKTX]
+    reference_table: null
+    notes: Also a uniqueness compare-field, hence often multi-role.
+
+  - id: procurement_type
+    description: How a material is procured (in-house, external, both).
+    sap_examples: [BESKZ]
+    reference_table: null
+    notes: Small fixed domain (E/F/X) - template_fixed, not a reference table.
+
+  - id: mrp_type
+    description: MRP procedure controlling material planning.
+    sap_examples: [DISMM]
+    reference_table: T438A
+    notes: Drives cross-field rules (e.g. reorder-point types require MABST).
+
+  - id: mrp_controller
+    description: Person or group responsible for material planning in a plant.
+    sap_examples: [DISPO]
+    reference_table: T024D
+    notes: Reference values are plant-scoped (keyed by plant + controller).
+
+  - id: purchasing_group
+    description: Buyer or group of buyers responsible for procurement.
+    sap_examples: [EKGRP]
+    reference_table: T024
+    notes: Often conditionally mandatory for externally procured materials.
+
+  - id: status_flag
+    description: Status or deletion indicator governing record lifecycle.
+    sap_examples: [LVORM, MSTAE, MMSTA]
+    reference_table: T141
+    notes: Commonly used as a scope filter (e.g. exclude flagged-for-deletion).
+
+  - id: date_field
+    description: A calendar date such as creation or status validity date.
+    sap_examples: [ERSDA, MMSTD, LAEDA]
+    reference_table: null
+    notes: Null-date sentinel 00/00/0000 handled by the schema layer.
+
+  - id: quantity_numeric
+    description: A numeric measure such as a weight or a stock quantity.
+    sap_examples: [BRGEW, NTGEW, MABST]
+    reference_table: null
+    notes: Supports range and cross-field rules (e.g. gross weight >= net).
+
+  - id: old_material_ref
+    description: Legacy or old material number cross-reference.
+    sap_examples: [BISMT]
+    reference_table: null
+
+  - id: unknown
+    description: >-
+      No confident role could be assigned. This is a legitimate outcome, not a
+      failure: it routes the field to the Suggestion Agent's data-driven
+      inference engine rather than forcing a bad bank join.
+    sap_examples: []
+    reference_table: null

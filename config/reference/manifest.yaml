@@ -1,0 +1,151 @@
+# AgentDQ - Reference Table Manifest
+# ---------------------------------------------------------------------------
+# v1.0 | 05-Jul-2026 | Initial creation. Ten Phase-1 reference tables for
+#                      MARA / MARC, with as-of metadata; all pending.
+# v1.1 | 05-Jul-2026 | Switch to xlsx loaded via extract_loader. Add
+#                      header_anchor + sheet per table. T006, T001W, T134 are
+#                      real CAL extracts and marked loaded; remainder pending.
+# ---------------------------------------------------------------------------
+# Extract each table from the appliance the same way you exported the master
+# data (SE16N / SE12 to xlsx), drop the file here, set header_anchor to a field
+# that appears in the export's header row, then flip status to `loaded` and fill
+# source_system + extract_date (a loaded list with no "as of when" is itself a
+# mild DQ defect; the store's missing_asof() will flag it).
+#
+# Only tables whose value set is large, client-specific or externally
+# standardised belong here. Small fixed domains (e.g. BESKZ = E/F/X) stay in the
+# rule bank as template_fixed and must NOT be added here.
+# ---------------------------------------------------------------------------
+
+version: 1
+
+tables:
+  - name: T006
+    description: Units of measure
+    serves_role: unit_of_measure
+    source_system: S4H100
+    extract_date: 09-07-2026
+    key_columns: [MSEHI]
+    value_column: MSEHI
+    scope_columns: []
+    header_anchor: MSEHI
+    sheet: Data
+    status: loaded
+    file: T006.xlsx
+
+  - name: T001W
+    description: Plants / branches
+    serves_role: org_unit_plant
+    source_system: S4H100
+    extract_date: 09-07-2026
+    key_columns: [WERKS]
+    value_column: WERKS
+    scope_columns: []
+    header_anchor: WERKS
+    sheet: Data
+    status: loaded
+    file: T001W.xlsx
+
+  - name: T134
+    description: Material types
+    serves_role: material_type
+    source_system: S4H100
+    extract_date: 09-07-2026
+    key_columns: [MTART]
+    value_column: MTART
+    scope_columns: []
+    header_anchor: MTART
+    sheet: Data
+    status: loaded
+    file: T134.xlsx
+
+  - name: T023
+    description: Material groups
+    serves_role: material_group
+    source_system: S4H100
+    extract_date: 09-07-2026
+    key_columns: [MATKL]
+    value_column: MATKL
+    scope_columns: []
+    header_anchor: MATKL
+    sheet: Data
+    status: loaded
+    file: T023.xlsx
+
+  - name: T137
+    description: Industry sectors
+    serves_role: industry_sector
+    source_system: S4H100
+    extract_date: 09-07-2026
+    key_columns: [MBRSH]
+    value_column: MBRSH
+    scope_columns: []
+    header_anchor: MBRSH
+    sheet: Data
+    status: loaded
+    file: T137.xlsx
+
+  - name: T002
+    description: Language keys
+    serves_role: language_key
+    source_system: S4H100
+    extract_date: 09-07-2026
+    key_columns: [SPRAS]
+    value_column: SPRAS
+    scope_columns: []
+    header_anchor: SPRAS
+    sheet: Data
+    status: loaded
+    file: T002.xlsx
+
+  - name: T024
+    description: Purchasing groups
+    serves_role: purchasing_group
+    source_system: S4H100
+    extract_date: 09-07-2026
+    key_columns: [EKGRP]
+    value_column: EKGRP
+    scope_columns: []
+    header_anchor: EKGRP
+    sheet: Data
+    status: loaded
+    file: T024.xlsx
+
+  - name: T024D
+    description: MRP controllers (per plant)
+    serves_role: mrp_controller
+    source_system: S4H100
+    extract_date: 09-07-2026
+    key_columns: [WERKS, DISPO]
+    value_column: DISPO
+    scope_columns: [WERKS]
+    header_anchor: DISPO
+    sheet: Data
+    status: loaded
+    file: T024D.xlsx
+
+  - name: T438A
+    description: MRP types
+    serves_role: mrp_type
+    source_system: S4H100
+    extract_date: 09-07-2026
+    key_columns: [DISMM]
+    value_column: DISMM
+    scope_columns: []
+    header_anchor: DISMM
+    sheet: Data
+    status: loaded
+    file: T438A.xlsx
+
+  - name: T141
+    description: Material status values (X-plant / plant-specific)
+    serves_role: status_flag
+    source_system: S4H100
+    extract_date: 09-07-2026
+    key_columns: [MMSTA]
+    value_column: MMSTA
+    scope_columns: []
+    header_anchor: MMSTA
+    sheet: Data
+    status: loaded
+    file: T141.xlsx
