@@ -2,6 +2,9 @@
 # v0.2 | 27-Jun-2026 | Add composite primary keys and a key-uniqueness check;
 #                      switch loader call to header_anchor
 # v0.3 | 27-Jun-2026 | Follow rename of data loader to extract_loader
+# v0.4 | 13-Jul-2026 | Read header anchor and primary key from object packs
+#                      (config/objects/); the hardcoded dicts below become
+#                      fallbacks, as their own comments always anticipated
 
 """Profiler for SAP master data extracts.
 
@@ -32,6 +35,7 @@ import pandas as pd
 from pydantic import BaseModel, Field
 
 from src.data.extract_loader import load_sap_table  # v0.3
+from src.data.object_packs import ObjectPack, load_object_packs  # v0.4
 
 
 # Field used only to locate the header row in the SE16N preamble (see loader).
@@ -234,12 +238,16 @@ def profile_table(
     table_name: str,
     top_n: int = DEFAULT_TOP_N,
     domain_threshold: int = DEFAULT_DOMAIN_THRESHOLD,
+    primary_key: Optional[list[str]] = None,  # v0.4
 ) -> TableProfile:
-    """Profile every field in a loaded table and check its composite key."""
+    """Profile every field in a loaded table and check its composite key.
+
+    primary_key, when supplied (from an object pack), wins over the historical
+    hardcoded fallback dict."""
     row_count: int = int(frame.shape[0])
     fields: dict[str, FieldProfile] = {}
     column_name: str = ""
-    primary_key: list[str] = TABLE_PRIMARY_KEY.get(table_name, [])  # v0.2
+    resolved_key: list[str] = primary_key if primary_key else TABLE_PRIMARY_KEY.get(table_name, [])  # v0.4
     key_uniqueness: Optional[KeyUniqueness] = None  # v0.2
 
     for column_name in frame.columns:
@@ -247,8 +255,8 @@ def profile_table(
             frame[column_name], row_count, top_n, domain_threshold
         )
 
-    if primary_key:  # v0.2
-        key_uniqueness = check_key_uniqueness(frame, primary_key)  # v0.2
+    if resolved_key:  # v0.4
+        key_uniqueness = check_key_uniqueness(frame, resolved_key)  # v0.4
 
     return TableProfile(
         table=table_name,
@@ -316,21 +324,40 @@ def profile_files(
     out_dir: Optional[str],
     top_n: int = DEFAULT_TOP_N,
     domain_threshold: int = DEFAULT_DOMAIN_THRESHOLD,
+    packs_dir: Optional[str] = "config/objects",  # v0.4
 ) -> dict[str, TableProfile]:
-    """Load, profile, and optionally persist a set of table extracts."""
+    """Load, profile, and optionally persist a set of table extracts.
+
+    Per-table configuration is resolved from object packs when present
+    (config/objects/<table>.yaml), falling back to the historical hardcoded
+    dicts for tables without a pack. The --pattern argument still applies to
+    tables without a pack; a pack's file_pattern wins for its own table."""
     base: Path = Path(input_dir)
     out_path: Optional[Path] = Path(out_dir) if out_dir else None
     profiles: dict[str, TableProfile] = {}
     table: str = ""
+    packs: dict[str, ObjectPack] = {}  # v0.4
+    pack: Optional[ObjectPack] = None  # v0.4
+
+    if packs_dir is not None:  # v0.4
+        packs = load_object_packs(packs_dir)  # v0.4
 
     if out_path is not None:
         out_path.mkdir(parents=True, exist_ok=True)
 
     for table in tables:
-        file_path: Path = base / pattern.format(table=table)
-        anchor: str = TABLE_HEADER_ANCHOR.get(table, "MATNR")  # v0.2
+        pack = packs.get(table)  # v0.4
+        if pack is not None:  # v0.4
+            file_path = pack.resolve_file(base)  # v0.4
+            anchor = pack.header_anchor  # v0.4
+        else:  # v0.4
+            file_path = base / pattern.format(table=table)
+            anchor = TABLE_HEADER_ANCHOR.get(table, "MATNR")  # v0.2
         frame: pd.DataFrame = load_sap_table(str(file_path), header_anchor=anchor)  # v0.2
-        profile: TableProfile = profile_table(frame, table, top_n, domain_threshold)
+        profile: TableProfile = profile_table(
+            frame, table, top_n, domain_threshold,
+            primary_key=pack.primary_key if pack is not None else None,  # v0.4
+        )
         profiles[table] = profile
         _print_summary(profile)
 
@@ -360,6 +387,7 @@ def _build_arg_parser() -> argparse.ArgumentParser:
         help="filename pattern, with {table} as the placeholder",
     )
     parser.add_argument("--out", default=None, help="directory to write profile JSON into")
+    parser.add_argument("--packs-dir", default="config/objects", help="object pack directory")  # v0.4
     parser.add_argument("--top-n", type=int, default=DEFAULT_TOP_N)
     parser.add_argument("--domain-threshold", type=int, default=DEFAULT_DOMAIN_THRESHOLD)
     return parser
@@ -378,6 +406,7 @@ def main() -> None:
         out_dir=args.out,
         top_n=args.top_n,
         domain_threshold=args.domain_threshold,
+        packs_dir=args.packs_dir,  # v0.4
     )
 
 
