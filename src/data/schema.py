@@ -1,5 +1,10 @@
 # v0.1 | 27-Jun-2026 | Initial schema loader and parsing helpers
 # v0.2 | 27-Jun-2026 | Add inverse formatters (format_quantity, format_date) for the generator
+# v0.3 | 13-Jul-2026 | Add the remaining onboarding fields (file_pattern,
+#                      uniqueness) so ONE schema YAML is all a steward creates
+#                      to onboard an object. primary_key and header_anchor were
+#                      already here; the profiler's hardcoded dicts now defer to
+#                      the schema, as its own comments always intended.
 
 """Runtime loader for the table schema YAMLs.
 
@@ -55,16 +60,47 @@ class FieldSpec(BaseModel):
     observed_population_pct: Optional[float] = None
 
 
+class UniquenessConfig(BaseModel):  # v0.3
+    """Per-object configuration for the Uniqueness agent (Package 4).
+
+    The blocking key partitions the search space (only records sharing it are
+    compared); compare_fields are the fields whose similarity indicates a
+    duplicate. Kept here so one schema YAML is all a steward writes to onboard
+    an object. MARA blocks on MTART and compares MAKT.MAKTX; EQUI would block on
+    EQART and compare EQKT.EQKTX - the same mechanism, different parameters.
+    """
+
+    blocking_key: Optional[str] = None
+    compare_fields: list[str] = Field(default_factory=list)
+
+
 class TableSchema(BaseModel):
-    """A whole table schema with parsing helpers bound to its formatting."""
+    """A whole table schema with parsing helpers bound to its formatting.
+
+    Beyond field metadata this is the single onboarding contract for a table:
+    primary_key and header_anchor (long-standing), plus file_pattern and
+    uniqueness (v0.3). A steward onboarding EQUI writes ONE file.
+
+    Note on vocabularies: FieldSpec.role here is STRUCTURAL (key, attribute,
+    flag, temporal, client) and drives parsing and generation. It is a different
+    vocabulary from the rule bank's SEMANTIC field_role (unit_of_measure,
+    material_type, ...) in config/rule_bank/field_roles.yaml, which drives
+    template retrieval. They share a word, not a meaning; do not conflate them.
+    """
 
     table: str
     description: str = ""
     source_system: str = ""
     primary_key: list[str]
     header_anchor: str = "MATNR"
+    file_pattern: str = "{table}_EX_DATA.xlsx"  # v0.3
+    uniqueness: UniquenessConfig = Field(default_factory=UniquenessConfig)  # v0.3
     formatting: TableFormatting = Field(default_factory=TableFormatting)
     fields: dict[str, FieldSpec] = Field(default_factory=dict)
+
+    def resolve_file(self, base_dir: str) -> Path:  # v0.3
+        """The extract path this schema expects under a data directory."""
+        return Path(base_dir) / self.file_pattern.format(table=self.table)
 
     def field(self, name: str) -> Optional[FieldSpec]:
         """Return the spec for one field, or None if it is not in the schema."""
@@ -230,4 +266,23 @@ def load_schemas(schema_dir: str, tables: list[str]) -> dict[str, TableSchema]:
     for table in tables:
         schema_path: Path = base / f"{table.lower()}.yaml"
         schemas[table] = load_table_schema(str(schema_path))
+    return schemas
+
+
+def load_all_schemas(schema_dir: str) -> dict[str, TableSchema]:  # v0.3
+    """Load every schema YAML in a directory, keyed by table name. Unlike
+    load_schemas this does not need the table names up front, so callers (the
+    profiler, the onboarding tools) can discover what is registered. A missing
+    directory yields an empty dict rather than raising: schemas are the
+    preferred source of onboarding config, not yet a mandatory one."""
+    base: Path = Path(schema_dir)
+    schemas: dict[str, TableSchema] = {}
+    schema_path: Path = None
+    schema: TableSchema = None
+
+    if not base.exists():
+        return schemas
+    for schema_path in sorted(base.glob("*.yaml")):
+        schema = load_table_schema(str(schema_path))
+        schemas[schema.table] = schema
     return schemas

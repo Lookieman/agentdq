@@ -10,6 +10,11 @@
 #                      rank by left-most columns - a coincidentally unique
 #                      description column no longer masks the true composite
 #                      key (caught by the EQKT test).
+# v2.0 | 13-Jul-2026 | Emit a draft SCHEMA stub (config/schema/<table>.yaml)
+#                      rather than a separate object pack. The schema already
+#                      carried primary_key and header_anchor; a parallel config
+#                      was a mistake. One file per table is what a steward
+#                      should write to onboard an object.
 # ---------------------------------------------------------------------------
 """Onboarding scaffolder - agent-free by design.
 
@@ -21,9 +26,14 @@ the steward edits and confirms, never a silently written config. The v2
 judgement layer (table identity, key sanity-check) slots in later without
 changing this flow.
 
+The output is a DRAFT SCHEMA STUB: the onboarding fields (header_anchor,
+primary_key, file_pattern, uniqueness) plus a skeleton field block per column,
+with TODO markers. The steward fills in domains, mandatory flags and types -
+the judgement a scan cannot supply - and confirms.
+
 Run:
     python -m tools.onboard_object --file data/raw/EQUI_EX_DATA.xlsx --table EQUI
-    python -m tools.onboard_object --file ... --table EQUI --out config/objects/equi.yaml
+    python -m tools.onboard_object --file ... --table EQUI --out config/schema/equi.yaml
 """
 
 from __future__ import annotations
@@ -39,6 +49,7 @@ import pandas as pd
 import yaml
 
 from src.data.extract_loader import load_sap_table
+from src.data.profiler import profile_table  # v2.0
 from src.rules.rule_bank import load_field_roles
 
 
@@ -224,6 +235,30 @@ def reference_readiness(
 # Scaffold
 # ---------------------------------------------------------------------------
 
+def _field_stub(field_profile: Any) -> dict[str, Any]:  # v2.0
+    """A skeleton FieldSpec block seeded from the profile. Type and domain are
+    PROPOSALS a scan can support; mandatory-ness and business meaning are
+    judgement the steward supplies (or, later, the v2 layer proposes)."""
+    type_hint: str = getattr(field_profile, "type_hint", "free_text")
+    inferred_domain: Any = getattr(field_profile, "inferred_domain", None)
+    populated_pct: float = float(getattr(field_profile, "populated_pct", 0.0))
+    stub: dict[str, Any] = {}
+
+    stub["description"] = "TODO"
+    stub["role"] = "key" if type_hint == "key" else "attribute"
+    stub["type"] = {"key": "key", "categorical": "code", "constant": "code",
+                    "numeric_text": "text"}.get(type_hint, "text")
+    stub["mandatory"] = populated_pct >= 99.99
+    stub["length"] = {
+        "min": int(getattr(field_profile, "min_length", 0)),
+        "max": int(getattr(field_profile, "max_length", 0)),
+    }
+    stub["observed_population_pct"] = populated_pct
+    if isinstance(inferred_domain, list) and inferred_domain:
+        stub["domain"] = list(inferred_domain)
+    return stub
+
+
 def scaffold(
     xlsx_path: str | Path,
     table: str,
@@ -231,8 +266,9 @@ def scaffold(
     manifest_path: str | Path = "config/reference/manifest.yaml",
     sheet: str = "Data",
 ) -> dict[str, Any]:
-    """Run the full deterministic analysis and return the draft pack plus the
-    readiness report. Pure function of its inputs; the CLI does the printing."""
+    """Run the full deterministic analysis and return a draft SCHEMA STUB plus
+    the readiness report. Pure function of its inputs; the CLI does the
+    printing."""
     header_row: int = 0
     header_fields: list[str] = []
     anchor: str = ""
@@ -242,7 +278,10 @@ def scaffold(
     mapped: dict[str, str] = {}
     unmapped: list[str] = []
     readiness: list[dict[str, Any]] = []
-    draft_pack: dict[str, Any] = {}
+    draft_schema: dict[str, Any] = {}
+    profile: Any = None
+    field_blocks: dict[str, Any] = {}
+    name: str = ""
 
     header_row, header_fields = detect_header(xlsx_path, sheet=sheet)
     anchor = next((f for f in header_fields if f != "MANDT"), header_fields[0])
@@ -252,19 +291,23 @@ def scaffold(
     mapped, unmapped = map_roles(list(frame.columns), roles)
     readiness = reference_readiness(mapped, roles, manifest_path)
 
-    draft_pack = {
+    # Seed the field blocks from a real profile of the extract.
+    profile = profile_table(frame, table)
+    for name in frame.columns:
+        field_blocks[name] = _field_stub(profile.fields[name])
+
+    draft_schema = {
         "table": table,
         "description": f"TODO: describe the {table} object",
-        "header_anchor": anchor,
+        "source_system": "TODO",
         "primary_key": key_candidates[0] if key_candidates else ["TODO"],
+        "header_anchor": anchor,
         "file_pattern": Path(xlsx_path).name.replace(table, "{table}"),
-        "uniqueness": {
-            "blocking_key": "TODO",
-            "compare_fields": ["TODO"],
-        },
+        "uniqueness": {"blocking_key": "TODO", "compare_fields": ["TODO"]},
+        "fields": field_blocks,
     }
     return {
-        "draft_pack": draft_pack,
+        "draft_schema": draft_schema,
         "header_row": header_row,
         "row_count": int(frame.shape[0]),
         "column_count": int(frame.shape[1]),
@@ -277,17 +320,17 @@ def scaffold(
 
 def main() -> None:
     parser: argparse.ArgumentParser = argparse.ArgumentParser(
-        description="Scaffold a draft object pack from a raw SE16N/SE12 extract (no LLM)."
+        description="Scaffold a draft SCHEMA from a raw SE16N/SE12 extract (no LLM)."
     )
     parser.add_argument("--file", required=True, help="path to the xlsx extract")
     parser.add_argument("--table", required=True, help="SAP table name, e.g. EQUI")
     parser.add_argument("--roles", default="config/rule_bank/field_roles.yaml")
     parser.add_argument("--manifest", default="config/reference/manifest.yaml")
-    parser.add_argument("--out", default=None, help="write the draft pack YAML here")
+    parser.add_argument("--out", default=None, help="write the draft schema YAML here, e.g. config/schema/equi.yaml")
     args: argparse.Namespace = parser.parse_args()
 
     result: dict[str, Any] = scaffold(args.file, args.table, args.roles, args.manifest)
-    pack: dict[str, Any] = result["draft_pack"]
+    draft: dict[str, Any] = result["draft_schema"]  # v2.0
     entry: dict[str, Any] = {}
 
     print(f"=== {args.table}: {result['row_count']} rows, {result['column_count']} columns "
@@ -304,13 +347,14 @@ def main() -> None:
         out_path = Path(args.out)
         out_path.parent.mkdir(parents=True, exist_ok=True)
         with out_path.open("w", encoding="utf-8") as handle:
-            handle.write("# DRAFT object pack - generated by tools/onboard_object.py\n")
-            handle.write("# Review every TODO, then confirm by removing this banner.\n")
-            yaml.safe_dump(pack, handle, sort_keys=False, allow_unicode=True)
-        print(f"\ndraft pack written: {out_path} (review the TODOs before use)")
+            handle.write("# DRAFT schema - generated by tools/onboard_object.py\n")
+            handle.write("# Review every TODO (descriptions, mandatory flags, domains),\n")
+            handle.write("# then confirm by removing this banner.\n")
+            yaml.safe_dump(draft, handle, sort_keys=False, allow_unicode=True)
+        print(f"\ndraft schema written: {out_path} (review the TODOs before use)")
     else:
-        print("\n--- draft pack (pass --out to write it) ---")
-        print(yaml.safe_dump(pack, sort_keys=False, allow_unicode=True))
+        print("\n--- draft schema (pass --out to write it) ---")
+        print(yaml.safe_dump(draft, sort_keys=False, allow_unicode=True))
 
 
 if __name__ == "__main__":

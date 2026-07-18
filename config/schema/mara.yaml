@@ -4,6 +4,11 @@ source_system: SAP S/4HANA (Cloud Appliance Library)
 primary_key:
 - MATNR
 header_anchor: MATNR
+file_pattern: '{table}_EX_DATA.xlsx'
+uniqueness:
+  blocking_key: MTART
+  compare_fields:
+  - MAKT.MAKTX  
 formatting:
   decimal_separator: ','
   thousands_separator: .

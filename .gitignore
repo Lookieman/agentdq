@@ -31,3 +31,4 @@ build/
 
 # DVC cache
 .dvc/cache/
+.env

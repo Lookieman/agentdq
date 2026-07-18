@@ -2,9 +2,12 @@
 # v0.2 | 27-Jun-2026 | Add composite primary keys and a key-uniqueness check;
 #                      switch loader call to header_anchor
 # v0.3 | 27-Jun-2026 | Follow rename of data loader to extract_loader
-# v0.4 | 13-Jul-2026 | Read header anchor and primary key from object packs
-#                      (config/objects/); the hardcoded dicts below become
-#                      fallbacks, as their own comments always anticipated
+# v0.4 | 13-Jul-2026 | Read header anchor and primary key from config, not
+#                      hardcoded dicts (which become fallbacks)
+# v0.5 | 13-Jul-2026 | Source that config from the SCHEMA YAMLs, which already
+#                      carry primary_key and header_anchor - exactly the
+#                      migration this module's own comments called for. The
+#                      short-lived config/objects/ experiment is retired.
 
 """Profiler for SAP master data extracts.
 
@@ -35,7 +38,7 @@ import pandas as pd
 from pydantic import BaseModel, Field
 
 from src.data.extract_loader import load_sap_table  # v0.3
-from src.data.object_packs import ObjectPack, load_object_packs  # v0.4
+from src.data.schema import TableSchema, load_all_schemas  # v0.5
 
 
 # Field used only to locate the header row in the SE16N preamble (see loader).
@@ -242,8 +245,8 @@ def profile_table(
 ) -> TableProfile:
     """Profile every field in a loaded table and check its composite key.
 
-    primary_key, when supplied (from an object pack), wins over the historical
-    hardcoded fallback dict."""
+    primary_key, when supplied (from the table's schema), wins over the
+    historical hardcoded fallback dict."""
     row_count: int = int(frame.shape[0])
     fields: dict[str, FieldProfile] = {}
     column_name: str = ""
@@ -324,39 +327,39 @@ def profile_files(
     out_dir: Optional[str],
     top_n: int = DEFAULT_TOP_N,
     domain_threshold: int = DEFAULT_DOMAIN_THRESHOLD,
-    packs_dir: Optional[str] = "config/objects",  # v0.4
+    schema_dir: Optional[str] = "config/schema",  # v0.5
 ) -> dict[str, TableProfile]:
     """Load, profile, and optionally persist a set of table extracts.
 
-    Per-table configuration is resolved from object packs when present
-    (config/objects/<table>.yaml), falling back to the historical hardcoded
-    dicts for tables without a pack. The --pattern argument still applies to
-    tables without a pack; a pack's file_pattern wins for its own table."""
+    Per-table configuration is resolved from the schema YAMLs when present
+    (config/schema/<table>.yaml: header_anchor, primary_key, file_pattern),
+    falling back to the historical hardcoded dicts for tables without a schema.
+    The --pattern argument applies only to tables without a schema."""
     base: Path = Path(input_dir)
     out_path: Optional[Path] = Path(out_dir) if out_dir else None
     profiles: dict[str, TableProfile] = {}
     table: str = ""
-    packs: dict[str, ObjectPack] = {}  # v0.4
-    pack: Optional[ObjectPack] = None  # v0.4
+    schemas: dict[str, TableSchema] = {}  # v0.5
+    schema: Optional[TableSchema] = None  # v0.5
 
-    if packs_dir is not None:  # v0.4
-        packs = load_object_packs(packs_dir)  # v0.4
+    if schema_dir is not None:  # v0.5
+        schemas = load_all_schemas(schema_dir)  # v0.5
 
     if out_path is not None:
         out_path.mkdir(parents=True, exist_ok=True)
 
     for table in tables:
-        pack = packs.get(table)  # v0.4
-        if pack is not None:  # v0.4
-            file_path = pack.resolve_file(base)  # v0.4
-            anchor = pack.header_anchor  # v0.4
-        else:  # v0.4
+        schema = schemas.get(table)  # v0.5
+        if schema is not None:  # v0.5
+            file_path = schema.resolve_file(str(base))  # v0.5
+            anchor = schema.header_anchor  # v0.5
+        else:  # v0.5
             file_path = base / pattern.format(table=table)
             anchor = TABLE_HEADER_ANCHOR.get(table, "MATNR")  # v0.2
         frame: pd.DataFrame = load_sap_table(str(file_path), header_anchor=anchor)  # v0.2
         profile: TableProfile = profile_table(
             frame, table, top_n, domain_threshold,
-            primary_key=pack.primary_key if pack is not None else None,  # v0.4
+            primary_key=schema.primary_key if schema is not None else None,  # v0.5
         )
         profiles[table] = profile
         _print_summary(profile)
@@ -387,7 +390,7 @@ def _build_arg_parser() -> argparse.ArgumentParser:
         help="filename pattern, with {table} as the placeholder",
     )
     parser.add_argument("--out", default=None, help="directory to write profile JSON into")
-    parser.add_argument("--packs-dir", default="config/objects", help="object pack directory")  # v0.4
+    parser.add_argument("--schema-dir", default="config/schema", help="schema directory")  # v0.5
     parser.add_argument("--top-n", type=int, default=DEFAULT_TOP_N)
     parser.add_argument("--domain-threshold", type=int, default=DEFAULT_DOMAIN_THRESHOLD)
     return parser
@@ -406,7 +409,7 @@ def main() -> None:
         out_dir=args.out,
         top_n=args.top_n,
         domain_threshold=args.domain_threshold,
-        packs_dir=args.packs_dir,  # v0.4
+        schema_dir=args.schema_dir,  # v0.5
     )
 
 

@@ -5,6 +5,8 @@
 #                      governance over APPROVED rules (human-only, audited
 #                      promotion via repository.promote_strength). Renders and
 #                      invokes; never decides.
+# v1.1 | 15-Jul-2026 | Add a repo-root bootstrap so `streamlit run` works (app/
+#                      alone lands on sys.path otherwise, breaking src imports).
 # ---------------------------------------------------------------------------
 """Rule Bank browser + strength governance surface.
 
@@ -22,6 +24,17 @@ import os
 from typing import Any
 
 import streamlit as st
+
+# --- repo-root bootstrap (v1.1) -------------------------------------------
+# `streamlit run` executes this file directly; add the project root to sys.path
+# so `import src...` resolves regardless of the launch method.
+import sys as _sys  # v1.1
+from pathlib import Path as _Path  # v1.1
+
+_REPO_ROOT = _Path(__file__).resolve().parents[1]  # v1.1
+if str(_REPO_ROOT) not in _sys.path:  # v1.1
+    _sys.path.insert(0, str(_REPO_ROOT))  # v1.1
+# --------------------------------------------------------------------------
 
 from src.rules.repository import FileRepository, RulesRepository, SessionRepository
 from src.rules.rule_bank import RuleBank, Template

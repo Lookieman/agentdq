@@ -1,0 +1,10 @@
+{"at": "2026-07-18T14:31:22+00:00", "candidate_id": "IS_MARA_MATNR_NOT_NULL::ddbc9d1e", "event": "ingested", "from": null, "to": "draft", "actor": "batch_runner", "reason": "a87d469dcbce"}
+{"at": "2026-07-18T14:31:22+00:00", "candidate_id": "INF_MARA_ERSDA_NOT_NULL::25d657df", "event": "ingested", "from": null, "to": "draft", "actor": "batch_runner", "reason": "a87d469dcbce"}
+{"at": "2026-07-18T14:31:22+00:00", "candidate_id": "INF_MARA_CREATED_AT_TIME_NOT_NULL::16c75635", "event": "ingested", "from": null, "to": "draft", "actor": "batch_runner", "reason": "a87d469dcbce"}
+{"at": "2026-07-18T14:31:22+00:00", "candidate_id": "INF_MARA_LAEDA_NOT_NULL::578824d2", "event": "ingested", "from": null, "to": "draft", "actor": "batch_runner", "reason": "a87d469dcbce"}
+{"at": "2026-07-18T14:31:22+00:00", "candidate_id": "IS_MARA_MATKL_REFERENCE_EXISTS::5334ebcd", "event": "ingested", "from": null, "to": "draft", "actor": "batch_runner", "reason": "a87d469dcbce"}
+{"at": "2026-07-18T14:31:22+00:00", "candidate_id": "IS_MARA_MATKL_NOT_NULL::a5d4bfab", "event": "ingested", "from": null, "to": "draft", "actor": "batch_runner", "reason": "a87d469dcbce"}
+{"at": "2026-07-18T14:31:22+00:00", "candidate_id": "IS_MARA_MTART_REFERENCE_EXISTS::91185b71", "event": "ingested", "from": null, "to": "draft", "actor": "batch_runner", "reason": "a87d469dcbce"}
+{"at": "2026-07-18T14:31:22+00:00", "candidate_id": "IS_MARA_MTART_NOT_NULL::ca07915e", "event": "ingested", "from": null, "to": "draft", "actor": "batch_runner", "reason": "a87d469dcbce"}
+{"at": "2026-07-18T14:31:22+00:00", "candidate_id": "IS_MARA_MEINS_NOT_NULL::46623558", "event": "ingested", "from": null, "to": "draft", "actor": "batch_runner", "reason": "a87d469dcbce"}
+{"at": "2026-07-18T14:31:22+00:00", "candidate_id": "INF_MARA_GEWEI_DOMAIN_IN::c6ff37bf", "event": "ingested", "from": null, "to": "draft", "actor": "batch_runner", "reason": "a87d469dcbce"}

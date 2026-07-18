@@ -1,0 +1,596 @@
+{
+  "run": {
+    "run_id": "a87d469dcbce",
+    "at": "2026-07-18T14:16:49+00:00",
+    "table": "MARA",
+    "dataset": "",
+    "model": "openai/gpt-4o-mini",
+    "counts": {
+      "total": 10,
+      "bank_match": 6,
+      "inferred": 4
+    }
+  },
+  "candidates": [
+    {
+      "rule_spec": {
+        "rule_id": "IS_MARA_MATNR_NOT_NULL",
+        "name": "MAT000_MaterialNumberPopulated",
+        "table": "MARA",
+        "dama_dimension": "Completeness",
+        "is_dimension": "Completeness",
+        "archetype": "not_null",
+        "severity": "High",
+        "description": "Verify the material number is not empty.",
+        "fields": [
+          "MATNR"
+        ],
+        "assertion": {
+          "node": "cmp",
+          "field": "MATNR",
+          "op": "is_not_null"
+        },
+        "executable": true,
+        "provenance": {
+          "source": "information_steward",
+          "original_name": "MAT000_MaterialNumberPopulated",
+          "original_expression": "BEGIN RETURN\n$P_I_Material IS NOT NULL\nAND $P_I_Material != '';\nEND",
+          "rule_doc": "Verify the material number is not empty."
+        }
+      },
+      "origin": "bank_match",
+      "parameter_source": null,
+      "rationale": "The logical alignment between the material identifier (MATNR) and the completeness check for not null predicates supports acceptance of the template. The population being one and the defined distinct count further suggests that each entry is essential, reinforcing the rationale that identifiers should not be null. Though the reference indicates that this is not a reference rule, the clear role of the field means this completeness check is likely very relevant in practice, even if it is not formally referenced.\n\nThe main counter-evidence is the statement of \"not a reference rule,\" which raises questions regarding the established norms in assessing completeness for this specific field. However, given the context of identifiers and their critical nature in data integrity, the acceptance of the template stands as reasonable.",
+      "evidence_citations": [
+        "field_characterisation",
+        "template_summary",
+        "reference_summary"
+      ],
+      "confidence": {
+        "s_prior": 1.0,
+        "s_support": 1.0,
+        "s_coverage": 1.0,
+        "w_prior": 0.4,
+        "w_support": 0.4,
+        "w_coverage": 0.2,
+        "confidence": 1.0
+      },
+      "description_risk": "low",
+      "template_ref": "TPL-IS_MARA_MATNR_NOT_NULL"
+    },
+    {
+      "rule_spec": {
+        "rule_id": "INF_MARA_ERSDA_NOT_NULL",
+        "name": "ERSDA not_null (inferred)",
+        "table": "MARA",
+        "dama_dimension": "Completeness",
+        "archetype": "not_null",
+        "severity": "Medium",
+        "description": "The field's high population rate (1.0) and diverse range of distinct values support the assertion that this field is crucial for each record, particularly given its semantic meaning as a creation date. The implication is that it should not be null, as every record must have a corresponding date of creation for proper tracking or data integrity.",
+        "fields": [
+          "ERSDA"
+        ],
+        "assertion": {
+          "node": "cmp",
+          "field": "ERSDA",
+          "op": "is_not_null"
+        },
+        "executable": true,
+        "provenance": {
+          "source": "data_driven_inference",
+          "natural_language": "The field's high population rate (1.0) and diverse range of distinct values support the assertion that this field is crucial for each record, particularly given its semantic meaning as a creation date. The implication is that it should not be null, as every record must have a corresponding date of creation for proper tracking or data integrity."
+        }
+      },
+      "origin": "inferred",
+      "parameter_source": "data_derived",
+      "rationale": "The field's high population rate (1.0) and diverse range of distinct values support the assertion that this field is crucial for each record, particularly given its semantic meaning as a creation date. The implication is that it should not be null, as every record must have a corresponding date of creation for proper tracking or data integrity.",
+      "evidence_citations": [
+        "population=1.0",
+        "distinct_count=93",
+        "top_value_share=0.7342857142857143"
+      ],
+      "confidence": {
+        "s_prior": 0.3,
+        "s_support": 0.6,
+        "s_coverage": 1.0,
+        "w_prior": 0.4,
+        "w_support": 0.4,
+        "w_coverage": 0.2,
+        "confidence": 0.56
+      },
+      "description_risk": "medium",
+      "template_ref": null
+    },
+    {
+      "rule_spec": {
+        "rule_id": "INF_MARA_CREATED_AT_TIME_NOT_NULL",
+        "name": "CREATED_AT_TIME not_null (inferred)",
+        "table": "MARA",
+        "dama_dimension": "Completeness",
+        "archetype": "not_null",
+        "severity": "Medium",
+        "description": "This rule is suggested based on the complete population of the field which indicates it is mandatory for every record to have a creation time logged. While the dominant value share indicates some repeatability, the distinct count suggests variety, reinforcing that `CREATED_AT_TIME` is an essential metadata field for this dataset, and hence, it is not a coincidence that this field is consistently filled.",
+        "fields": [
+          "CREATED_AT_TIME"
+        ],
+        "assertion": {
+          "node": "cmp",
+          "field": "CREATED_AT_TIME",
+          "op": "is_not_null"
+        },
+        "executable": true,
+        "provenance": {
+          "source": "data_driven_inference",
+          "natural_language": "This rule is suggested based on the complete population of the field which indicates it is mandatory for every record to have a creation time logged. While the dominant value share indicates some repeatability, the distinct count suggests variety, reinforcing that `CREATED_AT_TIME` is an essential metadata field for this dataset, and hence, it is not a coincidence that this field is consistently filled."
+        }
+      },
+      "origin": "inferred",
+      "parameter_source": "data_derived",
+      "rationale": "This rule is suggested based on the complete population of the field which indicates it is mandatory for every record to have a creation time logged. While the dominant value share indicates some repeatability, the distinct count suggests variety, reinforcing that `CREATED_AT_TIME` is an essential metadata field for this dataset, and hence, it is not a coincidence that this field is consistently filled.",
+      "evidence_citations": [
+        "population=1.0",
+        "distinct_count=204",
+        "top_value_share=0.145"
+      ],
+      "confidence": {
+        "s_prior": 0.3,
+        "s_support": 0.9,
+        "s_coverage": 1.0,
+        "w_prior": 0.4,
+        "w_support": 0.4,
+        "w_coverage": 0.2,
+        "confidence": 0.68
+      },
+      "description_risk": "low",
+      "template_ref": null
+    },
+    {
+      "rule_spec": {
+        "rule_id": "INF_MARA_LAEDA_NOT_NULL",
+        "name": "LAEDA not_null (inferred)",
+        "table": "MARA",
+        "dama_dimension": "Completeness",
+        "archetype": "not_null",
+        "severity": "Medium",
+        "description": "This rule is proposed based on the high population of entries having values. Since this field serves as the last change date of a record, it is logically mandatory for data integrity and historical tracking. The presence of varying dates suggests that though one date is prevalent, it is essential for each record to contain a date entry, thus reinforcing the notion of the field being non-null.",
+        "fields": [
+          "LAEDA"
+        ],
+        "assertion": {
+          "node": "cmp",
+          "field": "LAEDA",
+          "op": "is_not_null"
+        },
+        "executable": true,
+        "provenance": {
+          "source": "data_driven_inference",
+          "natural_language": "This rule is proposed based on the high population of entries having values. Since this field serves as the last change date of a record, it is logically mandatory for data integrity and historical tracking. The presence of varying dates suggests that though one date is prevalent, it is essential for each record to contain a date entry, thus reinforcing the notion of the field being non-null."
+        }
+      },
+      "origin": "inferred",
+      "parameter_source": "data_derived",
+      "rationale": "This rule is proposed based on the high population of entries having values. Since this field serves as the last change date of a record, it is logically mandatory for data integrity and historical tracking. The presence of varying dates suggests that though one date is prevalent, it is essential for each record to contain a date entry, thus reinforcing the notion of the field being non-null.",
+      "evidence_citations": [
+        "population=1.0",
+        "distinct_count=109",
+        "top_value_share=0.7339285714285714",
+        "semantic=the last change date of the record"
+      ],
+      "confidence": {
+        "s_prior": 0.3,
+        "s_support": 0.6,
+        "s_coverage": 1.0,
+        "w_prior": 0.4,
+        "w_support": 0.4,
+        "w_coverage": 0.2,
+        "confidence": 0.56
+      },
+      "description_risk": "medium",
+      "template_ref": null
+    },
+    {
+      "rule_spec": {
+        "rule_id": "IS_MARA_MATKL_REFERENCE_EXISTS",
+        "name": "MAT0070_MaterialGroupRef",
+        "table": "MARA",
+        "dama_dimension": "Validity",
+        "is_dimension": "Consistency",
+        "archetype": "reference_exists",
+        "severity": "Medium",
+        "description": "Verify the material group value exists in the Material Groups table.",
+        "fields": [
+          "MATKL"
+        ],
+        "assertion": {
+          "node": "cmp",
+          "field": "MATKL",
+          "op": "in",
+          "value": [
+            "01",
+            "02",
+            "190102",
+            "211502",
+            "A001",
+            "A002",
+            "B001",
+            "B002",
+            "DIGIVEHI",
+            "E001",
+            "E002",
+            "E003",
+            "E004",
+            "FL80",
+            "L001",
+            "L002",
+            "L003",
+            "L004",
+            "L005",
+            "L006",
+            "L007",
+            "L008",
+            "P000",
+            "P001",
+            "P002",
+            "P003",
+            "R001",
+            "SUBS",
+            "YBFA01",
+            "YBFA02",
+            "YBFA03",
+            "YBFA04",
+            "YBFA05",
+            "YBFA06",
+            "YBFA07",
+            "YBFA08",
+            "YBFA09",
+            "YBFA10",
+            "YBFA11",
+            "YBFA12",
+            "YBMM00",
+            "YBMM01",
+            "YBPM01",
+            "YBPM02",
+            "Z991",
+            "Z992",
+            "Z993",
+            "Z994",
+            "ZBRAKES",
+            "ZCRUISE",
+            "ZFORK",
+            "ZFRAME",
+            "ZGEARS",
+            "ZHANDLE",
+            "ZMTN",
+            "ZPEDAL",
+            "ZRACING",
+            "ZSEAT",
+            "ZSERV",
+            "ZSHOCK",
+            "ZTRAIN",
+            "ZWHEEL",
+            "ZYOUTH"
+          ]
+        },
+        "executable": true,
+        "provenance": {
+          "source": "information_steward",
+          "original_name": "MAT0070_MaterialGroupRef",
+          "original_expression": "BEGIN\n     RETURN exists('DS_IS_RDS', 'T023', 'MATKL', $P_I_MaterialGroup);\nEND",
+          "reference_table": "T023",
+          "rule_doc": "Verify the material group value exists in the Material Groups table."
+        }
+      },
+      "origin": "bank_match",
+      "parameter_source": "reference",
+      "rationale": "The template accurately matches the profile of the field `MATKL`, as demonstrated by a full match rate of 1.0 with no non-matching entries. The assertion of the template provides valid values compatible with the field, including \"01,\" which dominates the sample values. This full alignment indicates that the template fits well within the parameters of the `MATKL` field. While the distinct count and types are conducive to the provided categorical space, no counter-evidence or anomalies have been identified. The field's classification as a material group further supports its candidacy for the template.",
+      "evidence_citations": [
+        "match_rate=1.0",
+        "sample_values=['01', '01', '01', '01', '01']",
+        "template asserts={'node': 'cmp', 'field': 'MATKL', 'op': 'in', 'value': [...]}"
+      ],
+      "confidence": {
+        "s_prior": 1.0,
+        "s_support": 1.0,
+        "s_coverage": 1.0,
+        "w_prior": 0.4,
+        "w_support": 0.4,
+        "w_coverage": 0.2,
+        "confidence": 1.0
+      },
+      "description_risk": "low",
+      "template_ref": "TPL-IS_MARA_MATKL_REFERENCE_EXISTS"
+    },
+    {
+      "rule_spec": {
+        "rule_id": "IS_MARA_MATKL_NOT_NULL",
+        "name": "MAT0060_MaterialGroupPopulated",
+        "table": "MARA",
+        "dama_dimension": "Completeness",
+        "is_dimension": "Completeness",
+        "archetype": "not_null",
+        "severity": "Medium",
+        "description": "Verify the material group field is not empty.",
+        "fields": [
+          "MATKL"
+        ],
+        "assertion": {
+          "node": "cmp",
+          "field": "MATKL",
+          "op": "is_not_null"
+        },
+        "executable": true,
+        "provenance": {
+          "source": "information_steward",
+          "original_name": "MAT0060_MaterialGroupPopulated",
+          "original_expression": "BEGIN RETURN\n$P_I_MaterialGroup IS NOT NULL\nAND $P_I_MaterialGroup != '';\nEND",
+          "rule_doc": "Verify the material group field is not empty."
+        }
+      },
+      "origin": "bank_match",
+      "parameter_source": null,
+      "rationale": "The template is accepted because it is concerned with completeness, a key aspect indicated by the high population rate and consistent data points in the MATKL field. The template's strong prior strength further supports its suitability. Although there are no reference rules to measure against, the absence of such rules does not indicate a misfit. Instead, the overall quality and consistency of the data suggest that the rule is applicable in maintaining data integrity for non-null entries.",
+      "evidence_citations": [
+        "field_summary",
+        "template_summary",
+        "reference_summary"
+      ],
+      "confidence": {
+        "s_prior": 1.0,
+        "s_support": 0.9614,
+        "s_coverage": 1.0,
+        "w_prior": 0.4,
+        "w_support": 0.4,
+        "w_coverage": 0.2,
+        "confidence": 0.9846
+      },
+      "description_risk": "low",
+      "template_ref": "TPL-IS_MARA_MATKL_NOT_NULL"
+    },
+    {
+      "rule_spec": {
+        "rule_id": "IS_MARA_MTART_REFERENCE_EXISTS",
+        "name": "MAT0020_MaterialTypeRef",
+        "table": "MARA",
+        "dama_dimension": "Validity",
+        "is_dimension": "Consistency",
+        "archetype": "reference_exists",
+        "severity": "Medium",
+        "description": "Verify the material type value exists in the Material Types table.",
+        "fields": [
+          "MTART"
+        ],
+        "assertion": {
+          "node": "cmp",
+          "field": "MTART",
+          "op": "in",
+          "value": [
+            "ABF",
+            "BUND",
+            "CBAU",
+            "CH00",
+            "CONT",
+            "COUP",
+            "DIEN",
+            "EPA",
+            "ERSA",
+            "FERT",
+            "FFFC",
+            "FGTR",
+            "FHMI",
+            "FOOD",
+            "FRIP",
+            "GBRA",
+            "HALB",
+            "HAWA",
+            "HERB",
+            "HERS",
+            "HIBE",
+            "IBAU",
+            "INTR",
+            "IWIP",
+            "KMAT",
+            "LEER",
+            "LEIH",
+            "LGUT",
+            "MAT",
+            "MODE",
+            "MPO",
+            "NLAG",
+            "NOF1",
+            "PIPE",
+            "PLAN",
+            "PROC",
+            "PROD",
+            "ROH",
+            "SBPD",
+            "SBRE",
+            "SERV",
+            "SUBC",
+            "SUBP",
+            "SUBS",
+            "SWNV",
+            "UNBW",
+            "UNFR",
+            "UNSF",
+            "VBRA",
+            "VEHI",
+            "VERP",
+            "VKHM",
+            "VOLL",
+            "VVGR",
+            "WERB",
+            "WERT",
+            "WETT"
+          ]
+        },
+        "executable": true,
+        "provenance": {
+          "source": "information_steward",
+          "original_name": "MAT0020_MaterialTypeRef",
+          "original_expression": "BEGIN\n     RETURN exists('DS_IS_RDS', 'T134', 'MTART', $P_I_MaterialType);\nEND",
+          "reference_table": "T134",
+          "rule_doc": "Verify the material type value exists in the Material Types table."
+        }
+      },
+      "origin": "bank_match",
+      "parameter_source": "reference",
+      "rationale": "The evidence strongly supports the fit between the field MTART and the template, as the match rate of 1.0 indicates that all values align with the expected classifications. The template sets out valid options for material types clearly, and the field's closed domain further supports adherence to these values without anomalies. There is no counter-evidence suggesting any discrepancies.",
+      "evidence_citations": [
+        "match_rate=1.0",
+        "non_matching=[]",
+        "asserts={'node': 'cmp', 'field': 'MTART', 'op': 'in', 'value': [...] }"
+      ],
+      "confidence": {
+        "s_prior": 1.0,
+        "s_support": 1.0,
+        "s_coverage": 1.0,
+        "w_prior": 0.4,
+        "w_support": 0.4,
+        "w_coverage": 0.2,
+        "confidence": 1.0
+      },
+      "description_risk": "low",
+      "template_ref": "TPL-IS_MARA_MTART_REFERENCE_EXISTS"
+    },
+    {
+      "rule_spec": {
+        "rule_id": "IS_MARA_MTART_NOT_NULL",
+        "name": "MAT0010_MaterialTypePopulated",
+        "table": "MARA",
+        "dama_dimension": "Completeness",
+        "is_dimension": "Completeness",
+        "archetype": "not_null",
+        "severity": "High",
+        "description": "Verify the material type field is not empty.",
+        "fields": [
+          "MTART"
+        ],
+        "assertion": {
+          "node": "cmp",
+          "field": "MTART",
+          "op": "is_not_null"
+        },
+        "executable": true,
+        "provenance": {
+          "source": "information_steward",
+          "original_name": "MAT0010_MaterialTypePopulated",
+          "original_expression": "BEGIN RETURN\n$P_I_MaterialType IS NOT NULL\nAND $P_I_MaterialType != '';\nEND",
+          "rule_doc": "Verify the material type field is not empty."
+        }
+      },
+      "origin": "bank_match",
+      "parameter_source": null,
+      "rationale": "The assertion made by the template regarding MTART being not null aligns with the field’s profile, which shows a complete nature given its population of 1.0. The presence of a high top value share implies that while 'FERT' dominates, there are sufficient distinct values (22) indicating diversity without nulls being apparent. The lack of a reference rule does not negate completeness; instead, it reinforces the validity of the asserted completeness since there is no conflicting data. While there are no noted anomalies or missing records, the assurance from the strong prior strength of the template further supports its suitability.",
+      "evidence_citations": [
+        "field_summary",
+        "field_characterisation",
+        "template_summary"
+      ],
+      "confidence": {
+        "s_prior": 1.0,
+        "s_support": 1.0,
+        "s_coverage": 1.0,
+        "w_prior": 0.4,
+        "w_support": 0.4,
+        "w_coverage": 0.2,
+        "confidence": 1.0
+      },
+      "description_risk": "low",
+      "template_ref": "TPL-IS_MARA_MTART_NOT_NULL"
+    },
+    {
+      "rule_spec": {
+        "rule_id": "IS_MARA_MEINS_NOT_NULL",
+        "name": "MAT0080_BaseUnitOfMeasurePopulated",
+        "table": "MARA",
+        "dama_dimension": "Completeness",
+        "is_dimension": "Completeness",
+        "archetype": "not_null",
+        "severity": "High",
+        "description": "Verify the base unit of measure field is not empty.",
+        "fields": [
+          "MEINS"
+        ],
+        "assertion": {
+          "node": "cmp",
+          "field": "MEINS",
+          "op": "is_not_null"
+        },
+        "executable": true,
+        "provenance": {
+          "source": "information_steward",
+          "original_name": "MAT0080_BaseUnitOfMeasurePopulated",
+          "original_expression": "BEGIN RETURN\n$P_I_BaseUOM IS NOT NULL\nAND $P_I_BaseUOM != '';\nEND",
+          "rule_doc": "Verify the base unit of measure field is not empty."
+        }
+      },
+      "origin": "bank_match",
+      "parameter_source": null,
+      "rationale": "The template is accepted based on strong evidence supporting the completeness of the MEINS field since there are no null values observed. Even though there may be a concentration of identical values indicated by the top value share, this does not negate the requirement that all entries must have a non-null MEINS value, and the data presented confirms this. There were no notes of anomalies affecting its integrity or creating ambiguity around its surety as a mandated unit of measure.",
+      "evidence_citations": [
+        "population=1.0",
+        "distinct_count=14",
+        "top_value_share=0.825",
+        "field_characterisation=unit of measure for the material"
+      ],
+      "confidence": {
+        "s_prior": 1.0,
+        "s_support": 1.0,
+        "s_coverage": 1.0,
+        "w_prior": 0.4,
+        "w_support": 0.4,
+        "w_coverage": 0.2,
+        "confidence": 1.0
+      },
+      "description_risk": "low",
+      "template_ref": "TPL-IS_MARA_MEINS_NOT_NULL"
+    },
+    {
+      "rule_spec": {
+        "rule_id": "INF_MARA_GEWEI_DOMAIN_IN",
+        "name": "GEWEI domain_in (inferred)",
+        "table": "MARA",
+        "dama_dimension": "Validity",
+        "archetype": "domain_in",
+        "severity": "Medium",
+        "description": "The high population density and the dominance of a single value ('KG') among the potential distinct values indicate that this field serves a critical role as a weight measurement unit. The closed set of values confirms that it is likely designed to accept specific units that are not arbitrary but are essential for maintaining consistency and correctness in usage. Therefore, enforcing that GEWEI must contain one of the recognized weight units is justified, rather than merely describing current data.",
+        "fields": [
+          "GEWEI"
+        ],
+        "assertion": {
+          "node": "cmp",
+          "field": "GEWEI",
+          "op": "in",
+          "value": [
+            "KG"
+          ]
+        },
+        "executable": true,
+        "provenance": {
+          "source": "data_driven_inference",
+          "natural_language": "The high population density and the dominance of a single value ('KG') among the potential distinct values indicate that this field serves a critical role as a weight measurement unit. The closed set of values confirms that it is likely designed to accept specific units that are not arbitrary but are essential for maintaining consistency and correctness in usage. Therefore, enforcing that GEWEI must contain one of the recognized weight units is justified, rather than merely describing current data."
+        }
+      },
+      "origin": "inferred",
+      "parameter_source": "data_derived",
+      "rationale": "The high population density and the dominance of a single value ('KG') among the potential distinct values indicate that this field serves a critical role as a weight measurement unit. The closed set of values confirms that it is likely designed to accept specific units that are not arbitrary but are essential for maintaining consistency and correctness in usage. Therefore, enforcing that GEWEI must contain one of the recognized weight units is justified, rather than merely describing current data.",
+      "evidence_citations": [
+        "population=0.9170999999999999",
+        "distinct_count=2",
+        "top_value_share=0.8664330218068536",
+        "sample_values=['KG', 'KG', 'KG', 'KG', 'KG']"
+      ],
+      "confidence": {
+        "s_prior": 0.3,
+        "s_support": 0.6,
+        "s_coverage": 1.0,
+        "w_prior": 0.4,
+        "w_support": 0.4,
+        "w_coverage": 0.2,
+        "confidence": 0.56
+      },
+      "description_risk": "medium",
+      "template_ref": null
+    }
+  ]
+}

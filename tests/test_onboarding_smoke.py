@@ -1,10 +1,12 @@
 # ---------------------------------------------------------------------------
 # tests/test_onboarding_smoke.py
-# v1.0 | 13-Jul-2026 | Initial creation. Object packs (load, resolve, profiler
-#                      v0.4 pack-wins-dict-falls-back) and the deterministic
-#                      onboarding scaffolder run against a synthetic EQKT
-#                      extract built in the SE16N export format (preamble,
-#                      spacer column, blank separator row).
+# v1.0 | 13-Jul-2026 | Initial creation. Onboarding config + the deterministic
+#                      scaffolder, run against a synthetic EQKT extract in the
+#                      SE16N export format (preamble, spacer column, blank
+#                      separator row).
+# v2.0 | 13-Jul-2026 | Config source moved from the retired config/objects to
+#                      config/schema, which already carried primary_key and
+#                      header_anchor. Scaffolder now emits a draft SCHEMA.
 # ---------------------------------------------------------------------------
 
 from __future__ import annotations
@@ -15,7 +17,7 @@ import openpyxl
 import pandas as pd
 import pytest
 
-from src.data.object_packs import load_object_pack, load_object_packs
+from src.data.schema import load_all_schemas, load_table_schema
 from src.data.profiler import profile_table
 from tools.onboard_object import detect_header, detect_key_candidates, map_roles, scaffold
 
@@ -23,31 +25,42 @@ from tools.onboard_object import detect_header, detect_key_candidates, map_roles
 REPO_ROOT = Path(__file__).resolve().parents[1]
 ROLES_PATH = REPO_ROOT / "config" / "rule_bank" / "field_roles.yaml"
 MANIFEST = REPO_ROOT / "config" / "reference" / "manifest.yaml"
-PACKS_DIR = REPO_ROOT / "config" / "objects"
+SCHEMA_DIR = REPO_ROOT / "config" / "schema"
 
 
 # ---------------------------------------------------------------------------
-# Object packs
+# Onboarding config lives in the SCHEMA (not a parallel object pack)
 # ---------------------------------------------------------------------------
 
-def test_packs_load_and_resolve():
-    packs = load_object_packs(PACKS_DIR)
-    assert {"MARA", "MARC", "MARD", "MAKT"}.issubset(set(packs))
-    assert packs["MAKT"].primary_key == ["MATNR", "SPRAS"]
-    assert packs["MARA"].uniqueness["blocking_key"] == "MTART"
-    assert packs["MARC"].resolve_file("data/raw").name == "MARC_EX_DATA.xlsx"
+def test_schema_carries_all_onboarding_fields():
+    # ONE file per table is what a steward writes. The schema already had
+    # primary_key and header_anchor; v0.3 added file_pattern and uniqueness.
+    schemas = load_all_schemas(SCHEMA_DIR)
+    assert {"MARA", "MARC"}.issubset(set(schemas))
+    mara = schemas["MARA"]
+    assert mara.primary_key == ["MATNR"]
+    assert mara.header_anchor == "MATNR"
+    assert mara.resolve_file("data/raw").name == "MARA_EX_DATA.xlsx"
+    assert mara.uniqueness.blocking_key == "MTART"
+    assert mara.uniqueness.compare_fields == ["MAKT.MAKTX"]
+    # MARC has no uniqueness block: absent config degrades to None, not a crash.
+    assert schemas["MARC"].primary_key == ["MATNR", "WERKS"]
+    assert schemas["MARC"].uniqueness.blocking_key is None
 
 
-def test_pack_requires_table_and_anchor(tmp_path: Path):
-    bad = tmp_path / "bad.yaml"
-    bad.write_text("table: EQUI\n", encoding="utf-8")
-    with pytest.raises(ValueError):
-        load_object_pack(bad)
+def test_schema_field_role_is_structural_not_semantic():
+    # A naming collision worth guarding: schema FieldSpec.role is STRUCTURAL
+    # (key/attribute/flag/temporal/client) and drives parsing and generation.
+    # The rule bank's field_role is SEMANTIC (unit_of_measure, ...) and drives
+    # template retrieval. Same word, different vocabularies - do not conflate.
+    mara = load_table_schema(str(SCHEMA_DIR / "mara.yaml"))
+    assert mara.field("MATNR").role == "key"
+    assert mara.field("MEINS").role == "attribute"     # NOT unit_of_measure
+    assert mara.field("LVORM").role == "flag"
 
 
-def test_profiler_uses_pack_key_over_fallback():
-    # MAKT's fallback dict key is MATNR+SPRAS; give profile_table an explicit
-    # override (as profile_files does from a pack) and confirm it wins.
+def test_profiler_uses_schema_key_over_fallback():
+    # The schema's primary_key wins over the historical hardcoded dict.
     frame = pd.DataFrame({
         "MATNR": ["1", "1", "2"],
         "SPRAS": ["E", "D", "E"],
@@ -58,7 +71,7 @@ def test_profiler_uses_pack_key_over_fallback():
     assert profile.key_uniqueness.primary_key == ["MATNR", "SPRAS"]
     assert profile.key_uniqueness.is_unique is True
 
-    # And a pack for a table with NO fallback entry still gets a key check.
+    # A table with NO fallback dict entry still gets a key check from its schema.
     equi_frame = pd.DataFrame({"EQUNR": ["10", "11"], "EQART": ["P", "P"]})
     equi_profile = profile_table(equi_frame, "EQUI", primary_key=["EQUNR"])
     assert equi_profile.key_uniqueness.is_unique is True
@@ -106,7 +119,7 @@ def test_scaffold_detects_header_key_and_roles(tmp_path: Path):
     # 10); the composite EQUNR+SPRAS is - arithmetic, no AI needed.
     assert ["EQUNR", "SPRAS"] in result["key_candidates"]
     assert ["EQUNR"] not in result["key_candidates"]
-    assert result["draft_pack"]["primary_key"] == result["key_candidates"][0]
+    assert result["draft_schema"]["primary_key"] == result["key_candidates"][0]
 
     # Role mapping: SPRAS is a known language_key; EQUNR is unknown to the
     # material-centric vocabulary and routes to inference - by design.
@@ -117,9 +130,27 @@ def test_scaffold_detects_header_key_and_roles(tmp_path: Path):
     tables = [entry["reference_table"] for entry in result["reference_readiness"]]
     assert "T002" in tables
 
-    # The draft pack carries TODO markers - a draft, never a silent config.
-    assert result["draft_pack"]["uniqueness"]["blocking_key"] == "TODO"
-    assert "{table}" in result["draft_pack"]["file_pattern"]
+    # The draft SCHEMA carries TODO markers - a draft, never a silent config.
+    draft = result["draft_schema"]
+    assert draft["uniqueness"]["blocking_key"] == "TODO"
+    assert "{table}" in draft["file_pattern"]
+    assert draft["description"].startswith("TODO")
+
+    # Field blocks are seeded from a real profile: SPRAS is a 2-value code,
+    # mandatory (fully populated), with its observed domain proposed.
+    spras = draft["fields"]["SPRAS"]
+    assert spras["mandatory"] is True
+    assert sorted(spras["domain"]) == ["D", "E"]
+    assert spras["description"] == "TODO"          # judgement, not scanned
+
+    # KZLTX is sparsely populated -> not proposed as mandatory.
+    assert draft["fields"]["KZLTX"]["mandatory"] is False
+
+    # And the draft VALIDATES as a real schema once loaded.
+    from src.data.schema import TableSchema
+    for name, block in draft["fields"].items():
+        block["name"] = name
+    TableSchema.model_validate(draft)
 
 
 def test_detect_header_rejects_non_se16n(tmp_path: Path):

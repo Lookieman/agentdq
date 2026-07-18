@@ -7,6 +7,10 @@
 #                      decides. Backend selected by AGENTDQ_REPO_MODE:
 #                      "file" (default, real store) or "session" (public demo
 #                      sandbox, per-visitor, discarded on exit).
+# v1.1 | 15-Jul-2026 | Add a repo-root bootstrap so `streamlit run app/gate.py`
+#                      works: Streamlit executes the file directly, leaving app/
+#                      (not the project root) on sys.path, which broke the src.
+#                      imports.
 # ---------------------------------------------------------------------------
 """Approval gate surface.
 
@@ -26,6 +30,18 @@ import os
 from typing import Any
 
 import streamlit as st
+
+# --- repo-root bootstrap (v1.1) -------------------------------------------
+# `streamlit run app/gate.py` executes this file directly, so app/ (not the
+# project root) is what lands on sys.path, and `import src...` fails. Add the
+# project root (this file's parent's parent) to the path before importing src.
+import sys as _sys  # v1.1
+from pathlib import Path as _Path  # v1.1
+
+_REPO_ROOT = _Path(__file__).resolve().parents[1]  # v1.1
+if str(_REPO_ROOT) not in _sys.path:  # v1.1
+    _sys.path.insert(0, str(_REPO_ROOT))  # v1.1
+# --------------------------------------------------------------------------
 
 from src.rules.repository import (
     CandidateRecord,
