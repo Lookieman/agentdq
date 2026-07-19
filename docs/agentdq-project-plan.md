@@ -21,7 +21,667 @@ The project targets asset-intensive industries (oil & gas, utilities, manufactur
 
 ---
 
+## Build Status (Phase 1)
+
+**Delivery status (15-Jul-2026): Packages 1 and 2 complete.** The agentic loop
+closes end to end - an agent suggests a rule, a human governs it at the approval
+gate, and the approved rule is executable. The first AgentDQ LinkedIn article
+(Package 2's story: "the agent proposes, the human disposes") is ready to write.
+The delivery breakdown, the remaining packages, and per-package designs live in
+`agentdq_design.md`; the next build is Package 3 (LangGraph orchestration).
+
+The data foundation and the deterministic assessment path are built, tested and
+demonstrated end to end on real SAP CAL extracts (MARA, MARC, MAKT). The current
+state:
+
+```
+Component                     Module                              Status
+----------------------------  ----------------------------------  -----------
+Shared contracts / IR         src/contracts.py                    done
+SE16N extract loader          src/data/extract_loader.py          done
+Deterministic profiler        src/data/profiler.py                done
+Schema layer + parsers        src/data/schema.py, config/schema/  done
+Schema scaffolder             tools/build_schema.py               done
+Synthetic generator           src/data/generator.py               done
+Defect injector + labels      src/data/defect_injector.py         done
+IS rule importer              src/rules/is_importer.py            done
+Rule loader                   src/rules/rule_loader.py            done
+Rule executor (pandas)        src/rules/executor.py               done
+Completeness agent            src/agents/completeness.py          done
+Validity agent                src/agents/validity.py              done
+Scorecard + evaluation        src/reporting/scorecard.py          done
+Shared assess() function      src/reporting/assessment.py         done
+Console assessment CLI        tools/run_assessment.py             done
+Streamlit dashboard           app/dashboard.py                    done
+Smoke test suite (12 tests)   tests/test_pipeline_smoke.py        done
+```
+
+What the pilot demonstrates today:
+
+- A full generate -> inject labelled defects -> execute rules -> score loop, with
+  the executor reproducing the injected ground truth exactly (precision and
+  recall of 1.000 on Completeness, Validity and Consistency).
+- 107 legacy Information Steward rules imported into the canonical IR, re-mapped
+  from the IS taxonomy onto the DAMA dimensions, and bound to self-defined
+  domains for the synthetic path.
+- A scorecard and dashboard that run on both the labelled synthetic scenarios
+  and the real CAL extract, surfacing genuine completeness gaps in the real data.
+
+Still to build in Phase 1 (reordered around the agentic pivot - see "The Agentic
+Core" below):
+
+```
+Item                                       Notes
+-----------------------------------------  ----------------------------------
+Reposition IS rules as a rule bank         templates/priors, not active set
+Profiling Agent (DSPy)                     interpret the profile; feed suggestion
+Rule Suggestion Agent (DSPy)               centrepiece: bank-match + inference
+Rules repository + approval lifecycle      approved / versioned store
+Approval + authoring UI                    Streamlit: review, edit, add per dim
+Execution reads approved repository        agents point at approved rules
+Remediation Agent (DSPy)                   findings -> prioritised actions
+Uniqueness agent                           fuzzy / embedding + LLM adjudication
+Timeliness agent + defect stub             needs MARA date fields (re-export in)
+Accuracy agent (DSPy)                       LLM judgement on real-world truth
+LangGraph orchestrator                      wire the flow with the human gate
+MLflow experiment tracking                  suggestion quality + per-run scores
+```
+
+Note: the Consistency agent is now built (deterministic execution layer). The
+three execution-layer agents (Completeness, Validity, Consistency) are complete
+and scored at 1.000; the pivot adds the agentic layer around them.
+
+---
+
+## The Agentic Core: Profile, Suggest, Approve, Execute, Remediate
+
+This section is the anchor for the whole project. It exists because it is easy to
+drift into building a deterministic rules engine with a language model bolted on
+for appearances - which is not the goal. The goal is a genuinely agentic system,
+and the discipline below is what keeps it honest.
+
+### Where the intelligence actually lives
+
+The irreducible judgement in enterprise data quality is not *executing* rules -
+that is arithmetic, and a machine should do it exactly. The judgement is *deciding
+what the rules should be* for a dataset nobody has assessed before, and *making
+sense of the findings* afterwards. Most customers do not arrive with a rule list;
+they look to SAP or a partner to suggest sensible rules, and only months later
+begin authoring their own. So the intelligence sits at the front (profile, then
+suggest rules) and the back (synthesise findings into prioritised remediation),
+with a deterministic executor in the middle as the trusted tool.
+
+```mermaid
+graph TD
+    D[(Customer data<br/>CAL / BDC data product)] --> PA[Profiling Agent<br/>what IS this data?]
+    PA --> RSA[Rule Suggestion Agent<br/>what rules SHOULD apply?]
+    BANK[(Rule Bank<br/>IS rules as templates + priors)] --> RSA
+    REF[(Reference values<br/>ISO units, check tables)] --> RSA
+    RSA --> PROP[Candidate rules<br/>rationale + evidence + confidence]
+    PROP --> GATE{Data-ops review<br/>approve / edit / reject}
+    GATE --> REPO[(Rules Repository<br/>approved, versioned)]
+    REPO --> EXEC[Deterministic execution layer<br/>Completeness / Validity / Consistency<br/>the executor wielded as a tool]
+    EXEC --> FIND[Findings + scorecard]
+    FIND --> REM[Remediation Agent<br/>prioritise + explain]
+    REM --> RPT[Report]
+    ADD[Data-ops authoring page<br/>add a new rule per dimension] --> REPO
+```
+
+### The IS rules are a bank, not the starting ruleset
+
+The single most important correction to the earlier direction: the Information
+Steward rules are repositioned as a **rule bank** - a catalogue of proven rules a
+partner brings to a client and adapts - rather than the active ruleset a customer
+is assumed to already have. This is their natural role. A template such as
+"MEINS must be a valid ISO unit" or "FERT materials tend to share a base unit" is
+a *prior*; whether it applies to a given customer is decided by the data, not
+assumed. FERT base unit of KG might hold for one customer and not another, so the
+rule is suggested only when the profiled data supports it.
+
+### The Rule Suggestion Agent: two grounded engines
+
+This is the centrepiece, and the genuinely agentic component. It runs two engines,
+both grounded in provided evidence rather than model memory:
+
+- **Bank matching.** For each profiled field, does its pattern resemble a bank
+  template? "100% populated, 14 distinct values, all ISO unit codes - resembles
+  the MEINS validity template; suggest a domain rule." The template is a
+  hypothesis; the profile confirms or rejects it.
+- **Data-driven inference.** For fields with no template - the non-SAP case, where
+  Material Group or Industry Sector may be absent - the agent reasons from the
+  data alone: infer a categorical domain from recurring values, propose that a
+  missing-but-expected field should exist, and suggest candidate values.
+
+Both engines emit the same canonical `RuleSpec` IR (see Rules Ingestion), each
+suggestion carrying a rationale, the evidence it reasoned from, and a confidence.
+A representative DSPy signature:
+
+```
+field_profile, schema_context, bank_templates, reference_values
+    -> candidate_rules, rationale, evidence, confidence
+```
+
+### The failure mode to design against
+
+An agent inferring rules from data will happily suggest rules that merely
+*describe the current data* rather than enforce genuine *quality*. "97% of rows
+have status X, so X is mandatory" - but the 3% may be the correct rows and the 97%
+the defect. Overfitting to the present state is the central risk. Two safeguards:
+the **rule bank** biases suggestions towards known-good rules rather than raw
+frequency, and the **human approval gate** is where data-ops decides whether a
+candidate is a rule or merely a description of today's data. Approval is therefore
+not bureaucracy; it is the control that stops the agent mistaking description for
+prescription.
+
+### Autonomy, placed deliberately
+
+The system is autonomous wherever that is safe, and gated at the one point where an
+unsupervised error would corrupt every later assessment.
+
+```
+Stage             Autonomous?      Why
+----------------  ---------------  --------------------------------------------
+Profiling         yes              reading data commits nothing
+Rule suggestion   yes              proposing is safe; it changes no data
+Rule approval     no - human       a wrong rule silently poisons all downstream
+                                   assessments; too costly to automate away
+Execution         yes              runs approved rules exactly, as a tool
+Remediation       yes              recommends; it does not act on the data
+```
+
+### How the executor becomes a tool, not the whole story
+
+The deterministic executor keeps its exact, reproducible behaviour, but its role
+changes: it is the tool the execution-layer agents call, not the system itself.
+Measurement stays deterministic (membership, population, predicate evaluation);
+judgement sits around it (which rules apply to this record, why a value failed -
+typo, new value, or genuine error - and what a combination of findings implies).
+This "deterministic core, grounded judgement on top" contract is the same one the
+Profiler section already describes, applied across every dimension.
+
+### What the existing build becomes
+
+Nothing built so far is discarded; most of it was the prerequisite for suggestion
+and execution.
+
+```
+Built                              Role in the agentic vision
+---------------------------------  -------------------------------------------
+Deterministic profiler             evidence layer feeding the Profiling Agent
+Schema layer                       structural grounding for suggestion + exec
+IS importer + RuleSpec IR          populates the RULE BANK (templates/priors)
+Rule executor (pandas)             the deterministic TOOL the agents wield
+Completeness/Validity/Consistency  execution layer, grounded on APPROVED rules
+Generator + defect injector        eval harness, and rule-rediscovery testing
+Scorecard + dashboard              output, plus the rule-approval surface
+```
+
+### Proving the Suggestion Agent
+
+The generator earns a second purpose. Generate data that conforms to a known
+embedded rule, hand it to the Suggestion Agent, and measure whether it
+*rediscovers* that rule - precision and recall on rule rediscovery, not only on
+defect detection. The IS rules serve as the gold set again: hidden in synthetic
+data, then checked to see whether the agent proposes them back.
+
+### Build order for the pivot
+
+```
+Item                          Effort   Notes
+----------------------------  -------  -----------------------------------------
+Reposition IS rules as bank   small    tag as templates; add match metadata
+Profiling Agent (DSPy)        medium   interpret profile; feeds suggestion
+Rule Suggestion Agent (DSPy)  large    the centrepiece; bank-match + inference
+Rules repository + lifecycle  medium   approved / versioned store
+Approval + authoring UI        medium   Streamlit page: review, edit, add per dim
+Execution reads repository    small    agents point at approved rules
+Remediation Agent (DSPy)      medium   findings -> prioritised recommendations
+LangGraph orchestrator         medium   wire the flow with the human gate
+Rediscovery evaluation        small    reuse generator to score suggestion quality
+```
+
+---
+
+## Rule Bank, Profiling and Suggestion: Detailed Design
+
+The three components at the front of the agentic flow - the rule bank, the
+Profiling Agent and the Rule Suggestion Agent - are specified together, because a
+schema is only "correct" if the Profiling Agent can produce the evidence it
+demands and the Suggestion Agent can consume it. Designed in isolation they would
+be three well-formed components with mismatched sockets. This section wires the
+sockets.
+
+### The rule-bank template schema
+
+A **template** is the existing `RuleSpec` IR wrapped in a match layer. Nothing the
+importer produced is discarded; the bank is metadata *around* the IR.
+
+```
+Template
++-- rule_spec            the existing RuleSpec IR (assertion, scope, archetype)
++-- provenance           IS rule id, original expression, NL description, dimension
++-- binding              where this template naturally attaches
++-- applicability        the profile fingerprint that makes it a candidate
++-- parameterisation     which parts are fixed vs instantiated from evidence
++-- prior_strength_block the governed strength attribute (see next subsection)
+```
+
+**Binding** attaches the template to data by *field role*, not just field name, so
+a rule such as "must be a valid ISO unit" generalises to any unit field rather
+than only MEINS.
+
+```
+Field              Example                          Purpose
+-----------------  -------------------------------  --------------------------------
+target_table       MARA (or ANY)                    IS rules are table-specific;
+                                                     roles let them generalise
+target_field       MEINS (or role: unit_of_measure) binds by name or by role
+field_role         unit_of_measure, language_key    the generalisation handle for
+                                                     the non-SAP / unknown-field case
+```
+
+**Applicability signals** are the profile fingerprint that makes a template a
+*candidate*. They are expressed in the deterministic profiler's own vocabulary, so
+retrieval is a join rather than a guess. They are deliberately loose (recall
+oriented); the agent's judgement is the precision step.
+
+```
+Signal                     Example for "MEINS valid ISO unit"
+-------------------------  ------------------------------------------
+population_range           >= 0.95 populated
+distinct_count_range       5 - 50 distinct values
+value_shape                short uppercase codes, length 1-3
+reference_match_rate       >= 0.90 of values found in T006 / ISO list
+type_hint                  categorical string
+```
+
+**Parameterisation** is the anti-overfitting mechanism baked into the schema. Each
+parameter declares its source of truth, and that source travels with every
+suggestion into the approval UI - because a reference-sourced domain rule and a
+data-derived one may look identical as RuleSpecs, yet data-ops must treat them
+differently.
+
+```
+Parameter source     Meaning                              Overfitting risk
+-------------------  -----------------------------------  ----------------
+reference            values come from a check table       none - reference
+                     (T006, ISO 4217); data only           defines, data
+                     *confirms* the match                  merely confirms
+template_fixed       values are part of the proven rule   none
+data_derived         values inferred from observed data   HIGH - must be
+                                                           flagged as such
+```
+
+Templates live as YAML in `config/rule_bank/`, loaded by `src/rules/rule_bank.py`.
+The one-off job that wraps the 107 imported RuleSpecs with match metadata is
+`tools/build_rule_bank.py`.
+
+### Rule strength as a governed attribute, not a birthmark
+
+Strength must not be fixed by origin alone. An IS-imported rule starting as
+`strong` and an inferred rule starting as `weak` is fine on day one and wrong by
+month three: a regulatory rule authored next quarter deserves `strong` regardless
+of provenance. Origin therefore sets the **default**; governance owns the
+**current value**. One field becomes a small governed block:
+
+```
+prior_strength_block
++-- strength            strong | moderate | weak    (the current, governing value)
++-- strength_source     default | steward_set       (who decided)
++-- strength_reason     proven_template | regulatory | governance_policy |
+                        business_critical | inferred | unverified
++-- set_by              user id (when steward_set)
++-- set_at              timestamp
++-- note                free text, e.g. "MiFID II mandates this field"
+```
+
+The rules of the game:
+
+```
+Event                                    Effect
+---------------------------------------  ---------------------------------------
+Template imported from IS workbook       strength=strong, source=default,
+                                         reason=proven_template
+Rule inferred by suggestion agent        strength=weak, source=default,
+                                         reason=inferred
+Data Manager promotes a rule             strength=strong, source=steward_set,
+(regulatory / governance change)         reason=regulatory, note + audit trail
+Agent proposes a strength change         NEVER. Agents may flag a candidate for
+                                         review; only a human changes strength.
+```
+
+The last row is a control, not a courtesy. Strength feeds confidence, and
+confidence feeds what data-ops trusts; if an agent could promote its own
+suggestions to `strong` it could quietly inflate its own credibility. Strength
+changes are human-only, audited and reversible - the same autonomy-placement logic
+as the approval gate: the one lever that compounds downstream stays in human hands.
+A useful side effect is that `strength_reason=regulatory` becomes a first-class
+filter, so "show every regulatory rule and its current pass rate" - exactly the
+question an auditor asks - is a query rather than an archaeology project.
+
+The block sits in the template YAML and travels onto approved rules in the
+repository, because governance applies to adopted rules too, not only to bank
+templates.
+
+### The field-role vocabulary
+
+A role is the *semantic job* a field performs, independent of its SAP name - the
+handle that lets a template generalise across fields and datasets. The starting
+enum is drawn from the fields the 107 imported rules actually touch across
+MARA/MARC/MAKT:
+
+```
+Role                    SAP examples          Typical templates that bind
+----------------------  --------------------  -------------------------------
+material_identifier     MATNR                 key uniqueness, format/length
+org_unit_plant          WERKS                 valid plant, key component
+material_type           MTART                 domain, conditional-mandatory
+                                              driver (scope antecedent)
+material_group          MATKL                 reference domain (T023)
+industry_sector         MBRSH                 reference domain (T137)
+unit_of_measure         MEINS                 reference domain (T006 / ISO)
+language_key            SPRAS                 reference domain (T002)
+description_text        MAKTX                 not-null, length, uniqueness
+                                              compare-field
+procurement_type        BESKZ                 fixed domain, cross-field
+                                              consistency with MTART
+mrp_type                DISMM                 fixed domain, cross-field
+                                              (drives MABST etc.)
+mrp_controller          DISPO                 reference domain (T024D)
+purchasing_group        EKGRP                 reference domain (T024),
+                                              conditional mandatory
+status_flag             LVORM, MSTAE          fixed domain, scope filter
+date_field              ERSDA, MMSTD          format, sentinel, timeliness
+quantity_numeric        BRGEW, NTGEW, MABST   range, non-negative, cross-field
+                                              (gross >= net)
+old_material_ref        BISMT                 format, cross-reference
+```
+
+Two design notes. A field may carry **more than one role** - MAKTX is both
+`description_text` and a uniqueness compare-field - so roles are a list on the
+characterisation. And `unknown` is a **legitimate role**: the Profile Interpreter
+must be allowed to say "no confident role", which routes the field to the
+inference engine rather than forcing a bad join. A vocabulary without an escape
+hatch produces confident nonsense at the edges.
+
+Governance mirrors strength: the enum is a controlled list in
+`config/rule_bank/field_roles.yaml`; the agent selects from it and never invents
+entries; humans extend it. The join's integrity is only as good as the
+vocabulary's stability.
+
+### The Profiling Agent: two outputs, one evidence of record
+
+The Profiling Agent (`src/agents/profile_interpreter.py`, deliberately not
+`profiler.py`, which is the deterministic module) serves two consumers: a human
+who wants the plain-language readout, and the Suggestion Agent, which needs
+structured field-level interpretation. The trap to avoid is daisy-chaining - if
+the Suggestion Agent reasoned only over the readout prose, an upstream
+interpretation error would silently poison everything downstream, LLM output
+feeding LLM input with no deterministic anchor. The contract is therefore:
+
+> The raw deterministic profile JSON is the evidence of record. The Profiling
+> Agent adds hypotheses; it never replaces the numbers. Every downstream citation
+> points at the raw profile, not at the Profiling Agent's prose.
+
+So the agent emits a structured **field characterisation** alongside the readout:
+
+```
+Field characterisation
++-- semantic_type_hypothesis   "this looks like a unit-of-measure field"
++-- field_role_candidates      [unit_of_measure]  - the bank's binding handles
++-- domain_candidacy           does this field behave like a closed domain?
++-- anomaly_notes              "population drops for MTART=ROH rows"
++-- evidence_refs              pointers into the raw profile JSON
+```
+
+`field_role_candidates` uses the same controlled vocabulary as the template
+binding block. That shared vocabulary is the socket: the Profiling Agent speaks the
+bank's language, so template retrieval becomes a deterministic join. A
+representative DSPy signature:
+
+```
+table_profile, schema_context, business_context
+    -> field_characterisations, health_summary, concerns
+```
+
+### The Rule Suggestion Agent: retrieve deterministically, judge agentically
+
+The same cost-ladder philosophy as the Uniqueness design - cheap deterministic
+work narrows the field, the language model only touches what genuinely needs
+judgement.
+
+```mermaid
+graph TD
+    PROF[(Raw profile JSON<br/>evidence of record)] --> PI[Profile Interpreter<br/>DSPy]
+    PI --> FC[Field characterisations<br/>role candidates + hypotheses]
+    BANK[(Rule bank<br/>templates + match metadata)] --> RET[Candidate retrieval<br/>DETERMINISTIC join on<br/>binding + applicability]
+    FC --> RET
+    PROF --> RET
+    RET --> ADJ[Bank-match adjudication<br/>DSPy - does it really fit?<br/>instantiate parameters]
+    REF[(Reference tables<br/>T006, ISO lists)] --> ADJ
+    FC --> INF[Data-driven inference<br/>DSPy - fields with NO template]
+    PROF --> INF
+    ADJ --> CAND[Candidate RuleSpecs<br/>rationale + evidence + confidence<br/>+ origin + parameter source]
+    INF --> CAND
+    CAND --> GATE{Data-ops approval}
+```
+
+**Engine 1 - bank matching, in two tiers.** *Retrieval* (deterministic, free)
+joins field characterisations against template bindings, then filters by
+applicability signals against the raw profile. Generous thresholds; this tier
+optimises recall and makes no LLM call. *Adjudication* (agentic) then judges
+genuine fit for each surviving (field, template) pair and instantiates parameters,
+grounded in the profile, the template and the reference tables it is handed. It
+never fills a domain from training memory; if the ISO unit list is not provided,
+it cannot suggest an ISO unit rule. That is the grounding discipline made
+structural.
+
+```
+adjudication signature:
+field_profile, field_characterisation, candidate_templates, reference_values
+    -> accepted_rules, rationale, evidence_citations, confidence
+```
+
+**Engine 2 - data-driven inference**, for fields retrieval could not match (the
+non-SAP case). Same output shape, plus one mandatory field:
+
+```
+inference signature:
+field_profile, field_characterisation, schema_context
+    -> inferred_rules, rationale, evidence_citations, confidence, description_risk
+```
+
+`description_risk` is the agent's own explicit assessment of whether the candidate
+merely describes the current data state rather than prescribing quality - forcing
+the "97% have status X, so X is mandatory" trap into the open where the approval
+gate can see it. The agent must argue why the candidate is a rule and not a
+coincidence, and confess when it cannot.
+
+The Suggestion Agent lives in `src/agents/rule_suggester.py`; its signatures in
+`src/dspy_modules/suggestion_signatures.py`.
+
+### One candidate shape
+
+Both engines emit an identical candidate, so there is one approval UI, one
+repository schema and one rediscovery evaluation harness:
+
+```
+Candidate suggestion
++-- rule_spec             the proposed RuleSpec IR
++-- origin                bank_match | inferred
++-- template_ref          which template, if bank-matched
++-- parameter_source      reference | template_fixed | data_derived
++-- rationale             why this rule, in plain language
++-- evidence_citations    pointers into raw profile JSON + reference tables
++-- confidence            calibrated (see below)
++-- description_risk      inference engine; bank matches inherit low risk
+```
+
+### Confidence as decomposable arithmetic
+
+A confidence score is decoration unless it is defined. Confidence is a function of
+three declared inputs rather than a number the model is asked to invent:
+
+$$\text{confidence} = w_p \cdot s_{\text{prior}} + w_s \cdot s_{\text{support}} + w_c \cdot s_{\text{coverage}}$$
+
+where the weights $w_p + w_s + w_c = 1$ are calibrated by the rediscovery harness,
+and:
+
+```
+Term                Meaning
+------------------  --------------------------------------------------------
+s_prior             from prior_strength_block: strong > moderate > weak
+s_support           how cleanly the profile fits (0.98 reference match
+                    beats 0.91)
+s_coverage          how much data backs it (10,000 rows beats 40 rows)
+```
+
+A strong template with clean evidence lands high; a weak inference from a 40-row
+sample lands low regardless of how neat the pattern looks. Because confidence is
+computed from inputs we can display, **the explanation is the calculation** - we
+never ask the model "how confident are you?" and hope the number means something.
+The review card decomposes rather than asserts:
+
+```
+Candidate: MEINS must be in reference list T006          Confidence: 0.91
++-- Prior strength      strong  (proven IS template APN-0042, steward-confirmed)
++-- Evidence support    0.97    (2,714 of 2,798 populated values match T006)
++-- Evidence coverage   high    (2,798 rows, 100% of table profiled)
++-- Agent rationale     "Value shape and reference match are consistent with a
+                        unit-of-measure domain; 84 non-matching values cluster on
+                        three codes, suggesting typos rather than a second domain."
++-- Evidence citations  profile.mara.meins.reference_match_rate = 0.9700
+                        profile.mara.meins.distinct_count = 17
++-- Parameter source    reference (T006)
++-- Description risk     low
+```
+
+Every line is either a number from the raw profile JSON or a claim citing one. The
+reviewer may disagree with the judgement but can never be mystified by the number.
+The rationale must cite counter-evidence too (the 84 misses above): an explanation
+that presents only supporting evidence is advocacy, not analysis.
+
+### Retrieval and presentation: two dials, not one
+
+A single confidence threshold conflates two different jobs, and set at retrieval it
+sabotages the system's purpose. Retrieval is the recall tier: its job is to surface
+every template that *might* apply so the adjudicator can judge. On the messy
+datasets AgentDQ most wants to help, a field with a 6% typo rate has a
+`reference_match_rate` of 0.94; a 0.95 retrieval floor would never retrieve it, the
+adjudicator would never see it, and no rule would be suggested - precisely because
+the field has the quality problem the rule would catch. The dirtier the data, the
+fewer rules suggested; the system would eat its own purpose. So two dials, kept
+deliberately far apart:
+
+```
+Dial                          Default   Optimises for
+----------------------------  --------  -------------------------------------
+Retrieval (per-signal floor,  0.80      recall - let the adjudicator see
+e.g. reference_match_rate)              borderline fits; a miss here is
+                                        silent and invisible
+Suggestion confidence floor   0.95      precision at the human gate, but only
+(auto-highlight in review UI)           for highlighting; lower-confidence
+                                        candidates are still shown, sorted down
+```
+
+The economics reinforce the split: a wasted adjudication call costs a fraction of a
+cent; a silently missed rule costs the one thing the system exists to provide. The
+rediscovery harness tunes both dials empirically - hide known rules in generated
+data, measure recall at retrieval and precision at suggestion, adjust.
+
+### Reference tables for MARA/MARC
+
+Not every domain needs a reference *table*. Small fixed domains (BESKZ = E/F/X)
+are `template_fixed` - the values live in the template, no file needed. Reference
+tables earn their existence when the value set is large, client-specific or
+externally standardised. Filtering the 107 rules' needs through that lens gives a
+Phase 1 shortlist of ten, all extractable from the CAL appliance via the same
+SE16N route as the master data (the existing `extract_loader.py` ingests them
+unchanged):
+
+```
+#   Table    Contents                       Serves (role)            Size-ish
+--  -------  -----------------------------  -----------------------  ---------
+1   T006     Units of measure               unit_of_measure          ~50-100
+2   T023     Material groups                material_group           ~100s
+3   T134     Material types                 material_type            ~30-50
+4   T137     Industry sectors               industry_sector          ~10-20
+5   T002     Language keys                  language_key             ~40
+6   T001W    Plants                         org_unit_plant           ~10-30
+7   T024     Purchasing groups              purchasing_group         ~20-50
+8   T024D    MRP controllers (per plant)    mrp_controller           ~20-50
+9   T438A    MRP types                      mrp_type                 ~20-30
+10  T141     Material status values         status_flag              ~10-20
+```
+
+Two of these are plant-dependent (T024D keys on plant + controller), which the
+reference layer preserves rather than flattens, because "valid MRP controller *for
+this plant*" is the real rule. Held in reserve for lazy addition if templates
+demand them: T005 (countries), TCURC (currencies), T025 (valuation classes) -
+MARA/MARC rules touch these less often, and adding one is just another file in
+`config/reference/` plus a loader entry.
+
+Each reference table carries a thin metadata wrapper - source system, extract date,
+key columns - because "valid as of when?" is an auditor's question, and a stale
+reference list masquerading as truth is itself a data quality defect. A DQ tool
+should not build that irony into its own foundations.
+
+### The approval and governance UI
+
+The Streamlit app (`app/dashboard.py`) grows two surfaces rather than a new app:
+
+```
+Surface              Shows                              User action
+-------------------  ---------------------------------  ------------------------
+Rule Bank browser    templates, binding, applicability  edit strength (Data
+                     signals, strength + reason, usage  Manager role), retire,
+                     history                            annotate
+Suggestion review    candidate rules with decomposed    approve / edit / reject,
+(approval gate)      confidence, rationale, evidence,   with reason captured
+                     description-risk, parameter source
+```
+
+The Suggestion review surface renders the decomposed confidence card shown above,
+so explainability is a property of the data model rather than a feature bolted on.
+The Rule Bank browser is where the Data Manager exercises the strength-governance
+control - the human-only, audited promotion described earlier.
+
+### Canonical file paths
+
+```
+config/rule_bank/                    template YAMLs
+config/rule_bank/field_roles.yaml    the controlled role enum
+config/reference/                    the ten reference tables + metadata
+tools/build_rule_bank.py             wraps the 107 RuleSpecs with match metadata
+src/rules/rule_bank.py               loads and queries the bank
+src/agents/profile_interpreter.py    Profiling Agent (two outputs)
+src/agents/rule_suggester.py         Rule Suggestion Agent (two engines)
+src/dspy_modules/suggestion_signatures.py   the DSPy signatures
+```
+
+### Open decisions, now closed
+
+```
+Decision                     Resolution
+---------------------------  ------------------------------------------------
+Field-role vocabulary        fixed controlled enum of 16 roles + `unknown`,
+                             seeded from the 107 rules' field coverage
+Retrieval threshold          two dials: 0.80 retrieval (recall), 0.95
+                             highlight (precision at the gate)
+Reference tables up front    ten scaffolded now (T006, T023, T134, T137,
+                             T002, T001W, T024, T024D, T438A, T141);
+                             remainder added lazily
+```
+
+---
+
 ## Agent Architecture
+
+The dimension agents below form the **execution layer** in the flow above: they
+run the approved rules from the repository, wielding the deterministic executor as
+a tool, and apply grounded judgement around the results. They are described here
+in full; the profiling, suggestion and remediation agents that surround them are
+covered in "The Agentic Core" above.
 
 ### Agent-to-Dimension Mapping
 
@@ -100,8 +760,6 @@ graph LR
 ```
 
 Conditional edges apply — for instance, if the Completeness Agent finds the table is less than 70% complete, the Uniqueness Agent gets deprioritised (no point finding duplicates in sparse data), and the Remediation Recommender is told to flag completeness as the primary concern.
-
----
 
 ---
 
@@ -234,6 +892,184 @@ Author, natural-language origin, dry-run statistics and timestamp travel with ea
 ### Relationship to the current contracts
 
 The `Rule` contract already carries dimension, archetype, domain values and provenance, and covers the simple archetypes (not-null, domain-in) directly. The one evolution required is to add the **predicate tree** for the compositional cases — scope filters and cross-field `when/then` with `and`/`or`/`not`/`implies` — so the IR can express the richer rules. This is an extension of the existing contract rather than a new concept.
+
+---
+
+---
+
+## Uniqueness: Duplicate Detection Design
+
+Uniqueness is the first agent that is not a rule wrapper. The rule-backed agents
+ask "is this row valid?" and answer deterministically. Uniqueness asks "are these
+two rows the same entity?" and answers with a similarity score, because true
+duplicates rarely share an identical value - "ACME Corp" and "ACME Corporation
+Pte Ltd" are plausibly one supplier yet have no field in common. The work is
+therefore pairwise, not per-row, and that shift shapes the whole design.
+
+### Scope and blocking are two different things
+
+A recurring confusion is worth settling once. Limiting what gets compared is two
+separate mechanisms, not one:
+
+```
+Concept    What it means                           Example
+---------  -------------------------------------   ---------------------------
+Scope      which records are considered at all     only dedupe FERT materials
+Blocking   partition records so comparison only     never compare FERT to ROH
+           happens within a partition
+```
+
+"Do not compare a finished good (FERT) against a raw material (ROH) or packaging
+(VERP)" is blocking, and Material Type (MTART) is the blocking key. Blocking does
+double duty: it cuts the number of comparisons and it removes a whole class of
+false positives, since two records in different blocks can never be wrongly
+merged. Scope is a separate, optional filter - "only run on FERT and HALB" - and
+it reuses the same predicate IR the rules already use, for example a `Comparison`
+of `MTART in ['FERT','HALB']`. One natural-language front-end therefore feeds
+both rule authoring and uniqueness scoping.
+
+Phase 1 and Phase 2 both use **MTART as the blocking key and MAKTX (description)
+as the compared field**. The compared fields are a configurable list, not a
+hardcoded single field, so dimensions (BRGEW, NTGEW) or, for manufacturing
+customers, classification characteristics (AUSP/KSSK/KLAH) can be added later as
+a config change rather than a rewrite.
+
+### Why all-pairs does not scale, and what replaces it
+
+Comparing every record against every other is $O(n^2)$. Even after blocking by
+MTART, the dominant block explodes: the HALB block alone holds roughly 2,186
+materials, giving $\frac{2186 \times 2185}{2} \approx 2.4$ million pairs from a
+2,800-row table. At a million materials a single block is intractable.
+
+For Phase 1 at pilot scale, brute-force comparison within a block is acceptable
+and simple, so that is what the first cut does. The design keeps a clear seam for
+Phase 2: replace all-pairs with **embedding-based approximate nearest neighbour**
+(a vector index such as FAISS, or `sentence-transformers` semantic search), which
+turns the within-block problem from $O(n^2)$ into roughly $O(n \log n)$. The
+agent and its output are unchanged; only the candidate-generation step swaps -
+the same pattern as pandas to SQL for the rules.
+
+### Tiered matching: cheap methods first, judgement last
+
+Matching runs as a cost ladder, so expensive tiers only see what the cheap ones
+cannot resolve:
+
+```mermaid
+graph LR
+    A[In-block records] --> N[Normalise<br/>upper, strip suffixes]
+    N --> F[Fuzzy score<br/>rapidfuzz Jaro-Winkler]
+    N --> S[Semantic score<br/>MiniLM cosine]
+    F --> C[Combined score]
+    S --> C
+    C --> B{Score band}
+    B -->|>= 0.92| D[Duplicate]
+    B -->|0.80 - 0.92| L[LLM adjudicates<br/>DSPy]
+    B -->|< 0.80| X[Not a duplicate]
+```
+
+- **Normalise (deterministic).** Uppercase, strip punctuation, collapse
+  whitespace, remove legal suffixes. Exact duplicates after normalisation are
+  caught for free, with no fuzzy work.
+- **Fuzzy (deterministic).** Jaro-Winkler / Levenshtein via rapidfuzz catches
+  typos, word-order swaps and abbreviations.
+- **Semantic (deterministic).** MiniLM embeddings compared by cosine similarity
+  catch meaning that string distance misses, such as "Hex Bolt M8" versus
+  "M8 Hexagon Screw".
+- **Combine** the fuzzy and semantic scores (weighted blend or max, configurable)
+  and band the result.
+
+### The agent's role, and where the language model helps
+
+Most of the pipeline is deterministic plumbing. The agent is the judgement layer
+on top, with three jobs, only one of which uses a language model:
+
+```
+Job           What it does                              Uses LLM
+------------  ----------------------------------------  --------
+Orchestrate   run normalise -> block -> score, band     no
+Adjudicate    decide the genuinely uncertain pairs      yes
+Explain       justify each call for a human reviewer    yes
+```
+
+The language model is not the matcher - fuzzy and semantic scoring already match.
+It is a **second-pass adjudicator on the uncertain band only** (for example
+0.80 to 0.92). Above the upper threshold the deterministic methods are already
+confident; below the lower one they are confident it is not a duplicate. Sending
+those to a model wastes money and adds latency. This is the central cost control:
+language-model calls scale with genuine ambiguity, not with dataset size.
+
+Its real value is on the high-score-but-actually-different case, which pure
+scoring gets wrong:
+
+```
+Pair                                     Fuzzy   Semantic   Why the model helps
+---------------------------------------  ------  ---------  ------------------------------
+Hex Bolt M8  /  M8 Hexagon Screw          low     high      knows bolt ~ screw; same part
+Bearing 6203  /  Bearing 6204             high    high      6203 != 6204; different part
+Pump A100  /  Pump A100 - REFURBISHED     high    high      variant or same? a judgement
+```
+
+So the model is as much a false-positive filter as a matcher: it rejects
+plausible-looking non-duplicates using knowledge of what a difference means, and
+it explains each verdict so a steward can action it. It never auto-merges - master
+data merges are destructive, so the agent produces scored, reasoned candidates and
+a human confirms.
+
+### The adjudicator as a DSPy module
+
+Adjudication is a typed function, not a prompt string:
+
+```
+description_a, description_b, material_type, scores -> same_material, confidence, reasoning
+```
+
+As a DSPy signature this returns a validated object (not text to parse), is
+optimisable against the injector's labelled twin pairs with measurement in
+MLflow, and swaps from the OpenAI API to SAP AI Core in Phase 2 as a
+configuration change rather than a prompt rewrite.
+
+### One declarative config
+
+Everything above collapses into a single declarative configuration, which the
+natural-language layer can later generate from a data-ops request:
+
+```
+uniqueness:
+  scope:                     # optional filter, reuses the rule predicate IR
+    field: MTART
+    op: in
+    value: [FERT, HALB]
+  blocking_key: MTART        # only compare within the same value
+  compare_fields: [MAKTX]    # Phase 1: description; extend later
+  methods:
+    fuzzy:    { metric: jaro_winkler, weight: 0.5 }
+    semantic: { model: all-MiniLM-L6-v2, weight: 0.5 }
+  bands:
+    duplicate:   0.92        # >= this: auto-flag as duplicate
+    review_low:  0.80        # [review_low, duplicate): model adjudicates
+```
+
+### Output, scoring and ground truth
+
+Uniqueness produces candidate duplicate pairs (and, by transitive grouping,
+clusters) each with a confidence score, rather than a binary per-row finding. The
+existing ground truth already supports evaluation: the defect injector labels each
+twin with `duplicate_of` pointing at its source, and because a twin copies its
+source's MTART, twin and source always land in the same block by construction. The
+one contract change is small - a duplicate is a pair, so `Finding.metadata` carries
+the matched partner and the score rather than a new type being introduced.
+
+### Trade-offs to state plainly
+
+- **Blocking by MTART assumes true duplicates share a material type.** A material
+  created once as FERT and once as HALB would be missed. This is a deliberate
+  trade of a little recall for large gains in precision and speed, and is the
+  right default for material master; if a customer needs cross-type detection the
+  blocking key becomes configurable.
+- **Description alone over-merges generic materials.** "HEX BOLT" M8 and M12 look
+  identical on description; the discriminating detail lives in characteristics.
+  This is why compared fields are configurable and why results are always
+  reviewed by a human rather than auto-merged.
 
 ---
 
