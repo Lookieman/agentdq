@@ -4,6 +4,10 @@
 #                      loads frames/schemas/approved-rules, runs the parallel
 #                      dimension fan-out through LangGraph, prints the scorecard.
 #                      The LangGraph counterpart to tools/run_assessment.py.
+# v1.1 | 20-Jul-2026 | Add a no-checks guard: when zero rules execute, a 100%
+#                      score means "checked nothing", not "clean data". Warn
+#                      loudly, label the scorecard, and hint at --rules
+#                      config/rules. Guard logic is a testable pure helper.
 # ---------------------------------------------------------------------------
 """Run the assessment graph over a dataset and print the scorecard.
 
@@ -21,7 +25,7 @@ Run:
 from __future__ import annotations
 
 import argparse
-from typing import Any, Callable
+from typing import Any, Callable, Optional
 
 import pandas as pd
 
@@ -38,11 +42,37 @@ from src.rules.rule_loader import load_rules
 GRAPH_DIMENSIONS: list[str] = ["Completeness", "Validity", "Consistency"]
 
 
-def _rule_loader(rules_dir: str) -> Callable[[dict[str, Any]], list[Any]]:
-    """Return a load_rules callable the load_approved node can call with state.
-    Reads approved rules from a directory in the importer/rule_loader shape."""
+def no_checks_warning(rules_loaded: int, rules_run: int, rules_dir: str) -> Optional[str]:  # v1.1
+    """Return a warning when the run executed no checks, else None.
+
+    A scorecard of 100% is produced by 100 * (1 - affected/total) with zero
+    findings - which is exactly what happens when NO rules run. That reads as
+    'perfect data' but means 'checked nothing', so it must be flagged. The two
+    causes read differently: no rules were found at all, or rules were found but
+    none executed (not executable, or none for the assessed tables)."""
+    hint: str = "point --rules at a directory of rules (e.g. --rules config/rules)"
+    detail: str = ""
+
+    if rules_run > 0:
+        return None
+    if rules_loaded == 0:
+        detail = f"no rules were found in {rules_dir}"
+    else:
+        detail = (f"{rules_loaded} rule(s) loaded from {rules_dir}, but none executed "
+                  f"(none executable, or none for the assessed tables)")
+    return (
+        "WARNING: 0 checks ran, so the scores below reflect NOTHING CHECKED, "
+        "not clean data.\n"
+        f"         {detail}.\n"
+        f"         To assess against real rules, {hint}."
+    )
+
+
+def _preloaded_loader(rules: list[Any]) -> Callable[[dict[str, Any]], list[Any]]:  # v1.1
+    """Return a load-rules callable that yields an already-loaded rule list, so
+    the CLI can report the count once and reuse it inside the graph."""
     def loader(state: dict[str, Any]) -> list[Any]:
-        return load_rules(rules_dir)
+        return rules
     return loader
 
 
@@ -66,10 +96,13 @@ def main() -> None:
 
     frames: dict[str, pd.DataFrame] = load_frames(args.data, args.tables, args.format)
     schemas: dict[str, TableSchema] = load_schemas(args.schema_dir, args.tables)
+    approved: list[Any] = load_rules(args.rules)  # v1.1
+    executable: int = sum(1 for r in approved if getattr(r, "executable", True))  # v1.1
+    print(f"Loaded {len(approved)} rule(s) from {args.rules} ({executable} executable).")  # v1.1
 
     graph: Any = build_assessment_graph(
         CompletenessAgent(), ValidityAgent(), ConsistencyAgent(),
-        load_rules=_rule_loader(args.rules), compute_scorecard=_scorecard_fn(),
+        load_rules=_preloaded_loader(approved), compute_scorecard=_scorecard_fn(),  # v1.1
     )
     initial: dict[str, Any] = {
         "tables": args.tables, "frames": frames, "schemas": schemas,
@@ -77,7 +110,21 @@ def main() -> None:
     }
     final: dict[str, Any] = graph.invoke(initial)
 
-    print_scorecard(final["report"]["scorecard"], args.data)
+    rules_run: int = sum(  # v1.1
+        r.get("rules_run", 0) for r in final["agent_results"] if "rules_run" in r
+    )
+    warning: Optional[str] = no_checks_warning(len(approved), rules_run, args.rules)  # v1.1
+    label: str = args.data if warning is None else f"{args.data}  [NO CHECKS RUN]"  # v1.1
+
+    if warning is not None:  # v1.1
+        print("\n" + "!" * 60)
+        print(warning)
+        print("!" * 60)
+
+    print_scorecard(final["report"]["scorecard"], label)  # v1.1
+
+    if warning is not None:  # v1.1
+        print("\nReminder: the score above is not meaningful - 0 checks ran.")
     advisories: list[str] = final.get("upstream_advisories", {}).get("uniqueness", [])
     if advisories:
         print("\nCross-agent advisories (to the Uniqueness stage, Package 4):")

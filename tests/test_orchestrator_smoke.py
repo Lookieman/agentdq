@@ -217,3 +217,22 @@ def test_assessment_graph_agents_stay_graph_free():
     for module in (base, comp):
         source = inspect.getsource(module)
         assert "langgraph" not in source
+
+
+# ---------------------------------------------------------------------------
+# The no-checks guard (run_assessment_graph)
+# ---------------------------------------------------------------------------
+
+def test_no_checks_warning_fires_when_nothing_runs():
+    from tools.run_assessment_graph import no_checks_warning
+    # No rules found at all.
+    w1 = no_checks_warning(rules_loaded=0, rules_run=0, rules_dir="data/approved")
+    assert w1 is not None and "NOTHING CHECKED" in w1 and "no rules were found" in w1
+    # Rules loaded but none executed (e.g. not executable / wrong tables).
+    w2 = no_checks_warning(rules_loaded=12, rules_run=0, rules_dir="config/rules")
+    assert w2 is not None and "none executed" in w2 and "12 rule" in w2
+
+
+def test_no_checks_warning_silent_when_checks_run():
+    from tools.run_assessment_graph import no_checks_warning
+    assert no_checks_warning(rules_loaded=37, rules_run=14, rules_dir="config/rules") is None
