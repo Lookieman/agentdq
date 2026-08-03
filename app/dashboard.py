@@ -1,11 +1,15 @@
 # v0.1 | 27-Jun-2026 | Initial Streamlit dashboard
+# v0.2 | 26-Jul-2026 | Replace the Phase 2 migration tab with an About tab
+#                      (POC framing; portability kept as a design property,
+#                      not a roadmap); drop the "Phase 1 pilot" caption. The
+#                      Consistency dimension now appears via assess() v0.2.
 
 """AgentDQ dashboard.
 
 A presentation layer over the shared assess() function. It shows the data
 quality scorecard, lets a reader drill into findings, presents the
-precision/recall evidence on labelled data, and lays out the Phase 2 case. All
-the analysis lives in src/; this file is purely the view.
+precision/recall evidence on labelled data, and explains what the proof of
+concept demonstrates. All the analysis lives in src/; this file is purely the view.
 
 Launch from the repository root:
 
@@ -176,7 +180,7 @@ def render_findings_tab(result: AssessmentResult) -> None:
 
 
 def render_evidence_tab(result: AssessmentResult) -> None:
-    """The precision/recall evidence, the credibility anchor for Phase 2."""
+    """The precision/recall evidence: the credibility anchor for the results."""
     rows: list[dict[str, object]] = []
     name: str = ""
     row = None
@@ -219,42 +223,46 @@ def render_evidence_tab(result: AssessmentResult) -> None:
     st.plotly_chart(figure, use_container_width=True)
 
 
-def render_phase2_tab() -> None:
-    """The Phase 2 case: what is proven and what is being asked for."""
+def render_about_tab() -> None:
+    """What this proof of concept demonstrates."""
     dot: str = """
     digraph {
       rankdir=LR;
       node [shape=box, style="rounded,filled", fontname="Helvetica", fillcolor="#eef4ff"];
       edge [color="#8899bb"];
-      IR [label="Canonical Rule IR\\n(unchanged)", fillcolor="#fff4e6"];
-      Agents [label="Dimension agents\\n(unchanged)", fillcolor="#fff4e6"];
-      Pandas [label="pandas executor\\nPhase 1"];
-      SQL [label="SQL on Datasphere / Databricks\\nPhase 2"];
-      Parquet [label="local parquet\\nPhase 1"];
-      Sphere [label="SAP Datasphere\\nPhase 2"];
-      OpenAI [label="OpenAI API\\nPhase 1"];
-      AICore [label="SAP AI Core\\nPhase 2"];
-      IR -> Pandas; IR -> SQL;
-      Parquet -> Agents; Sphere -> Agents;
-      Agents -> OpenAI; Agents -> AICore;
+      Profile [label="Profile the data"];
+      Suggest [label="Suggest rules (agent)", fillcolor="#fff4e6"];
+      Approve [label="Human approves (gate)", fillcolor="#e8f7ec"];
+      Execute [label="Execute approved rules"];
+      Remediate [label="Prioritise + explain (agent)", fillcolor="#fff4e6"];
+      Profile -> Suggest -> Approve -> Execute -> Remediate;
     }
     """
-    migration: list[dict[str, str]] = [
-        {"Concern": "Execution", "Phase 1": "pandas executor", "Phase 2": "SQL pushdown (Datasphere / Databricks)"},
-        {"Concern": "Data access", "Phase 1": "local parquet / xlsx", "Phase 2": "SAP Datasphere views"},
-        {"Concern": "LLM serving", "Phase 1": "OpenAI API", "Phase 2": "SAP AI Core (GenAI Hub)"},
-        {"Concern": "Rule store", "Phase 1": "git-tracked YAML", "Phase 2": "governed table with lifecycle"},
+    demonstrates: list[dict[str, str]] = [
+        {"Capability": "Rule suggestion", "How": "an agent proposes rules from profiled data, grounded in a rule bank and data-driven inference"},
+        {"Capability": "Human approval gate", "How": "a data steward approves, edits or rejects each suggestion before it can run"},
+        {"Capability": "Deterministic execution", "How": "approved rules run through an exact, reproducible pandas executor - no LLM in the measurement"},
+        {"Capability": "Explained findings", "How": "each finding carries its rule, evidence and severity; ground-truth evaluation reports precision and recall"},
     ]
 
-    st.subheader("Phase 1 is the proof; Phase 2 is a change of substrate")
+    st.subheader("What this proof of concept shows")
     st.write(
-        "The rule representation and the agents do not change between phases. What changes is where "
-        "the work runs. That is the whole point of compiling rules from a declarative representation: "
-        "the same design scales onto enterprise infrastructure without a rewrite."
+        "AgentDQ is a proof of concept and a portfolio piece. It shows how a multi-agent AI system "
+        "can assess and quantify data quality for SAP master data, with the judgement placed where it "
+        "belongs: an agent proposes rules, a human decides which to adopt, and a deterministic executor "
+        "does the measuring. The agents reason only over provided evidence - the rule bank, the reference "
+        "tables, the schema and the profile - never from model memory."
     )
     st.graphviz_chart(dot, use_container_width=True)
-    st.subheader("What Phase 2 needs")
-    st.dataframe(pd.DataFrame(migration), use_container_width=True, hide_index=True)
+    st.subheader("What it demonstrates")
+    st.dataframe(pd.DataFrame(demonstrates), use_container_width=True, hide_index=True)
+    st.subheader("A note on portability")
+    st.write(
+        "Rules are compiled from a declarative representation rather than written as code, so the same "
+        "approved rules could run on a different executor - for example SQL pushdown - without changing "
+        "the agents. That portability is a property of the design, shown here on pandas; it is not a "
+        "planned migration."
+    )
 
 
 def main() -> None:
@@ -267,7 +275,7 @@ def main() -> None:
     result: AssessmentResult = None
 
     st.title("AgentDQ - SAP Master Data Quality")
-    st.caption("Agentic data quality assessment for SAP Material Master - Phase 1 pilot")
+    st.caption("Agentic data quality assessment for SAP Material Master - proof of concept")
 
     if not datasets:
         st.error("No datasets found. Generate a synthetic dataset or place CAL extracts in data/raw.")
@@ -282,8 +290,8 @@ def main() -> None:
     result = cached_assess(chosen["dir"], chosen["format"])
     render_kpis(result)
 
-    scorecard_tab, findings_tab, evidence_tab, phase2_tab = st.tabs(
-        ["Scorecard", "Findings", "Evidence", "Phase 2 case"]
+    scorecard_tab, findings_tab, evidence_tab, about_tab = st.tabs(
+        ["Scorecard", "Findings", "Evidence", "About"]
     )
     with scorecard_tab:
         render_scorecard_tab(result)
@@ -291,8 +299,8 @@ def main() -> None:
         render_findings_tab(result)
     with evidence_tab:
         render_evidence_tab(result)
-    with phase2_tab:
-        render_phase2_tab()
+    with about_tab:
+        render_about_tab()
 
 
 main()

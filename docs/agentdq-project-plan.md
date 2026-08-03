@@ -11,24 +11,40 @@ The project targets asset-intensive industries (oil & gas, utilities, manufactur
 - Demonstrates **agent architecture design** — not single-shot LLM calls
 - Applies **domain expertise** (SAP MDG) to a real enterprise problem
 - Uses **rigorous evaluation methodology** — ground truth labels, precision/recall per dimension, MLflow tracking
-- Bridges **open-source and enterprise platforms** (Phase 1 → Phase 2 progression)
+- Treats **portability as a design property** — rules are described declaratively, so the checks are not welded to one runtime
 - Differentiates from typical ML portfolios by combining AI/ML skills with deep enterprise data management knowledge
 
-### Two-Phase Approach
+### Scope
 
-- **Phase 1 (Pilot):** Open-source technology stack, synthetic + SAP sandbox data
-- **Phase 2 (Enterprise):** SAP Business Data Cloud (BDC) as the data and AI platform
+AgentDQ is a proof of concept and a portfolio piece. It runs on an open-source
+stack against synthetic data and real SAP CAL sandbox extracts, and it stays
+there.
+
+Re-platforming onto SAP Business Data Cloud was considered early on and is now
+**out of scope for this POC**. SAP intends Reltio, once integrated into BDC, to
+serve as the data quality and profiling solution, so there is no case for
+building a parallel one on that platform. What survives that decision is the
+design property rather than the roadmap: rules are described declaratively
+instead of written as runtime code, so they could in principle be compiled to
+another engine. That claim is untested here and is stated as a property of the
+design, not as a plan.
 
 ---
 
-## Build Status (Phase 1)
+## Build Status
 
-**Delivery status (15-Jul-2026): Packages 1 and 2 complete.** The agentic loop
-closes end to end - an agent suggests a rule, a human governs it at the approval
-gate, and the approved rule is executable. The first AgentDQ LinkedIn article
-(Package 2's story: "the agent proposes, the human disposes") is ready to write.
-The delivery breakdown, the remaining packages, and per-package designs live in
-`agentdq_design.md`; the next build is Package 3 (LangGraph orchestration).
+**Delivery status (26-Jul-2026): Packages 1, 2 and 3 complete.** The agentic
+loop closes end to end - an agent suggests a rule, a human governs it at the
+approval gate, and the approved rule is executable - now orchestrated as two
+LangGraph graphs (a suggestion graph and an assessment graph joined by the
+repository). The assessment graph fans the three deterministic dimensions out
+in parallel and routes cross-agent advisories to the downstream uniqueness
+stage. The suite stands at 84 passing tests, 1 skipped, all offline. The first
+two AgentDQ LinkedIn articles are ready to write: Package 2's ("the agent
+proposes, the human disposes") and Package 3's ("where I put the human in the
+loop, and why"). The delivery breakdown, the remaining packages, and the
+per-package designs live in `agentdq_design.md`; the next build is Package 4
+(Uniqueness and Remediation).
 
 The data foundation and the deterministic assessment path are built, tested and
 demonstrated end to end on real SAP CAL extracts (MARA, MARC, MAKT). The current
@@ -67,7 +83,7 @@ What the pilot demonstrates today:
 - A scorecard and dashboard that run on both the labelled synthetic scenarios
   and the real CAL extract, surfacing genuine completeness gaps in the real data.
 
-Still to build in Phase 1 (reordered around the agentic pivot - see "The Agentic
+Still to build (reordered around the agentic pivot - see "The Agentic
 Core" below):
 
 ```
@@ -113,7 +129,7 @@ with a deterministic executor in the middle as the trusted tool.
 
 ```mermaid
 graph TD
-    D[(Customer data<br/>CAL / BDC data product)] --> PA[Profiling Agent<br/>what IS this data?]
+    D[(Customer data<br/>SAP CAL extracts)] --> PA[Profiling Agent<br/>what IS this data?]
     PA --> RSA[Rule Suggestion Agent<br/>what rules SHOULD apply?]
     BANK[(Rule Bank<br/>IS rules as templates + priors)] --> RSA
     REF[(Reference values<br/>ISO units, check tables)] --> RSA
@@ -595,7 +611,7 @@ Not every domain needs a reference *table*. Small fixed domains (BESKZ = E/F/X)
 are `template_fixed` - the values live in the template, no file needed. Reference
 tables earn their existence when the value set is large, client-specific or
 externally standardised. Filtering the 107 rules' needs through that lens gives a
-Phase 1 shortlist of ten, all extractable from the CAL appliance via the same
+shortlist of ten, all extractable from the CAL appliance via the same
 SE16N route as the master data (the existing `extract_loader.py` ingests them
 unchanged):
 
@@ -765,7 +781,7 @@ Conditional edges apply — for instance, if the Completeness Agent finds the ta
 
 ## Rules Ingestion and Authoring
 
-Rules are not hard-coded in the agents. They are declarative artefacts that enter the system, are validated against the schema, and are compiled to whichever engine runs them. How rules are authored determines whether Phase 2 is a recompile or a rewrite, so the design treats authoring as platform-neutral and execution as a compiler target.
+Rules are not hard-coded in the agents. They are declarative artefacts that enter the system, are validated against the schema, and are compiled to whichever engine runs them. How rules are authored determines whether moving to a different engine would be a recompile or a rewrite, so the design treats authoring as platform-neutral and execution as a compiler target.
 
 ### Two front-ends, one representation, many back-ends
 
@@ -774,7 +790,7 @@ Rules arrive two ways, and both converge on a single canonical representation:
 - the **IS importer**, which bulk-seeds the legacy Information Steward rules (roughly 1,600 rules) by deterministic parsing; and
 - the **natural-language authoring agent**, through which a data-operations user writes a new rule in English and the agent interprets it into a formal rule.
 
-Both emit one **canonical rule representation (IR)**: a declarative, platform-neutral specification. The IR is then compiled to the execution engine — pandas in Phase 1, Spark SQL on Databricks or HANA SQL on SAP BDC in Phase 2.
+Both emit one **canonical rule representation (IR)**: a declarative, platform-neutral specification. The IR is then compiled to whichever engine runs it. This POC ships exactly one compiler target, pandas. A SQL target is something the design allows for, not something it delivers.
 
 ```mermaid
 graph TD
@@ -782,9 +798,9 @@ graph TD
     IS[IS workbook expressions] --> IMP[IS Importer<br/>deterministic parse]
     AGENT --> IR[Canonical Rule IR<br/>declarative, platform-neutral]
     IMP --> IR
-    IR --> P1[pandas executor<br/>Phase 1]
-    IR --> P2A[Spark SQL / DLT<br/>Databricks]
-    IR --> P2B[HANA SQL / views<br/>SAP BDC Datasphere]
+    IR --> P1[pandas executor<br/>built]
+    IR --> P2A[Spark SQL<br/>possible target, not built]
+    IR --> P2B[HANA SQL / views<br/>possible target, not built]
     P1 --> FIND[Findings]
     P2A --> FIND
     P2B --> FIND
@@ -792,7 +808,7 @@ graph TD
 
 ### Emit IR, not code
 
-The system never asks a language model to write executable Python or SQL. The IR is a declarative description of the check — a small typed predicate tree — and a deterministic compiler turns it into code. This buys four properties, each of which matters most in Phase 2:
+The system never asks a language model to write executable Python or SQL. The IR is a declarative description of the check — a small typed predicate tree — and a deterministic compiler turns it into code. This buys four properties:
 
 ```
 Property         Why it matters
@@ -804,12 +820,12 @@ Portable         One IR compiles to pandas, Spark SQL or HANA SQL. The rule
 Validatable      Field names, types and domains are checked against the
                  schema before a rule runs. Hallucinated fields are
                  rejected, not executed.
-Pushdown         The IR compiles to SQL that runs in Databricks or
-                 Datasphere, so checks execute where the data lives rather
-                 than pulling rows to the client. This is what scales.
+Pushdown         The IR could compile to SQL that runs where the data
+                 lives, rather than pulling rows to the client. That is
+                 what would scale. Not built here.
 ```
 
-In Phase 1 the pandas executor pulls data to the desktop. In Phase 2 that is not viable, so the IR compiles to SQL that executes in place. The agent and the IR are unchanged; only the compiler differs.
+The pandas executor pulls data to the desktop, which is fine at pilot volumes and hopeless at production ones. Handling production volumes would mean compiling the IR to SQL that executes in place. The agent and the IR would be unchanged; only the compiler would differ. That is the portability claim, and here it stays a claim.
 
 ### The predicate: one structure, three roles
 
@@ -862,29 +878,30 @@ The design points that make it trustworthy for a non-technical author:
 
 - **Grounded in the schema.** The agent receives the table's fields, types, domains and keys, so it binds to real columns and any reference to a non-existent field is rejected. This reuses the schema layer.
 - **Emits a typed RuleSpec, not free text.** DSPy produces a validated object directly, so the output is structurally constrained by construction.
-- **Explain-back and dry-run before saving.** The agent compiles the proposed IR with the Phase-1 executor, runs it against the current dataset, and shows the user a plain-language paraphrase plus an impact preview ("this would flag 412 of 5,000 MARC rows; here are five examples"). The user confirms or corrects. This closes the loop between intent and interpretation and resolves the ambiguity natural language always carries.
+- **Explain-back and dry-run before saving.** The agent compiles the proposed IR with the pandas executor, runs it against the current dataset, and shows the user a plain-language paraphrase plus an impact preview ("this would flag 412 of 5,000 MARC rows; here are five examples"). The user confirms or corrects. This closes the loop between intent and interpretation and resolves the ambiguity natural language always carries.
 - **Classifies dimension and archetype** with the same mapping logic the importer uses, and **stores the original natural-language text as provenance**, mirroring how the IS expression is retained for lineage.
 
 ### The IS workbook as gold set
 
 The IS workbook is more than a seed catalogue. Each rule pairs a natural-language description with its formal expression, so once the importer has produced IR, the result is a set of roughly 1,600 `(natural language -> formal rule)` pairs. That is the labelled set used to optimise the authoring agent with DSPy and to score it in MLflow. Building the importer first is therefore doubly justified: it seeds the catalogue and it produces the evaluation set for the agent.
 
-### Phase 2 portability, concretely
+### Portability, concretely
 
-Only the bottom layer changes between phases:
+If this ever moved onto another platform, only the bottom layer would change.
+The table below records a design property, not a plan; nothing in the right-hand
+column has been built or tested.
 
 ```
-Concern            Phase 1                  Phase 2
+Concern            Built here               Would have to change
 -----------------  -----------------------  ------------------------------
 Execution          pandas executor          SQL compiler (Spark / HANA),
                                              via a transpiler such as
                                              SQLGlot for dialect targets
-Authoring LLM      OpenAI API               SAP AI Core (GenAI Hub) or
-                                             Databricks model serving;
-                                             a DSPy config change
-Rule repository    git-tracked YAML         governed table (Delta or
-                                             Datasphere) with a lifecycle:
-                                             draft -> approved -> active
+Authoring LLM      OpenAI API               any other served model, as a
+                                             DSPy config change
+Rule repository    git-tracked YAML         governed table with a
+                                             lifecycle: draft -> approved
+                                             -> active
 ```
 
 Author, natural-language origin, dry-run statistics and timestamp travel with each rule for audit.
@@ -928,8 +945,8 @@ it reuses the same predicate IR the rules already use, for example a `Comparison
 of `MTART in ['FERT','HALB']`. One natural-language front-end therefore feeds
 both rule authoring and uniqueness scoping.
 
-Phase 1 and Phase 2 both use **MTART as the blocking key and MAKTX (description)
-as the compared field**. The compared fields are a configurable list, not a
+The agent uses **MTART as the blocking key and MAKTX (description) as the
+compared field**. The compared fields are a configurable list, not a
 hardcoded single field, so dimensions (BRGEW, NTGEW) or, for manufacturing
 customers, classification characteristics (AUSP/KSSK/KLAH) can be added later as
 a config change rather than a rewrite.
@@ -941,9 +958,9 @@ MTART, the dominant block explodes: the HALB block alone holds roughly 2,186
 materials, giving $\frac{2186 \times 2185}{2} \approx 2.4$ million pairs from a
 2,800-row table. At a million materials a single block is intractable.
 
-For Phase 1 at pilot scale, brute-force comparison within a block is acceptable
-and simple, so that is what the first cut does. The design keeps a clear seam for
-Phase 2: replace all-pairs with **embedding-based approximate nearest neighbour**
+At pilot scale, brute-force comparison within a block is acceptable and simple,
+so that is what the first cut does. The design keeps a clear seam for a later
+swap: replace all-pairs with **embedding-based approximate nearest neighbour**
 (a vector index such as FAISS, or `sentence-transformers` semantic search), which
 turns the within-block problem from $O(n^2)$ into roughly $O(n \log n)$. The
 agent and its output are unchanged; only the candidate-generation step swaps -
@@ -1025,8 +1042,8 @@ description_a, description_b, material_type, scores -> same_material, confidence
 
 As a DSPy signature this returns a validated object (not text to parse), is
 optimisable against the injector's labelled twin pairs with measurement in
-MLflow, and swaps from the OpenAI API to SAP AI Core in Phase 2 as a
-configuration change rather than a prompt rewrite.
+MLflow, and swaps from one served model to another as a configuration change
+rather than a prompt rewrite.
 
 ### One declarative config
 
@@ -1139,7 +1156,7 @@ This allows evaluation of how each agent performs across different data quality 
 
 ---
 
-## Phase 1 — Pilot (Open Source Stack)
+## The Pilot Stack (Open Source)
 
 ### Objective
 
@@ -1162,7 +1179,7 @@ Prove the architecture works, establish benchmark scores, publish as a portfolio
 
 ### GPU Requirements
 
-**No GPU required for Phase 1.** LLM calls go to Claude API. Fuzzy matching uses CPU-friendly algorithms. sentence-transformers for embedding-based duplicate detection runs fine on CPU with a small model (all-MiniLM-L6-v2). MLflow is pure infrastructure. The entire Phase 1 runs on a Windows desktop with a 4070 Ti.
+**No GPU required.** LLM calls go to Claude API. Fuzzy matching uses CPU-friendly algorithms. sentence-transformers for embedding-based duplicate detection runs fine on CPU with a small model (all-MiniLM-L6-v2). MLflow is pure infrastructure. The whole thing runs on a Windows desktop with a 4070 Ti.
 
 ### Project Scaffold
 
@@ -1292,28 +1309,30 @@ agentdq/
 
 ---
 
-## Phase 2 — Enterprise (SAP BDC)
+## Out of scope: the enterprise migration
 
-### Objective
+An earlier version of this plan carried a second phase - re-platforming AgentDQ
+onto SAP Business Data Cloud, with Datasphere as the data layer, SAP AI Core
+serving the models, and SAP Analytics Cloud for the dashboard. That phase is
+**out of scope for this POC**.
 
-Demonstrate the same capability running on SAP's native infrastructure, proving enterprise deployability.
+The reason is not difficulty. SAP intends Reltio, once integrated into BDC, to
+be the data quality and profiling solution. Building a second one alongside it
+would be duplication, and a portfolio piece is a poor place to duplicate a
+vendor's roadmap.
 
-### Technology Migration
+The idea leaves something behind that is worth keeping. It is the reason rules
+are declarative artefacts compiled to an engine rather than Python written
+directly against pandas, and the reason all repository state changes go through
+a small set of verbs rather than through the user interface. Those choices make
+the system easier to reason about here and now. See "Portability, concretely"
+above for what would change on another platform, stated as a design property and
+not as a commitment.
 
-| Phase 1 (Open Source)       | Phase 2 (BDC)                                   |
-|-----------------------------|------------------------------------------------|
-| Local CSV/DuckDB            | SAP Datasphere (data layer)                    |
-| Claude API direct           | SAP AI Core (LLM serving via GenAI Hub)        |
-| LangGraph local             | LangGraph on SAP AI Core or BTP Kyma           |
-| Markdown/HTML report        | SAP Analytics Cloud dashboard                  |
-| Great Expectations          | Datasphere DQ monitoring (where available)     |
-| DVC                         | Datasphere data flows for lineage              |
-
-### Key Architectural Decisions
-
-The agents themselves are largely unchanged — DSPy signatures, validation logic, fuzzy matching. What changes is the plumbing: how agents access data (Datasphere CDS views via OData instead of pandas reading CSVs) and how they invoke LLMs (SAP AI Core LM class instead of direct API calls). The orchestration could remain LangGraph deployed as a container on Kyma, or explore SAP AI Launchpad's workflow capabilities if they've matured.
-
-BDC's DQ tooling is still maturing. Phase 2 is partly a "proof of what BDC *could* enable" and partly an exercise in working around its current gaps. This is a strong narrative — "here's the open-source version that works today, and here's how it maps onto SAP's roadmap."
+What the POC does claim is narrower and testable: that a multi-agent system can
+suggest data quality rules from profiled SAP master data, put a human in front
+of every rule before it is adopted, execute the approved rules deterministically,
+and quantify the result against known ground truth.
 
 ---
 

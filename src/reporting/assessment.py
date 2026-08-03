@@ -1,4 +1,8 @@
 # v0.1 | 27-Jun-2026 | Initial reusable assessment (shared by CLI and dashboard)
+# v0.2 | 26-Jul-2026 | Add the Consistency dimension: ConsistencyAgent joins the
+#                      agent loop and Consistency joins ASSESSED_DIMENSIONS, so
+#                      the linear assess() (and the dashboard over it) covers the
+#                      same three deterministic dimensions the graph does.
 
 """One place that runs an assessment end to end.
 
@@ -17,6 +21,7 @@ import pandas as pd
 from pydantic import BaseModel, Field
 
 from src.agents.completeness import CompletenessAgent
+from src.agents.consistency import ConsistencyAgent  # v0.2
 from src.agents.validity import ValidityAgent
 from src.contracts import DefectLabel, Finding
 from src.data.extract_loader import load_sap_table
@@ -30,7 +35,7 @@ from src.reporting.scorecard import (
 from src.rules.rule_loader import load_rules
 
 
-ASSESSED_DIMENSIONS: list[str] = ["Completeness", "Validity"]
+ASSESSED_DIMENSIONS: list[str] = ["Completeness", "Validity", "Consistency"]  # v0.2
 
 
 class AssessmentResult(BaseModel):
@@ -102,7 +107,7 @@ def assess(
     evaluation: Optional[dict[str, DimensionEval]] = None
     has_gt: bool = labels_path.exists()
 
-    for agent in (CompletenessAgent(), ValidityAgent()):
+    for agent in (CompletenessAgent(), ValidityAgent(), ConsistencyAgent()):  # v0.2
         result = agent.run(frames, schemas, rules)
         agent_summaries.append({
             "agent": result.agent,

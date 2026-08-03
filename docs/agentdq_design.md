@@ -1,4 +1,4 @@
-# AgentDQ - Delivery Design (Phase 1)
+# AgentDQ - Delivery Design
 
 ```
 v1.0 | 12-Jul-2026 | Initial end-to-end delivery design. Seven packages, the
@@ -9,6 +9,13 @@ v1.1 | 12-Jul-2026 | Object onboarding: extensibility audit, object packs,
                      two-version onboarding tool (deterministic scaffolder in
                      Pkg 2; LLM judgement layer as a Pkg 4+ stretch). Package 2
                      deliverables and build order extended accordingly.
+v1.2 | 26-Jul-2026 | Scope correction: re-platforming onto SAP BDC is out of
+                     scope for this POC. Portability retained as a design
+                     property rather than a roadmap; Phase 2 wording removed
+                     throughout.
+v1.3 | 26-Jul-2026 | Package 3 (LangGraph orchestration) confirmed complete and
+                     the no-checks guard added to the assessment runner; test
+                     count to 84 passing, 1 skipped.
 ```
 
 This document is the delivery counterpart to `agentdq-project-plan.md`. The plan
@@ -28,7 +35,7 @@ system.
 
 Packages 1, 2 and 3 are complete. The deterministic spine, the full agentic front
 half, the approval gate, and the LangGraph orchestration exist, are tested offline
-(82 passing tests, 1 skipped), and run on real SAP CAL extracts. The loop closes:
+(84 passing tests, 1 skipped), and run on real SAP CAL extracts. The loop closes:
 an agent suggests a rule, a human approves it, and the approved rule is loadable
 and runnable by the execution layer - now orchestrated as two graphs. The first
 LinkedIn article (Package 2's story - "the agent proposes, the human disposes") is
@@ -172,8 +179,8 @@ A. YAML snapshot + JSONL      git-diffable and human      Two files to keep
    append-only audit ledger   readable; audit trail is    consistent (one writer
    (RECOMMENDED)              append-only by              module removes the risk)
                               construction; maps cleanly
-                              onto a Phase 2 governed
-                              table
+                              onto a governed table if
+                              ever re-platformed
 B. Single YAML with           Simplest possible           History is rewritten in
    embedded history                                       place; merge conflicts;
                                                           a weak audit story
@@ -222,9 +229,10 @@ approved_rules()        What the execution layer runs
 ```
 
 The Streamlit surfaces **render and invoke; they never decide**. All state changes
-go through these verbs. This is the rule that makes Phase 2 a re-plumbing rather
-than a rewrite (the surface becomes a CAP or Fiori app, the verbs stay), and it is
-also what makes the interactive public demo cheap - see 3.5.
+go through these verbs. This is the rule that would make a change of platform a
+re-plumbing rather than a rewrite (the surface becomes some other application,
+the verbs stay), and it is also what makes the interactive public demo cheap -
+see 3.5.
 
 ### 3.5 Two backends behind one interface
 
@@ -235,8 +243,8 @@ another's.
 ```
 Backend                 Used by                 State lives in
 ----------------------  ----------------------  ---------------------------------
-FileRepository          Real runs (your machine, Repository YAML + JSONL ledger
-                        Phase 2)                 on disk
+FileRepository          Real runs (your machine) Repository YAML + JSONL ledger
+                                                 on disk
 SessionRepository       The public demo         Streamlit session_state, per
                                                 browser session, discarded on exit
 ```
@@ -260,8 +268,8 @@ Correct approval-gate design      Suggestions are produced once, reviewed later,
 Demo without live LLM calls       The dashboard renders REAL agent output that was
                                   pre-computed; no API key in the public app, no
                                   bill, no key to leak.
-Phase 2 shape                     A scheduled job writing to a governed store is
-                                  exactly how this runs on BDC.
+Production shape                  A scheduled job writing to a governed store is
+                                  the shape this would take on any platform.
 ```
 
 ---
@@ -757,7 +765,7 @@ only to where its parameters live.
 The generator and defect injector are material-specific. Live assessment of a
 newly onboarded object works fully; ground-truth REDISCOVERY evaluation
 (Package 5) initially covers material objects only. Extending the generator to
-equipment is deliberately out of Phase 1 scope - the evaluation harness proves
+equipment is deliberately out of scope for now - the evaluation harness proves
 the method on materials; the live pipeline proves extensibility on equipment.
 
 ---

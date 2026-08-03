@@ -6,8 +6,9 @@ spot. Versions are the latest change-log entry at the top of each file at the
 time of writing; treat them as a snapshot for verifying your working tree is in
 sync, not as a live value.
 
-*Updated 19-Jul-2026: adds the LangGraph orchestration (Package 3) - graph
-state, nodes, orchestrator, the two graph runners and the interrupt example.
+*Updated 20-Jul-2026: adds the LangGraph orchestration (Package 3) - graph
+state, nodes, orchestrator, the two graph runners and the interrupt example -
+plus the no-checks guard on the assessment runner.
 All versions in this map are now confirmed against the GitHub repo clone (the
 earlier [P1] "not re-read" tags are dropped). Prior updates added the rule bank,
 reference store, agentic core, DSPy signatures, the rules repository and gate
@@ -173,8 +174,9 @@ tools/run_suggestion.py    v1.2   Batch runner: profile -> interpret -> suggest
                                   the LM (loads .env, --model flag)
 tools/run_suggestion_graph.py  v1.0  Suggestion graph runner (LangGraph); reuses
                                      run_suggestion's helpers
-tools/run_assessment_graph.py  v1.0  Assessment graph runner (LangGraph): the
-                                     parallel dimension fan-out, real scorecard
+tools/run_assessment_graph.py  v1.1  Assessment graph runner (LangGraph): the
+                                     parallel dimension fan-out, real scorecard;
+                                     no-checks guard (0 rules -> warn, not 100%)
 tools/interrupt_example.py     v1.0  The LangGraph interrupt() primitive AgentDQ
                                      chose against, kept runnable (design 4.2)
 ```
@@ -197,10 +199,11 @@ tests/test_repository_smoke.py           v1.0   Lifecycle, ledger, session
 tests/test_onboarding_smoke.py           v2.0   Schema onboarding config + the
                                                 scaffolder on a synthetic EQKT
 tests/test_orchestrator_smoke.py         v1.0   Both graphs; assessment fan-out
-                                                with the real executor; advisories
+                                                with the real executor;
+                                                advisories; the no-checks guard
 ```
 
-Test position: 82 tests pass and 1 is skipped across the whole suite (the
+Test position: 84 tests pass and 1 is skipped across the whole suite (the
 agentic-core, Package 2 and Package 3 suites plus the Phase 1 pipeline suite).
 No LLM or API key is required for any of them.
 

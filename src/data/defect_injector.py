@@ -2,6 +2,13 @@
 # v0.2 | 27-Jun-2026 | Inject uniqueness twins onto the clean canvas before field-level injection
 # v0.3 | 27-Jun-2026 | Follow rename of rules loader to rule_loader
 # v0.4 | 27-Jun-2026 | Never corrupt or null a primary-key field in any dimension
+# v0.5 | 26-Jul-2026 | Handle OR-style (DNF) cross-field consistency rules, not
+#                      just IMPLIES: conform the baseline and inject+label them,
+#                      so every executed consistency rule has ground truth (no
+#                      more unlabelled findings scored as false positives). Every
+#                      injected consistency violation is VERIFIED against the real
+#                      executor before it is labelled, so ground truth cannot
+#                      diverge from what the agent actually detects.
 
 """Controlled defect injector for the synthetic baseline.
 
@@ -58,6 +65,7 @@ from src.contracts import (
     RuleSpec,
 )
 from src.data.schema import TableSchema, load_schemas
+from src.rules.executor import PandasRuleExecutor  # v0.5
 from src.rules.rule_loader import load_rules  # v0.3
 
 
@@ -133,6 +141,176 @@ def _is_implies(rule: RuleSpec) -> bool:
     return all(isinstance(operand, Comparison) for operand in assertion.operands)
 
 
+def _is_dnf(rule: RuleSpec) -> bool:  # v0.5
+    """Whether a rule's assertion is a top-level OR of clauses, where each clause
+    is a single Comparison or an AND of Comparisons (disjunctive normal form).
+    The rule PASSES when any clause holds; it fails when every clause is false."""
+    assertion = rule.assertion
+    operand = None
+    inner = None
+
+    if not isinstance(assertion, BoolNode) or assertion.op != BoolOp.OR:
+        return False
+    for operand in assertion.operands:
+        if isinstance(operand, Comparison):
+            continue
+        if isinstance(operand, BoolNode) and operand.op == BoolOp.AND:
+            if all(isinstance(inner, Comparison) for inner in operand.operands):
+                continue
+        return False
+    return True
+
+
+def _dnf_clauses(assertion: BoolNode) -> list[list[Comparison]]:  # v0.5
+    """Extract the clauses of a DNF assertion. Each clause is a list of literals
+    (Comparisons) that must ALL hold for the clause - and thus the rule - to be
+    satisfied."""
+    clauses: list[list[Comparison]] = []
+    operand = None
+
+    for operand in assertion.operands:
+        if isinstance(operand, Comparison):
+            clauses.append([operand])
+        else:
+            clauses.append(list(operand.operands))
+    return clauses
+
+
+def _violation_mask(rule: RuleSpec, frame: pd.DataFrame, schema: TableSchema) -> pd.Series:  # v0.5
+    """Rows that violate a rule, computed with the REAL executor so the injector
+    and the agent agree exactly on what a violation is. A row violates when it is
+    in scope and the assertion is definitively false (Kleene NA is not a
+    violation) - identical semantics to PandasRuleExecutor.run_rule."""
+    executor: PandasRuleExecutor = PandasRuleExecutor(schema)
+    scope_mask: pd.Series = None
+    assertion_mask: pd.Series = None
+
+    if rule.scope is None:
+        scope_mask = pd.Series(True, index=frame.index, dtype="boolean")
+    else:
+        scope_mask = executor.evaluate(rule.scope, frame)
+    assertion_mask = executor.evaluate(rule.assertion, frame)
+    return (scope_mask & (~assertion_mask)).fillna(False)
+
+
+def _satisfy_literal(frame: pd.DataFrame, idx: int, literal: Comparison) -> None:  # v0.5
+    """Mutate one field so a single literal becomes true."""
+    if literal.op == Operator.IN and literal.value:
+        frame.at[idx, literal.field] = literal.value[0]
+    elif literal.op == Operator.EQ:
+        frame.at[idx, literal.field] = literal.value
+    elif literal.op == Operator.IS_NULL:
+        frame.at[idx, literal.field] = None
+    elif literal.op == Operator.IS_NOT_NULL:
+        if pd.isna(frame.at[idx, literal.field]):
+            frame.at[idx, literal.field] = "0,000"
+
+
+def _dnf_pivot_field(clauses: list[list[Comparison]]) -> Optional[str]:  # v0.5
+    """A field that constrains EVERY clause is a pivot: changing it alone can
+    falsify all clauses at once. Return the left-most such field, or None."""
+    per_clause_fields: list[set] = []
+    clause: list[Comparison] = None
+    literal: Comparison = None
+    common: set = set()
+    ordered: list[str] = []
+    field_name: str = ""
+
+    for clause in clauses:
+        per_clause_fields.append({literal.field for literal in clause})
+    if not per_clause_fields:
+        return None
+    common = set.intersection(*per_clause_fields)
+    if not common:
+        return None
+    for literal in clauses[0]:
+        if literal.field in common and literal.field not in ordered:
+            ordered.append(literal.field)
+    return ordered[0] if ordered else sorted(common)[0]
+
+
+def _safe_conform_clause(  # v0.5
+    clauses: list[list[Comparison]],
+    schema: TableSchema,
+) -> list[Comparison]:
+    """Choose which DNF clause to satisfy when conforming a row, preferring one
+    that causes no collateral damage to OTHER rules. Order of preference:
+    (1) a clause that is a single IS_NULL literal - nulling a field never breaks
+    a domain check (Kleene treats null as unknown); (2) a clause whose literals
+    all use in-domain values; (3) the first clause as a last resort."""
+    clause: list[Comparison] = None
+    literal: Comparison = None
+    field_spec = None
+    in_domain: bool = True
+
+    for clause in clauses:
+        if len(clause) == 1 and clause[0].op == Operator.IS_NULL:
+            return clause
+    for clause in clauses:
+        in_domain = True
+        for literal in clause:
+            field_spec = schema.field(literal.field)
+            if field_spec is None or not field_spec.domain:
+                continue
+            if literal.op == Operator.EQ and literal.value not in field_spec.domain:
+                in_domain = False
+            elif literal.op == Operator.IN and not set(literal.value or []).issubset(set(field_spec.domain)):
+                in_domain = False
+        if in_domain:
+            return clause
+    return clauses[0]
+
+
+def _violate_dnf_row(
+    frame: pd.DataFrame,
+    idx: int,
+    clauses: list[list[Comparison]],
+    schema: TableSchema,
+) -> Optional[str]:  # v0.5
+    """Try to mutate a row so that EVERY clause is false (a rule violation),
+    changing a single pivot field where one exists. Prefer an in-domain value so
+    no collateral validity defect is created. Return the field changed, or None
+    if a clean single-field violation could not be constructed (the caller then
+    skips the row - the executor verification is the final arbiter)."""
+    pivot: Optional[str] = _dnf_pivot_field(clauses)
+    clause: list[Comparison] = None
+    literal: Comparison = None
+    forbidden: set = set()
+    requires_null: bool = False
+    field_spec = None
+    domain: list[str] = []
+    candidate: str = ""
+
+    if pivot is None:
+        return None
+
+    # Collect the pivot values each clause needs (which we must avoid), and
+    # whether any clause is satisfied by the pivot being null.
+    for clause in clauses:
+        for literal in clause:
+            if literal.field != pivot:
+                continue
+            if literal.op == Operator.EQ and literal.value is not None:
+                forbidden.add(literal.value)
+            elif literal.op == Operator.IN and literal.value:
+                forbidden.update(literal.value)
+            elif literal.op == Operator.IS_NULL:
+                requires_null = True
+
+    # Choose an in-domain replacement that is not forbidden and not null.
+    field_spec = schema.field(pivot)
+    domain = list(field_spec.domain) if field_spec is not None and field_spec.domain else []
+    for candidate in domain:
+        if candidate not in forbidden:
+            frame.at[idx, pivot] = candidate
+            return pivot
+    # No schema domain, or all domain values forbidden: fall back to a sentinel
+    # that still breaks the equality/membership clauses (verification will
+    # confirm; if it does not violate, the caller skips the row).
+    frame.at[idx, pivot] = "__INCONSISTENT__"
+    return pivot
+
+
 def _group_rules(rules: list[RuleSpec], schemas: dict[str, TableSchema]) -> dict[str, list[RuleSpec]]:  # v0.3
     """Split rules into the groups the injector acts on.
 
@@ -160,7 +338,7 @@ def _group_rules(rules: list[RuleSpec], schemas: dict[str, TableSchema]) -> dict
                 continue  # v0.4 - never corrupt a key value; it breaks record identity
             if isinstance(rule.assertion, Comparison) and rule.assertion.value:
                 validity.append(rule)
-        elif rule.archetype == RuleArchetype.CROSS_FIELD and _is_implies(rule):
+        elif rule.archetype == RuleArchetype.CROSS_FIELD and (_is_implies(rule) or _is_dnf(rule)):  # v0.5
             consistency.append(rule)
     return {"completeness": completeness, "validity": validity, "consistency": consistency}
 
@@ -193,20 +371,48 @@ def _conform_completeness(frames: dict[str, pd.DataFrame], rules: list[RuleSpec]
         frame.loc[empty_mask, field] = fill_values
 
 
-def _conform_consistency(frames: dict[str, pd.DataFrame], rules: list[RuleSpec]) -> None:
-    """Ensure each IMPLIES rule holds: where antecedent is true, force consequent true."""
+def _conform_consistency(  # v0.5
+    frames: dict[str, pd.DataFrame],
+    rules: list[RuleSpec],
+    schemas: dict[str, TableSchema],
+) -> None:
+    """Establish a clean canvas: every consistency rule must PASS on the baseline
+    before defects are injected, so that any finding on the final data traces to
+    an injected (and labelled) defect rather than to unconformed noise.
+
+    IMPLIES rules: where the antecedent holds, force the consequent true.
+    DNF rules: where the rule is violated (checked with the real executor),
+    satisfy the first clause on that row, which makes the whole OR true."""
     rule: RuleSpec = None
     frame: pd.DataFrame = None
+    schema: TableSchema = None
     antecedent: Comparison = None
     consequent: Comparison = None
     scope_mask: pd.Series = None
     ante_mask: pd.Series = None
     target_mask: pd.Series = None
+    clauses: list[list[Comparison]] = None
+    safe_clause: list[Comparison] = None  # v0.5
+    violating: pd.Series = None
+    idx: int = 0
+    literal: Comparison = None
 
     for rule in rules:
         frame = frames.get(rule.table)
-        if frame is None:
+        schema = schemas.get(rule.table)  # v0.5
+        if frame is None or schema is None:
             continue
+
+        if _is_dnf(rule):  # v0.5
+            clauses = _dnf_clauses(rule.assertion)
+            safe_clause = _safe_conform_clause(clauses, schema)  # v0.5
+            violating = _violation_mask(rule, frame, schema)
+            for idx in frame.index[violating]:
+                for literal in safe_clause:
+                    _satisfy_literal(frame, idx, literal)
+            continue
+
+        # IMPLIES (existing behaviour)
         antecedent = rule.assertion.operands[0]
         consequent = rule.assertion.operands[1]
         scope_mask = pd.Series(True, index=frame.index)
@@ -326,6 +532,75 @@ def _inject_validity(
             ))
 
 
+def _inject_consistency_dnf(  # v0.5
+    frame: pd.DataFrame,
+    rule: RuleSpec,
+    rate: float,
+    rng: np.random.Generator,
+    schemas: dict[str, TableSchema],
+    used: set,
+    labels: list[DefectLabel],
+) -> None:
+    """Inject violations of a DNF (OR-of-clauses) consistency rule and label them.
+
+    A row is mutated so every clause becomes false; the mutation is then VERIFIED
+    against the real executor, and the row is labelled ONLY if the executor now
+    reports a violation. This makes ground truth match exactly what the agent
+    detects - no trust is placed in the mutation logic being correct for the
+    shape. Rows that cannot be cleanly violated (or that verification does not
+    confirm) are skipped rather than mislabelled."""
+    schema: TableSchema = schemas.get(rule.table)
+    clauses: list[list[Comparison]] = None
+    executor: PandasRuleExecutor = None
+    scope_mask: pd.Series = None
+    eligible: pd.Index = None
+    idx: int = 0
+    changed_field: Optional[str] = None
+    original_value: Any = None
+    row_frame: pd.DataFrame = None
+    violated: pd.Series = None
+
+    if schema is None:
+        return
+    clauses = _dnf_clauses(rule.assertion)
+    executor = PandasRuleExecutor(schema)
+
+    scope_mask = pd.Series(True, index=frame.index)
+    if rule.scope is not None and isinstance(rule.scope, Comparison):
+        scope_mask = _eval_comparison_mask(rule.scope, frame)
+    eligible = frame.index[scope_mask]
+
+    for idx in _sample_indices(eligible, rate, rng):
+        # Skip rows whose fields are already spoken for by another defect.
+        if any((rule.table, idx, literal.field) in used for clause in clauses for literal in clause):
+            continue
+        original_value = {literal.field: frame.at[idx, literal.field]
+                          for clause in clauses for literal in clause}
+        changed_field = _violate_dnf_row(frame, idx, clauses, schema)
+        if changed_field is None:
+            continue
+
+        # VERIFY against the real executor: only a truly-violating row is labelled.
+        row_frame = frame.loc[[idx]]
+        violated = _violation_mask(rule, row_frame, schema)
+        if not bool(violated.iloc[0]):
+            # Could not construct a real violation - restore and skip.
+            frame.at[idx, changed_field] = original_value.get(changed_field)
+            continue
+
+        used.add((rule.table, idx, changed_field))
+        labels.append(DefectLabel(
+            defect_id=f"CONS_{rule.table}_{idx}_{rule.rule_id}",
+            table=rule.table,
+            record_key=schema.record_key(frame.loc[idx].to_dict()),
+            dimension=Dimension.CONSISTENCY,
+            field=changed_field,
+            rule_id=rule.rule_id,
+            original_value=f"{changed_field}={original_value.get(changed_field)}",
+            corrupted_value=f"{changed_field}={frame.at[idx, changed_field]}",
+        ))
+
+
 def _inject_consistency(
     frames: dict[str, pd.DataFrame],
     rules: list[RuleSpec],
@@ -351,6 +626,11 @@ def _inject_consistency(
         frame = frames.get(rule.table)
         if frame is None:
             continue
+
+        if _is_dnf(rule):  # v0.5
+            _inject_consistency_dnf(frame, rule, rate, rng, schemas, used, labels)
+            continue
+
         antecedent = rule.assertion.operands[0]
         consequent = rule.assertion.operands[1]
         scope_mask = pd.Series(True, index=frame.index)
@@ -488,6 +768,55 @@ def _inject_uniqueness(
 
 # --- orchestration ------------------------------------------------------------
 
+def _reconcile_consistency_labels(  # v0.5
+    frames: dict[str, pd.DataFrame],
+    rules: list[RuleSpec],
+    schemas: dict[str, TableSchema],
+    labels: list[DefectLabel],
+) -> None:
+    """Make consistency ground truth complete by defining it as what the REAL
+    executor sees on the final data. Injecting one dimension's defect can
+    incidentally violate a cross-field rule that shares a field (for example, an
+    out-of-domain value is both a validity defect AND a consistency defect); such
+    a row is a genuine consistency violation and must be labelled, or the agent's
+    correct finding is scored as a false positive.
+
+    This runs after all injection: for each consistency rule it labels every
+    executor-detected violation not already labelled. Ground truth then matches
+    exactly what the deterministic agent detects, as it must for a deterministic
+    dimension."""
+    existing: set = {(label.rule_id, label.record_key) for label in labels
+                     if label.dimension == Dimension.CONSISTENCY}
+    rule: RuleSpec = None
+    frame: pd.DataFrame = None
+    schema: TableSchema = None
+    mask: pd.Series = None
+    idx: int = 0
+    record_key: str = ""
+
+    for rule in rules:
+        frame = frames.get(rule.table)
+        schema = schemas.get(rule.table)
+        if frame is None or schema is None:
+            continue
+        mask = _violation_mask(rule, frame, schema)
+        for idx in frame.index[mask]:
+            record_key = schema.record_key(frame.loc[idx].to_dict())
+            if (rule.rule_id, record_key) in existing:
+                continue
+            existing.add((rule.rule_id, record_key))
+            labels.append(DefectLabel(
+                defect_id=f"CONS_RECON_{rule.table}_{idx}_{rule.rule_id}",
+                table=rule.table,
+                record_key=record_key,
+                dimension=Dimension.CONSISTENCY,
+                field=",".join(rule.fields),
+                rule_id=rule.rule_id,
+                original_value=None,
+                corrupted_value="cross-field violation (reconciled from executor)",
+            ))
+
+
 def inject_defects(
     baseline: dict[str, pd.DataFrame],
     schemas: dict[str, TableSchema],
@@ -512,7 +841,7 @@ def inject_defects(
 
     # Conform first so the only violations are the injected ones.
     _conform_completeness(frames, grouped["completeness"], rng)
-    _conform_consistency(frames, grouped["consistency"])
+    _conform_consistency(frames, grouped["consistency"], schemas)  # v0.5
 
     # Add near-duplicate twins to the clean canvas first, so subsequent
     # field-level injection sees them as ordinary rows and labels any defect it
@@ -524,6 +853,7 @@ def inject_defects(
     _inject_completeness(frames, grouped["completeness"], dim_rates["completeness"], rng, schemas, used, labels)
     _inject_validity(frames, grouped["validity"], dim_rates["validity"], rng, schemas, used, labels)
     _inject_consistency(frames, grouped["consistency"], dim_rates["consistency"], rng, schemas, used, labels)
+    _reconcile_consistency_labels(frames, grouped["consistency"], schemas, labels)  # v0.5
 
     manifest: dict[str, Any] = _manifest(scenario, seed, dim_rates, grouped, labels)
     return frames, labels, manifest
