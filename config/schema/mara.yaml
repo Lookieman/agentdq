@@ -6,9 +6,23 @@ primary_key:
 header_anchor: MATNR
 file_pattern: '{table}_EX_DATA.xlsx'
 uniqueness:
-  blocking_key: MTART
+  scope: null
+  blocking_keys:
+  - MTART
+  - MEINS
   compare_fields:
-  - MAKT.MAKTX  
+  - field: MAKT.MAKTX
+    weight: 1.0
+  methods:
+    fuzzy:
+      metric: jaro_winkler
+      weight: 0.5
+    semantic:
+      model: all-MiniLM-L6-v2
+      weight: 0.5
+  bands:
+    duplicate: 0.92
+    review_low: 0.8
 formatting:
   decimal_separator: ','
   thousands_separator: .

@@ -1,6 +1,9 @@
 # v0.1 | 27-Jun-2026 | Schema scaffolder: merge SAP overlay with profiler output
 
 # v0.2 | 27-Jun-2026 | Omit empty domains (no values found != nothing allowed)
+# v0.3 | 04-Aug-2026 | Package 4a. TABLE_META now carries file_pattern and,
+#                      for MARA, the uniqueness block. Both were hand-added
+#                      to mara.yaml and were erased on every rebuild.
 """One-off scaffolder that writes the table schema YAMLs.
 
 It merges two sources:
@@ -61,6 +64,22 @@ TABLE_META: dict[str, dict[str, Any]] = {
         "source_system": "SAP S/4HANA (Cloud Appliance Library)",
         "primary_key": ["MATNR"],
         "header_anchor": "MATNR",
+        "file_pattern": "{table}_EX_DATA.xlsx",  # v0.3
+        # v0.3: uniqueness lives here so a rebuild does not silently drop it.
+        # Blocking keys must agree EXACTLY before two records are compared;
+        # MTART and MEINS mean a bolt is never proposed as a duplicate of a
+        # coil, nor an each-priced item of a kilo-priced one. The bands and
+        # weights are stated defaults, not calibrated numbers.
+        "uniqueness": {  # v0.3
+            "scope": None,
+            "blocking_keys": ["MTART", "MEINS"],
+            "compare_fields": [{"field": "MAKT.MAKTX", "weight": 1.0}],
+            "methods": {
+                "fuzzy": {"metric": "jaro_winkler", "weight": 0.5},
+                "semantic": {"model": "all-MiniLM-L6-v2", "weight": 0.5},
+            },
+            "bands": {"duplicate": 0.92, "review_low": 0.8},
+        },
     },
     "MARC": {
         "table": "MARC",
@@ -68,6 +87,7 @@ TABLE_META: dict[str, dict[str, Any]] = {
         "source_system": "SAP S/4HANA (Cloud Appliance Library)",
         "primary_key": ["MATNR", "WERKS"],
         "header_anchor": "MATNR",
+        "file_pattern": "{table}_EX_DATA.xlsx",  # v0.3
     },
     "MAKT": {
         "table": "MAKT",
@@ -75,6 +95,7 @@ TABLE_META: dict[str, dict[str, Any]] = {
         "source_system": "SAP S/4HANA (Cloud Appliance Library)",
         "primary_key": ["MATNR", "SPRAS"],
         "header_anchor": "MATNR",
+        "file_pattern": "{table}_EX_DATA.xlsx",  # v0.3
     },
 }
 

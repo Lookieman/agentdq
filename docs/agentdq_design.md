@@ -16,6 +16,14 @@ v1.2 | 26-Jul-2026 | Scope correction: re-platforming onto SAP BDC is out of
 v1.3 | 26-Jul-2026 | Package 3 (LangGraph orchestration) confirmed complete and
                      the no-checks guard added to the assessment runner; test
                      count to 84 passing, 1 skipped.
+v1.4 | 04-Aug-2026 | Package 4 design resolved and step 4a built. Section 5
+                     rewritten with the settled decisions: two blocking keys
+                     (MTART and MEINS), clusters rather than pairs, the survivor
+                     as the reference point, survivorship rules, detection
+                     scored but survivorship not, the steward-versus-advisory
+                     band precedence, the configuration fingerprint, harder
+                     injected near-copies and decoy pairs. Test count to 106
+                     passing, 1 skipped.
 ```
 
 This document is the delivery counterpart to `agentdq-project-plan.md`. The plan
@@ -41,6 +49,13 @@ and runnable by the execution layer - now orchestrated as two graphs. The first
 LinkedIn article (Package 2's story - "the agent proposes, the human disposes") is
 ready to write; Package 3's story ("where I put the human in the loop, and why")
 follows it.
+
+Package 4 is now in build. Its design is settled (section 5) and step 4a - the
+uniqueness configuration - is done: schema v0.4, the MARA dials, and 22 offline
+tests, taking the suite to 106 passing and 1 skipped. Step 4a also fixed a bug
+that predates Package 4: `tools/build_schema.py` regenerates the schema YAMLs
+from its own TABLE_META, which held neither `file_pattern` nor the `uniqueness`
+block, so every rebuild silently erased both from `config/schema/mara.yaml`.
 
 Package 3 additions (all done): src/state.py (typed graph state with reducers for
 the parallel fan-out), src/graph_nodes.py (thin nodes + the two advisory
@@ -392,11 +407,29 @@ that will not be tested.
 
 ## 5. Package 4 - Uniqueness and Remediation
 
-### 5.1 Uniqueness: a cost ladder, with the model last
+### 5.1 What is being answered, and why it is not a rule
 
-Blocking key MTART; compared field MAKTX. Both are the MATERIAL configuration of
-a generic mechanism and live in the object pack (see 9.5), not in code - EQUI
-blocks on EQART and compares EQKT.EQKTX with no change to the ladder itself.
+Every agent so far asks "is this row valid?" and answers from a rule. Uniqueness
+asks "are these two records the same thing?" and answers with a score, because
+two records that describe one material rarely hold one identical value. That
+shift, from per-row to per-pair, shapes the whole design.
+
+### 5.2 Blocking: two keys, agreed exactly
+
+Two records are only ever compared when they agree **exactly** on every blocking
+key. MARA blocks on `MTART` and `MEINS`, so a bolt is never proposed as a
+duplicate of a coil, and an each-priced item is never matched to a kilo-priced
+one. This is how SAP's own duplicate check narrows a search, and it does three
+useful things at once: it removes a whole class of false positives, it makes an
+all-pairs comparison affordable, and it makes any further identity check
+unnecessary, since records inside a block already agree on both fields.
+
+Stated plainly, because it is a real gap: **blocking is exact.** A material with
+a wrong `MEINS` sits in the wrong block, so its true duplicate is never found.
+That is honest behaviour rather than a bug, and it is a reason the Validity agent
+and this agent need each other.
+
+### 5.3 The cost ladder, with the model last
 
 ```mermaid
 graph LR
@@ -406,27 +439,225 @@ graph LR
     F --> C[Combined score]
     S --> C
     C --> B{Score band}
-    B -->|>= 0.92| D[Duplicate]
-    B -->|0.80 - 0.92| L[LLM adjudicates<br/>DSPy - the uncertain band ONLY]
-    B -->|< 0.80| X[Not a duplicate]
+    B -->|>= duplicate band| D[Duplicate]
+    B -->|review band| L[Language model adjudicates<br/>DSPy - the uncertain band ONLY]
+    B -->|below review band| X[Not a duplicate]
 ```
 
+**Normalise** means make two texts comparable before scoring them: lowercase,
+remove extra spaces, remove punctuation. **Fuzzy** compares texts letter by
+letter, so it catches typing slips and small edits, and it is fast and needs no
+model. **Semantic** turns each description into a list of numbers that stands
+for its meaning, so "Hex Bolt M8" and "M8 Hexagon Screw" score highly although
+they share few letters.
+
 The language model is **not the matcher**. Fuzzy and semantic scoring already
-match; the model is a second-pass adjudicator on the genuinely uncertain band, and
-is as much a false-positive filter as a matcher ("Bearing 6203" and "Bearing 6204"
-score high on both metrics and are different parts). Language-model calls scale
-with genuine ambiguity, not with dataset size - that is the cost control.
+match. The model is a second look at the pairs the scores cannot settle, and it
+is as much a filter for wrong matches as a matcher: "Bearing 6203" and "Bearing
+6204" score high on both metrics and are different parts. Model calls therefore
+scale with genuine doubt, not with the size of the dataset, and that is the cost
+control.
 
-Constraint for the demo: MiniLM embeddings are computed in the **batch layer** and
-committed as artefacts. `sentence-transformers` must not load inside the Streamlit
-app process, which is memory-constrained on the free tier.
+Constraint for the demo: MiniLM embeddings are built in the **batch layer** and
+written as artefacts, because `sentence-transformers` is too heavy to load
+inside the Streamlit process on the free tier. When no artefact exists the agent
+runs **fuzzy only** and records that mode on every finding, so a partial run can
+never be mistaken for a full one. The artefacts are git-ignored and rebuilt.
 
-### 5.2 Remediation
+### 5.4 Clusters, not pairs
 
-A DSPy synthesis over the aggregated findings: prioritise by business impact (a
-completeness gap in a safety-relevant field outranks a formatting issue in a
-search term), explain each recommendation, and cite the findings it reasons from.
+A duplicate is rarely a pair. If A matches B and B matches C, all three form one
+cluster even when A and C do not match each other directly. Every cluster records
+its weakest link, so a steward can see when a group was joined by a thin chain
+and split it.
+
+The **survivor** is the record the agent recommends keeping, and it is the point
+every other member is scored against. One label, not two, so a steward reads one
+line: keep this record, these are its duplicates, this is how close each one is.
+A member that scores below the band against the survivor is flagged, which is
+exactly the case a hub-based view would hide.
+
+### 5.5 Survivorship: who is kept
+
+```
+Case                                 Recommendation             Resolution
+-----------------------------------  -------------------------  --------------
+Identical after normalisation        any member may survive     automatic
+Above the band but not identical     the most complete record   automatic
+Most complete, and still tied        no recommendation          needs_steward
+```
+
+"Most complete" is counted in order: populated mandatory fields first, then
+populated fields overall as the tie-break. Every cluster carries its resolution,
+and a `needs_steward` cluster is flagged on the existing dashboard. A dedicated
+merge review screen is Package 7 work.
+
+The agent never merges anything. Master data merges are destructive, so the
+agent produces scored, reasoned candidates and a human confirms.
+
+### 5.6 Detection is scored; survivorship is not
+
+The injector labels a twin as a duplicate of its source. It holds no opinion on
+which of the two should be kept, so scoring the survivor choice would measure a
+business judgement against ground truth that has no view on it.
+
+```
+What is measured        How
+----------------------  --------------------------------------------------
+Cluster detection       Did the twin land in the same cluster as its
+(precision and recall)  labelled source? Yes or no.
+Survivorship            Not scored. It is a recommendation for a human.
+```
+
+There is a leak to guard against as well. The injector numbers every twin from
+900000000, so anything that reads MATNR would score perfectly by reading a
+fingerprint the generator left behind. Nothing in blocking, scoring or
+survivorship reads the material number.
+
+### 5.7 Harder near-copies, and decoys
+
+The injector's original four changes (uppercase, trailing space, inserted
+punctuation, one character swap) all normalise back to the same string, so they
+score at or near 1.00. They keep their place, because they now test the
+automatic survivorship case, but on their own they leave the uncertain band
+empty and the adjudicator idle.
+
+Four harder changes are added, sized to land in the uncertain band: a unit word
+("5 inches" to "5in"), a unit symbol ("5 inches" to `5"`), a word reorder ("Hex
+Bolt M8" to "M8 Hex Bolt"), and an abbreviation ("Stainless Steel Bolt" to "SS
+Bolt").
+
+**Decoys** matter more. A decoy is a pair that looks similar and is genuinely two
+different materials - "Bearing 6203" against "Bearing 6204" - labelled
+`not_duplicate`. Without decoys every similar pair in the data is a real
+duplicate, the agent can never be wrong by saying yes, and precision is always
+1.000 and means nothing. Decoys are what turn "the model filters out wrong
+matches" from an assertion into a measured claim.
+
+### 5.8 The settings a steward controls
+
+Everything above collapses into one configuration block per object, held in the
+table's schema YAML:
+
+```yaml
+uniqueness:
+  scope: null                      # optional row filter, reuses the rule IR
+  blocking_keys: [MTART, MEINS]    # exact agreement required
+  compare_fields:
+    - {field: MAKT.MAKTX, weight: 1.0}
+  methods:
+    fuzzy:    {metric: jaro_winkler, weight: 0.5}
+    semantic: {model: all-MiniLM-L6-v2, weight: 0.5}
+  bands:
+    duplicate:  0.92
+    review_low: 0.80
+```
+
+Compare fields carry a weight because more than one field may be compared;
+weights are relative, so 7 and 3 mean the same as 0.7 and 0.3. Setting the
+semantic weight to 0 is the supported way to run fuzzy only.
+
+Three design properties come with it:
+
+- **Wrong settings fail while the file is read**, not deep inside a scoring
+  loop. Bands out of order, an unknown fuzzy metric, both methods weighted zero,
+  a compare field weighted zero, and the pre-v0.4 singular `blocking_key` all
+  raise a message naming the fix. The last guard matters most, since pydantic
+  ignores unknown keys and an unguarded old file would load with no blocking at
+  all.
+- **Steward first, advisory second.** An upstream advisory may raise the bands.
+  The finding records the steward's numbers, the shift, and the result, so
+  nobody concludes their setting was ignored. The shift is capped below a
+  perfect match, because a duplicate band of 1.0 would switch near-duplicate
+  detection off without saying so.
+- **Every run stamps a configuration fingerprint**, a short code that changes
+  when any dial changes, so a screen can warn that a cluster on display was
+  found under different settings.
+
+The dial values are stated, not calibrated. Calibration is Package 5.
+
+### 5.9 What is deliberately not built yet
+
+```
+Deferred item                      Why
+---------------------------------  ------------------------------------------
+Classification characteristics     No AUSP, KSSK, KLAH or CABN extract exists.
+(AUSP) as match input              Categorical ones would be blocking keys and
+                                   text ones compare fields, at no extra cost;
+                                   numeric ones need tolerance comparison,
+                                   which is a third comparison type
+On-screen settings form            Package 7. A read-only panel showing the
+                                   active settings is enough for Package 4
+Natural language to settings       A later package: a steward describes a
+                                   change, an agent proposes it, and the same
+                                   approval gate governs it. The agent must
+                                   never write the settings itself, because
+                                   they decide what counts as a duplicate
+Approximate nearest neighbour      All-pairs inside a block is O(n^2), which is
+                                   affordable at pilot scale. The seam is kept
+
+MAKT as a deduplication subject    MAKT holds one description per material per
+                                   language, so a MAKT duplicate is a key
+                                   violation, which the profiler already finds.
+                                   MAKT supplies evidence for MARA; it is not a
+                                   subject. MARC is assumed clean
+```
+
+The uniqueness score is therefore taken over the **MARA row count only**. Spread
+across all three loaded tables it would be diluted into near-invisibility.
+
+### 5.10 The build order
+
+```
+Step  Deliverable                                   Language model?
+----  --------------------------------------------  ---------------
+4a    Schema v0.4 uniqueness settings + MARA dials  no    (done)
+4b    Advisories become small structured records    no
+4c    tools/build_embeddings.py                     no
+4d    src/agents/uniqueness.py: block, score,       no
+      cluster, choose a survivor
+4e    Adjudicator DSPy signature and wiring         yes
+4f    defect_injector v0.5: harder changes, decoys  no
+4g    src/agents/remediation.py and its signature   yes
+4h    Graph reorder; Uniqueness joins the scorecard no
+4i    Tests, then the three living artefacts        no
+```
+
+Steps 4a to 4d contain no language model at all, so real clusters on real MARA
+data can be read before a single token is spent. This mirrors how the suggester
+was built: rails first, judgement second.
+
+### 5.11 One ordering fix in the graph
+
+The assessment graph today computes the scorecard before the uniqueness stage
+runs, so uniqueness findings could never reach the score. The order becomes:
+
+```
+aggregate -> uniqueness -> scorecard -> remediation -> report
+```
+
+and "Uniqueness" joins the dimension list the runner scores.
+
+### 5.12 Remediation
+
+Volume is the real design problem. A degraded scenario produces thousands of
+findings, and one action per finding is a worse report than no report.
+
+Remediation therefore **groups before it reasons**: findings are grouped by
+table, field, dimension and rule, and each group yields one ranked action
+carrying the number of records it affects. Thousands of findings become tens of
+groups, which fits in one model call.
+
+Each action holds a rank, the dimension, the table and field, the action itself,
+its rationale, the affected record count, the findings it cites, and a severity.
+The agent reasons only from evidence already in the system - the finding
+severity, the schema's mandatory flag, the semantic field role, the affected
+count, and the dimension - and not from what a model happens to know about SAP.
 It recommends; it never acts on data.
+
+A duplicate cluster becomes an ordinary action in that list, for example: review
+the clusters, keep the recommended survivor, and block the other members after
+checking for open transactions.
 
 ---
 
@@ -754,11 +985,16 @@ rest of the governance story. Realistically only the reference-domain templates
 
 ### 9.5 Uniqueness becomes per-object configuration
 
-The Package 4 design (MTART blocking, MAKTX compare) is the MATERIAL
-configuration of a generic mechanism, not the mechanism itself. The object pack
-carries `uniqueness.blocking_key` and `uniqueness.compare_fields`; EQUI would
-block on EQART and compare EQKT.EQKTX. No change to the cost-ladder design -
-only to where its parameters live.
+The Package 4 design (MTART and MEINS blocking, MAKTX compare) is the MATERIAL
+configuration of a generic mechanism, not the mechanism itself. The table's
+schema YAML carries `uniqueness.blocking_keys`, `uniqueness.compare_fields`,
+`uniqueness.methods` and `uniqueness.bands`; EQUI would block on EQART and
+compare EQKT.EQKTX. No change to the cost-ladder design - only to where its
+parameters live.
+
+Because the schema YAMLs are generated by `tools/build_schema.py`, these
+settings live in that tool's TABLE_META as well, or a rebuild erases them. That
+was a live bug until schema build v0.3.
 
 ### 9.6 Limitation stated plainly: evaluation coverage
 
@@ -978,12 +1214,12 @@ a precision and recall table. Guard those two packages.
 
 ## 14. Immediate next step
 
-Packages 1 to 3 are complete. The next build is Package 4 (Uniqueness and
-Remediation); its design is in section 5. Package 4 fills the uniqueness stub the
-orchestration already wires - the two cross-agent advisories (threshold modifier,
-signal suppression) that currently reach a logging stub will start actually
-modifying the matcher's behaviour, and the Remediation agent turns the merged
-findings into prioritised actions.
+Packages 1 to 3 are complete and Package 4 is in build. Its design is settled in
+section 5 and step 4a - the uniqueness settings - is done. The next build is step
+4b: the two cross-agent advisories become small structured records rather than
+sentences, so the uniqueness stage can act on them by reading a field instead of
+searching for words inside a sentence. Steps 4c and 4d then produce real
+duplicate clusters with no language model involved at all.
 
 At the end of Package 2 the loop closed for the first time: an agent suggests a
 rule, a human approves it, and the approved rule runs and changes the score.

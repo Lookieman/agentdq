@@ -6,6 +6,9 @@
 #                      No node imports LangGraph; agents import nothing from
 #                      here. The cross-agent advisory derivations live here as
 #                      pure, testable helpers.
+# v1.1 | 04-Aug-2026 | Package 4a. _uniqueness_compare_fields reads the name off
+#                      a CompareField (schema v0.4) rather than treating the
+#                      entry as a plain string.
 # ---------------------------------------------------------------------------
 """Graph nodes - the thin translation layer between graph state and agents.
 
@@ -34,7 +37,6 @@ from __future__ import annotations
 from typing import Any, Optional
 
 from src.agents.base import AgentResult
-
 
 # thresholds for the advisory derivations (presentation dials; the real
 # calibration of anything like these lands in Package 5)
@@ -178,14 +180,18 @@ def report_node(state: dict[str, Any]) -> dict[str, Any]:
 
 def _uniqueness_compare_fields(state: dict[str, Any]) -> list[tuple[str, str]]:
     """Return (table, field) pairs a table's schema nominates as uniqueness
-    compare fields. compare_fields may be written 'MAKT.MAKTX' (other table) or
+    compare fields. A compare field may be written 'MAKT.MAKTX' (other table) or
     'MAKTX' (same table); we take the field part and pair it with the schema's
-    own table when the referenced table is not in scope."""
+    own table when the referenced table is not in scope.
+
+    Since schema v0.4 each entry is a CompareField carrying a weight, so the
+    name is read from entry.field. The weight plays no part here: an advisory
+    is about whether a signal is trustworthy, not how much it counts."""
     schemas: dict[str, Any] = state.get("schemas", {})
     pairs: list[tuple[str, str]] = []
     table_name: str = ""
     schema: Any = None
-    entry: str = ""
+    entry: Any = None
     parts: list[str] = []
     ref_table: str = ""
     field_name: str = ""
@@ -195,7 +201,7 @@ def _uniqueness_compare_fields(state: dict[str, Any]) -> list[tuple[str, str]]:
         if uniqueness is None:
             continue
         for entry in getattr(uniqueness, "compare_fields", []) or []:
-            parts = str(entry).split(".")
+            parts = str(getattr(entry, "field", entry)).split(".")  # v1.1
             if len(parts) == 2:
                 ref_table, field_name = parts[0], parts[1]
             else:

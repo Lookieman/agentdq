@@ -5,6 +5,14 @@
 #                      to onboard an object. primary_key and header_anchor were
 #                      already here; the profiler's hardcoded dicts now defer to
 #                      the schema, as its own comments always intended.
+# v0.4 | 04-Aug-2026 | Package 4a. UniquenessConfig gains scope, methods and
+#                      bands; blocking_key becomes blocking_keys (a list, so
+#                      MTART AND MEINS both narrow the search) and
+#                      compare_fields carries a per-field weight. Adds
+#                      effective_bands() for steward-versus-advisory precedence
+#                      and fingerprint() so a run records the settings it used.
+#                      The v0.3 singular 'blocking_key' now raises rather than
+#                      being silently ignored.
 
 """Runtime loader for the table schema YAMLs.
 
@@ -22,12 +30,16 @@ parsing rules the extracts demand:
 
 from __future__ import annotations
 
+import hashlib  # v0.4
+import json  # v0.4
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Mapping, Optional
 
 import yaml
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator, model_validator  # v0.4
+
+from src.contracts import Predicate  # v0.4
 
 
 class TableFormatting(BaseModel):
@@ -60,18 +72,259 @@ class FieldSpec(BaseModel):
     observed_population_pct: Optional[float] = None
 
 
-class UniquenessConfig(BaseModel):  # v0.3
-    """Per-object configuration for the Uniqueness agent (Package 4).
+# The language key used to read a material description for matching. English
+# only in Phase 1: a multi-language object needs a decision about which
+# language wins, and that decision is not needed to prove the mechanism.
+COMPARE_LANGUAGE: str = "E"  # v0.4
 
-    The blocking key partitions the search space (only records sharing it are
-    compared); compare_fields are the fields whose similarity indicates a
-    duplicate. Kept here so one schema YAML is all a steward writes to onboard
-    an object. MARA blocks on MTART and compares MAKT.MAKTX; EQUI would block on
-    EQART and compare EQKT.EQKTX - the same mechanism, different parameters.
+# Text comparison metrics the fuzzy rung accepts. Each maps to a rapidfuzz
+# scorer in the Uniqueness agent. Named here so a wrong value in a YAML fails
+# at load time with a clear message, not deep inside a scoring loop.
+ALLOWED_FUZZY_METRICS: tuple[str, ...] = (  # v0.4
+    "jaro_winkler",
+    "token_sort_ratio",
+    "token_set_ratio",
+    "ratio",
+)
+
+# The highest a band may be pushed to by an advisory. A band of 1.0 would mean
+# only a perfect match counts, which silently switches near-duplicate detection
+# off, so the shift is capped below it.
+MAX_BAND: float = 0.99  # v0.4
+
+
+class CompareField(BaseModel):  # v0.4
+    """One field whose similarity contributes to a duplicate score.
+
+    field may name another table ('MAKT.MAKTX') or this table ('MAKTX').
+    weight is that field's share of the record score; weights are relative, so
+    0.7 and 0.3 mean the same as 7 and 3.
     """
 
-    blocking_key: Optional[str] = None
-    compare_fields: list[str] = Field(default_factory=list)
+    field: str
+    weight: float = 1.0
+
+    @field_validator("weight")  # v0.4
+    @classmethod
+    def _weight_must_be_positive(cls, value: float) -> float:
+        if value <= 0:
+            raise ValueError(
+                "compare field weight must be greater than 0; to stop using a "
+                "field, remove it from compare_fields"
+            )
+        return value
+
+
+class FuzzyMethod(BaseModel):  # v0.4
+    """Letter-by-letter text comparison. Catches typing slips and small edits.
+
+    Fast, and it needs no model. It has no idea that 'Bolt' and 'Screw' mean
+    nearly the same thing, which is why the semantic rung exists.
+    """
+
+    metric: str = "jaro_winkler"
+    weight: float = 0.5
+
+    @field_validator("metric")  # v0.4
+    @classmethod
+    def _metric_must_be_known(cls, value: str) -> str:
+        if value not in ALLOWED_FUZZY_METRICS:
+            raise ValueError(
+                f"unknown fuzzy metric '{value}'; allowed: "
+                f"{', '.join(ALLOWED_FUZZY_METRICS)}"
+            )
+        return value
+
+    @field_validator("weight")  # v0.4
+    @classmethod
+    def _weight_not_negative(cls, value: float) -> float:
+        if value < 0:
+            raise ValueError("method weight cannot be negative; use 0 to switch it off")
+        return value
+
+
+class SemanticMethod(BaseModel):  # v0.4
+    """Meaning-based comparison. Turns each description into a list of numbers
+    that stands for its meaning, so texts that say the same thing in different
+    words score highly.
+
+    Set weight to 0 to switch it off and run the fuzzy rung alone, which is
+    what happens on a machine with no embeddings artefact built.
+    """
+
+    model: str = "all-MiniLM-L6-v2"
+    weight: float = 0.5
+
+    @field_validator("weight")  # v0.4
+    @classmethod
+    def _weight_not_negative(cls, value: float) -> float:
+        if value < 0:
+            raise ValueError("method weight cannot be negative; use 0 to switch it off")
+        return value
+
+
+class UniquenessMethods(BaseModel):  # v0.4
+    """The two ways two texts are compared, and how much each one counts."""
+
+    fuzzy: FuzzyMethod = Field(default_factory=FuzzyMethod)
+    semantic: SemanticMethod = Field(default_factory=SemanticMethod)
+
+    @model_validator(mode="after")  # v0.4
+    def _at_least_one_method(self) -> UniquenessMethods:
+        if self.fuzzy.weight + self.semantic.weight <= 0:
+            raise ValueError(
+                "fuzzy and semantic weights are both 0, so no comparison would "
+                "run; give at least one of them a weight"
+            )
+        return self
+
+
+class UniquenessBands(BaseModel):  # v0.4
+    """The two score lines that split a pair into three outcomes.
+
+        score >= duplicate    -> duplicate, no model needed
+        review_low <= score   -> uncertain, ask the language model
+                   < duplicate
+        score < review_low    -> not a duplicate, no model needed
+
+    These numbers are presentation dials. They are stated, not calibrated;
+    calibration lands in Package 5.
+    """
+
+    duplicate: float = 0.92
+    review_low: float = 0.80
+
+    @model_validator(mode="after")  # v0.4
+    def _bands_must_be_ordered(self) -> UniquenessBands:
+        if not 0.0 < self.review_low < self.duplicate <= 1.0:
+            raise ValueError(
+                f"bands must satisfy 0 < review_low ({self.review_low}) < "
+                f"duplicate ({self.duplicate}) <= 1"
+            )
+        return self
+
+
+class UniquenessConfig(BaseModel):  # v0.4
+    """Per-object configuration for the Uniqueness agent (Package 4).
+
+    Blocking keys partition the search space: only records that agree EXACTLY
+    on every blocking key are ever compared. MARA blocks on MTART and MEINS, so
+    two materials of a different type, or measured in different units, are
+    never proposed as duplicates. This is how SAP's own duplicate check works,
+    and it is also what keeps an all-pairs comparison affordable.
+
+    compare_fields are then scored for similarity within a block. MARA compares
+    MAKT.MAKTX; EQUI would block on EQART and compare EQKT.EQKTX - the same
+    mechanism, different parameters.
+
+    Known limitation: blocking is exact. A material with a wrong MEINS sits in
+    the wrong block, so its true duplicate is never found. That is honest
+    behaviour, and it is a reason the Validity agent and this agent need each
+    other.
+    """
+
+    scope: Optional[Predicate] = None  # v0.4
+    blocking_keys: list[str] = Field(default_factory=list)  # v0.4
+    compare_fields: list[CompareField] = Field(default_factory=list)
+    methods: UniquenessMethods = Field(default_factory=UniquenessMethods)  # v0.4
+    bands: UniquenessBands = Field(default_factory=UniquenessBands)  # v0.4
+
+    @model_validator(mode="before")  # v0.4
+    @classmethod
+    def _reject_legacy_singular_key(cls, data: Any) -> Any:
+        """Fail loudly on the v0.3 spelling.
+
+        Pydantic ignores unknown keys by default, so a YAML still saying
+        'blocking_key: MTART' would load with NO blocking keys at all and
+        compare every record against every other one. A silent change of that
+        size deserves an error, not a shrug.
+        """
+        if isinstance(data, dict) and "blocking_key" in data:
+            raise ValueError(
+                "'blocking_key' was replaced by 'blocking_keys' (a list) in "
+                "schema v0.4; write 'blocking_keys: [MTART, MEINS]'"
+            )
+        return data
+
+    @field_validator("compare_fields", mode="before")  # v0.4
+    @classmethod
+    def _accept_plain_field_names(cls, value: Any) -> Any:
+        """Allow 'MAKT.MAKTX' as shorthand for {field: MAKT.MAKTX, weight: 1.0}
+        so a single-field object needs no weight at all."""
+        entries: list[Any] = []
+        entry: Any = None
+
+        if not isinstance(value, list):
+            return value
+        for entry in value:
+            if isinstance(entry, str):
+                entries.append({"field": entry.strip(), "weight": 1.0})
+            else:
+                entries.append(entry)
+        return entries
+
+    def normalised_compare_weights(self) -> dict[str, float]:
+        """Each compare field's share of the record score, summing to 1.0.
+
+        The steward writes relative numbers; scoring needs proportions. The
+        declared values are left untouched so a screen can show what was
+        actually written.
+        """
+        total: float = 0.0
+        shares: dict[str, float] = {}
+        entry: Optional[CompareField] = None
+
+        for entry in self.compare_fields:
+            total += entry.weight
+        if total <= 0:
+            return shares
+        for entry in self.compare_fields:
+            shares[entry.field] = entry.weight / total
+        return shares
+
+    def normalised_method_weights(self) -> dict[str, float]:
+        """The fuzzy and semantic shares of a field score, summing to 1.0."""
+        total: float = self.methods.fuzzy.weight + self.methods.semantic.weight
+        shares: dict[str, float] = {}
+
+        if total <= 0:
+            return shares
+        shares["fuzzy"] = self.methods.fuzzy.weight / total
+        shares["semantic"] = self.methods.semantic.weight / total
+        return shares
+
+    def effective_bands(self, shift: float = 0.0) -> dict[str, float]:
+        """Apply an upstream advisory's band shift and report the arithmetic.
+
+        A steward sets the bands; an advisory from Completeness or Validity may
+        raise them. Both numbers and the result are returned together, so a
+        finding can show all three and a steward can see why their setting did
+        not take effect on its own.
+        """
+        moved_duplicate: float = 0.0
+        moved_review_low: float = 0.0
+
+        moved_duplicate = min(self.bands.duplicate + shift, MAX_BAND)
+        moved_review_low = min(self.bands.review_low + shift, moved_duplicate - 0.01)
+        return {
+            "steward_duplicate": self.bands.duplicate,
+            "steward_review_low": self.bands.review_low,
+            "shift": shift,
+            "duplicate": round(moved_duplicate, 4),
+            "review_low": round(moved_review_low, 4),
+        }
+
+    def fingerprint(self) -> str:
+        """A short, stable code for this configuration.
+
+        Change any dial and the code changes. A run stamps it, so a screen can
+        warn that a cluster on display was found under different settings and
+        may no longer hold.
+        """
+        payload: str = ""
+
+        payload = json.dumps(self.model_dump(mode="json"), sort_keys=True)
+        return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:12]
 
 
 class TableSchema(BaseModel):

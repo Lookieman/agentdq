@@ -5,6 +5,8 @@
 #                      and real dimension agents on a tiny synthetic frame), the
 #                      two advisory derivations, and proof the parallel fan-out
 #                      merges findings from all three dimensions. No LLM.
+# v1.1 | 04-Aug-2026 | Package 4a. Fixture uses the schema v0.4 uniqueness
+#                      shape (blocking_keys as a list).
 # ---------------------------------------------------------------------------
 """Offline throughout. The suggestion graph uses fake interpreter/suggester
 programs; the assessment graph uses the real RuleBackedAgents and the real
@@ -52,7 +54,7 @@ def _schema() -> TableSchema:
         table="MARA",
         primary_key=["MATNR"],
         header_anchor="MATNR",
-        uniqueness=UniquenessConfig(blocking_key="MTART", compare_fields=["MAKTX"]),
+        uniqueness=UniquenessConfig(blocking_keys=["MTART", "MEINS"], compare_fields=["MAKTX"]),  # v1.1
         fields={},
     )
 

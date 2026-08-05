@@ -15,6 +15,9 @@
 #                      carried primary_key and header_anchor; a parallel config
 #                      was a mistake. One file per table is what a steward
 #                      should write to onboard an object.
+# v2.1 | 04-Aug-2026 | Package 4a. The draft uniqueness block now matches
+#                      schema v0.4 (blocking_keys, weighted compare_fields,
+#                      methods, bands) so a scaffolded schema loads.
 # ---------------------------------------------------------------------------
 """Onboarding scaffolder - agent-free by design.
 
@@ -259,6 +262,26 @@ def _field_stub(field_profile: Any) -> dict[str, Any]:  # v2.0
     return stub
 
 
+def _uniqueness_stub() -> dict:  # v2.1
+    """A DRAFT uniqueness block in the schema v0.4 shape.
+
+    Every value is a starting point the steward must confirm. Blocking keys
+    must be fields two records have to agree on EXACTLY before they are ever
+    compared; compare fields are the text that is then scored for similarity.
+    The bands and weights are the stated defaults and are not calibrated.
+    """
+    return {
+        "scope": None,
+        "blocking_keys": ["TODO"],
+        "compare_fields": [{"field": "TODO", "weight": 1.0}],
+        "methods": {
+            "fuzzy": {"metric": "jaro_winkler", "weight": 0.5},
+            "semantic": {"model": "all-MiniLM-L6-v2", "weight": 0.5},
+        },
+        "bands": {"duplicate": 0.92, "review_low": 0.8},
+    }
+
+
 def scaffold(
     xlsx_path: str | Path,
     table: str,
@@ -303,7 +326,7 @@ def scaffold(
         "primary_key": key_candidates[0] if key_candidates else ["TODO"],
         "header_anchor": anchor,
         "file_pattern": Path(xlsx_path).name.replace(table, "{table}"),
-        "uniqueness": {"blocking_key": "TODO", "compare_fields": ["TODO"]},
+        "uniqueness": _uniqueness_stub(),  # v2.1
         "fields": field_blocks,
     }
     return {

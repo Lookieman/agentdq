@@ -1,4 +1,4 @@
-# AgentDQ — Agentic Data Quality Assessment for SAP Master Data
+# AgentDQ - Agentic Data Quality Assessment for SAP Master Data
 
 ## Project Overview
 
@@ -8,10 +8,10 @@ The project targets asset-intensive industries (oil & gas, utilities, manufactur
 
 ### Why This Project
 
-- Demonstrates **agent architecture design** — not single-shot LLM calls
+- Demonstrates **agent architecture design** - not single-shot LLM calls
 - Applies **domain expertise** (SAP MDG) to a real enterprise problem
-- Uses **rigorous evaluation methodology** — ground truth labels, precision/recall per dimension, MLflow tracking
-- Treats **portability as a design property** — rules are described declaratively, so the checks are not welded to one runtime
+- Uses **rigorous evaluation methodology** - ground truth labels, precision/recall per dimension, MLflow tracking
+- Treats **portability as a design property** - rules are described declaratively, so the checks are not welded to one runtime
 - Differentiates from typical ML portfolios by combining AI/ML skills with deep enterprise data management knowledge
 
 ### Scope
@@ -33,18 +33,22 @@ design, not as a plan.
 
 ## Build Status
 
-**Delivery status (26-Jul-2026): Packages 1, 2 and 3 complete.** The agentic
+**Delivery status (04-Aug-2026): Packages 1, 2 and 3 complete; Package 4 in
+build.** The agentic
 loop closes end to end - an agent suggests a rule, a human governs it at the
 approval gate, and the approved rule is executable - now orchestrated as two
 LangGraph graphs (a suggestion graph and an assessment graph joined by the
 repository). The assessment graph fans the three deterministic dimensions out
 in parallel and routes cross-agent advisories to the downstream uniqueness
-stage. The suite stands at 84 passing tests, 1 skipped, all offline. The first
-two AgentDQ LinkedIn articles are ready to write: Package 2's ("the agent
-proposes, the human disposes") and Package 3's ("where I put the human in the
-loop, and why"). The delivery breakdown, the remaining packages, and the
-per-package designs live in `agentdq_design.md`; the next build is Package 4
-(Uniqueness and Remediation).
+stage. Package 4 (Uniqueness and Remediation) is designed and its first
+step is built: the uniqueness settings now live in the table schema (blocking on
+MTART and MEINS, weighted compare fields, methods, bands), with wrong settings
+failing while the file is read rather than deep inside a scoring loop. The suite
+stands at 106 passing tests, 1 skipped, all offline. The first two AgentDQ
+LinkedIn articles are ready to write: Package 2's ("the agent proposes, the
+human disposes") and Package 3's ("where I put the human in the loop, and why").
+The delivery breakdown, the remaining packages, and the per-package designs live
+in `agentdq_design.md`.
 
 The data foundation and the deterministic assessment path are built, tested and
 demonstrated end to end on real SAP CAL extracts (MARA, MARC, MAKT). The current
@@ -70,6 +74,7 @@ Shared assess() function      src/reporting/assessment.py         done
 Console assessment CLI        tools/run_assessment.py             done
 Streamlit dashboard           app/dashboard.py                    done
 Smoke test suite (12 tests)   tests/test_pipeline_smoke.py        done
+Uniqueness settings (v0.4)    src/data/schema.py, config/schema/  done
 ```
 
 What the pilot demonstrates today:
@@ -95,8 +100,9 @@ Rule Suggestion Agent (DSPy)               centrepiece: bank-match + inference
 Rules repository + approval lifecycle      approved / versioned store
 Approval + authoring UI                    Streamlit: review, edit, add per dim
 Execution reads approved repository        agents point at approved rules
-Remediation Agent (DSPy)                   findings -> prioritised actions
-Uniqueness agent                           fuzzy / embedding + LLM adjudication
+Remediation Agent (DSPy)                   grouped findings -> ranked actions
+Uniqueness agent                           block, score, cluster, then a model
+                                           on the uncertain band only
 Timeliness agent + defect stub             needs MARA date fields (re-export in)
 Accuracy agent (DSPy)                       LLM judgement on real-world truth
 LangGraph orchestrator                      wire the flow with the human gate
@@ -444,7 +450,7 @@ So the agent emits a structured **field characterisation** alongside the readout
 ```
 Field characterisation
 +-- semantic_type_hypothesis   "this looks like a unit-of-measure field"
-+-- field_role_candidates      [unit_of_measure]  - the bank's binding handles
++-- field_role_candidates      [unit_of_measure] - the bank's binding handles
 +-- domain_candidacy           does this field behave like a closed domain?
 +-- anomaly_notes              "population drops for MTART=ROH rows"
 +-- evidence_refs              pointers into the raw profile JSON
@@ -703,27 +709,27 @@ covered in "The Agentic Core" above.
 
 Six specialist agents, one per DAMA dimension, plus an orchestrator and a reporter:
 
-**Orchestrator (LangGraph StateGraph)** — Routes execution, manages shared state, applies conditional logic (e.g., if completeness is below threshold, deprioritise uniqueness), aggregates dimension scores into a composite DQ scorecard.
+**Orchestrator (LangGraph StateGraph)** - Routes execution, manages shared state, applies conditional logic (e.g., if completeness is below threshold, deprioritise uniqueness), aggregates dimension scores into a composite DQ scorecard.
 
-**Agent 1 — Completeness** — Measures population of mandatory and conditionally mandatory fields. For MARA: is MATKL (material group) populated for all active materials? For BUT000: do all partners with role FLCU00 (customer) have an ADRC address record? This agent understands which fields are mandatory *per material type or partner role*, not just globally — a raw material doesn't need a BOM, but a finished good does.
+**Agent 1 - Completeness** - Measures population of mandatory and conditionally mandatory fields. For MARA: is MATKL (material group) populated for all active materials? For BUT000: do all partners with role FLCU00 (customer) have an ADRC address record? This agent understands which fields are mandatory *per material type or partner role*, not just globally - a raw material doesn't need a BOM, but a finished good does.
 
-**Agent 2 — Validity** — Checks whether populated values conform to their permitted domains and format rules. MARA-MEINS against the ISO unit of measure table (T006). ADRC-POST_CODE against country-specific postal code patterns. BUT000-BU_SORT1 (search term) against naming conventions. Phone numbers in ADRC-TEL_NUMBER against E.164 format. This is the rules engine agent — it maintains or dynamically loads a validation rule set per field.
+**Agent 2 - Validity** - Checks whether populated values conform to their permitted domains and format rules. MARA-MEINS against the ISO unit of measure table (T006). ADRC-POST_CODE against country-specific postal code patterns. BUT000-BU_SORT1 (search term) against naming conventions. Phone numbers in ADRC-TEL_NUMBER against E.164 format. This is the rules engine agent - it maintains or dynamically loads a validation rule set per field.
 
-**Agent 3 — Consistency** — Cross-table and intra-record logical coherence. Does MARC-BESKZ (procurement type) align with MARA-MTART (material type)? If a material is externally procured, does it have a valid purchasing info record? Does the country in BUT000-LAND1 match the country derived from ADRC-POST_CODE? If a business partner has role FLVN00 (vendor) and FLCU00 (customer), are the addresses consistent? This agent requires entity-relationship knowledge of the SAP data model.
+**Agent 3 - Consistency** - Cross-table and intra-record logical coherence. Does MARC-BESKZ (procurement type) align with MARA-MTART (material type)? If a material is externally procured, does it have a valid purchasing info record? Does the country in BUT000-LAND1 match the country derived from ADRC-POST_CODE? If a business partner has role FLVN00 (vendor) and FLCU00 (customer), are the addresses consistent? This agent requires entity-relationship knowledge of the SAP data model.
 
-**Agent 4 — Accuracy** — The hardest dimension. Accuracy means "does the value reflect the real-world truth?" Approximated by: cross-referencing company names against ACRA's public registry (UEN lookup), validating postal codes against OneMap API, checking whether material descriptions match their material group classification (an LLM judgement call — does "Hex Bolt M8 Stainless" belong in material group "Fasteners"?). This is where DSPy shines — define a signature like `MaterialDescription, MaterialGroup, MaterialType -> AccuracyAssessment, Confidence, Reasoning` and optimise it.
+**Agent 4 - Accuracy** - The hardest dimension. Accuracy means "does the value reflect the real-world truth?" Approximated by: cross-referencing company names against ACRA's public registry (UEN lookup), validating postal codes against OneMap API, checking whether material descriptions match their material group classification (an LLM judgement call - does "Hex Bolt M8 Stainless" belong in material group "Fasteners"?). This is where DSPy shines - define a signature like `MaterialDescription, MaterialGroup, MaterialType -> AccuracyAssessment, Confidence, Reasoning` and optimise it.
 
-**Agent 5 — Timeliness** — Record currency and staleness. Materials with MARA-ERSDA (creation date) older than five years and no change document (CDHDR/CDPOS) entries in the last two years. Business partners created during initial migration (identifiable by creation date clustering) never subsequently maintained. Price conditions in KONP past their validity end date but still flagged as active. This agent needs temporal metadata — creation dates, last change dates, validity periods.
+**Agent 5 - Timeliness** - Record currency and staleness. Materials with MARA-ERSDA (creation date) older than five years and no change document (CDHDR/CDPOS) entries in the last two years. Business partners created during initial migration (identifiable by creation date clustering) never subsequently maintained. Price conditions in KONP past their validity end date but still flagged as active. This agent needs temporal metadata - creation dates, last change dates, validity periods.
 
-**Agent 6 — Uniqueness** — Duplicate and near-duplicate detection. For business partners: fuzzy matching on name (BUT000-NAME_ORG1/2) + address (ADRC) using Jaro-Winkler or embedding similarity. For materials: similar MAKTX descriptions with different material numbers, potentially across plants. Produces candidate duplicate clusters with a confidence score, not binary yes/no. The LLM serves as a second-pass adjudicator on borderline cases — "Are 'ACME Corp' and 'ACME Corporation Pte Ltd' the same entity given these addresses?"
+**Agent 6 - Uniqueness** - Duplicate and near-duplicate detection. For business partners: fuzzy matching on name (BUT000-NAME_ORG1/2) + address (ADRC) using Jaro-Winkler or embedding similarity. For materials: similar MAKTX descriptions with different material numbers, potentially across plants. Produces candidate duplicate clusters with a confidence score, not binary yes/no. The LLM serves as a second-pass adjudicator on borderline cases - "Are 'ACME Corp' and 'ACME Corporation Pte Ltd' the same entity given these addresses?"
 
-**Reporter — Remediation Recommender** — Consumes the structured findings from all six agents, prioritises by business impact (a completeness gap in safety-critical material fields outranks a formatting issue in search terms), and generates a structured remediation report. This is a DSPy pipeline: `DimensionFindings, MaterialType, BusinessContext -> PrioritisedRemediations, ExecutiveSummary`.
+**Reporter - Remediation Recommender** - Consumes the structured findings from all six agents, prioritises by business impact (a completeness gap in safety-critical material fields outranks a formatting issue in search terms), and generates a structured remediation report. This is a DSPy pipeline: `DimensionFindings, MaterialType, BusinessContext -> PrioritisedRemediations, ExecutiveSummary`.
 
 ### Profiling: Deterministic Measurement, Agentic Interpretation
 
 A deliberate separation runs through the profiling stage, and it is the template every downstream dimension agent follows: deterministic measurement first, language-model interpretation second. Profiling answers "what does the data look like?"; interpretation answers "so what, and who should care?". The two are different jobs and are kept in different layers.
 
-**Deterministic profiler (the evidence layer).** A pandas-based module computes the facts: per-field population rates, distinct counts, inferred domains, value-length ranges, a coarse type hint, and composite-key uniqueness (one row per material per plant in MARC, per plant and storage location in MARD). It is fast, free, fully reproducible, and emits structured JSON. It never uses a language model — arithmetic and counting are not tasks to delegate to an LLM. This layer is the single source of truth that everything else cites.
+**Deterministic profiler (the evidence layer).** A pandas-based module computes the facts: per-field population rates, distinct counts, inferred domains, value-length ranges, a coarse type hint, and composite-key uniqueness (one row per material per plant in MARC, per plant and storage location in MARD). It is fast, free, fully reproducible, and emits structured JSON. It never uses a language model - arithmetic and counting are not tasks to delegate to an LLM. This layer is the single source of truth that everything else cites.
 
 **Profiler Agent (the interpretation layer).** A DSPy module sits on top of that JSON and turns it into a narrative for a non-technical data-operations audience. It interprets; it does not measure. A representative signature is:
 
@@ -738,7 +744,7 @@ Two principles govern the agent:
 - **It cites the numbers it reasons from.** Every claim is anchored to a figure in the deterministic profile rather than free-narrated. This keeps the readout honest and auditable, which a data-operations audience needs in order to trust and act on it.
 - **Severity reflects business impact, not raw percentage.** A 5% gap in a safety-relevant field outranks a 30% gap in a cosmetic one. The agent therefore takes a small amount of domain context about which fields matter as an input, supplied from SAP knowledge, rather than ranking issues by magnitude alone.
 
-The separation earns its keep three ways. The numbers stay trustworthy because no language model computes them. The narrative is cheap to regenerate and easy to tune per audience — the same JSON can yield a technical readout, a data-operations summary and an executive paragraph from three different signatures, with no change to the evidence layer. And it is a low-risk rehearsal of the exact pattern the six dimension agents use, letting the DSPy and MLflow plumbing be proven out before the dimension logic gets complicated.
+The separation earns its keep three ways. The numbers stay trustworthy because no language model computes them. The narrative is cheap to regenerate and easy to tune per audience - the same JSON can yield a technical readout, a data-operations summary and an executive paragraph from three different signatures, with no change to the evidence layer. And it is a low-risk rehearsal of the exact pattern the six dimension agents use, letting the DSPy and MLflow plumbing be proven out before the dimension logic gets complicated.
 
 ```mermaid
 graph LR
@@ -775,7 +781,7 @@ graph LR
     RPT --> END([End])
 ```
 
-Conditional edges apply — for instance, if the Completeness Agent finds the table is less than 70% complete, the Uniqueness Agent gets deprioritised (no point finding duplicates in sparse data), and the Remediation Recommender is told to flag completeness as the primary concern.
+Conditional edges apply - for instance, if the Completeness Agent finds the table is less than 70% complete, the Uniqueness Agent gets deprioritised (no point finding duplicates in sparse data), and the Remediation Recommender is told to flag completeness as the primary concern.
 
 ---
 
@@ -808,7 +814,7 @@ graph TD
 
 ### Emit IR, not code
 
-The system never asks a language model to write executable Python or SQL. The IR is a declarative description of the check — a small typed predicate tree — and a deterministic compiler turns it into code. This buys four properties:
+The system never asks a language model to write executable Python or SQL. The IR is a declarative description of the check - a small typed predicate tree - and a deterministic compiler turns it into code. This buys four properties:
 
 ```
 Property         Why it matters
@@ -864,7 +870,7 @@ A not-null rule is `assertion = {field, is_not_null}` with no scope; a domain ru
 
 Scope is a first-class part of the spec, not an afterthought, because it is the single biggest lever for high-volume data. The scope predicate compiles directly to a SQL `WHERE` clause, so a check only ever scans the rows it cares about. "Reorder-point rule for active FERT materials in three plants" might touch a fraction of a percent of a billion-row table rather than all of it. Scope filter equals pushdown equals cost saved, and it reuses the same predicate machinery the cross-field rules already need.
 
-For the first cut, scope predicates reference the rule's **own table** (single-table filter). Cross-table scope — for example "apply to MARC rows whose MARA-MTART is FERT" — requires join machinery and is deferred to the same extension that introduces cross-table consistency rules generally. Same-table scope covers the large majority of real filters.
+For the first cut, scope predicates reference the rule's **own table** (single-table filter). Cross-table scope - for example "apply to MARC rows whose MARA-MTART is FERT" - requires join machinery and is deferred to the same extension that introduces cross-table consistency rules generally. Same-table scope covers the large majority of real filters.
 
 ### The natural-language authoring agent
 
@@ -908,7 +914,7 @@ Author, natural-language origin, dry-run statistics and timestamp travel with ea
 
 ### Relationship to the current contracts
 
-The `Rule` contract already carries dimension, archetype, domain values and provenance, and covers the simple archetypes (not-null, domain-in) directly. The one evolution required is to add the **predicate tree** for the compositional cases — scope filters and cross-field `when/then` with `and`/`or`/`not`/`implies` — so the IR can express the richer rules. This is an extension of the existing contract rather than a new concept.
+The `Rule` contract already carries dimension, archetype, domain values and provenance, and covers the simple archetypes (not-null, domain-in) directly. The one evolution required is to add the **predicate tree** for the compositional cases - scope filters and cross-field `when/then` with `and`/`or`/`not`/`implies` - so the IR can express the richer rules. This is an extension of the existing contract rather than a new concept.
 
 ---
 
@@ -945,18 +951,28 @@ it reuses the same predicate IR the rules already use, for example a `Comparison
 of `MTART in ['FERT','HALB']`. One natural-language front-end therefore feeds
 both rule authoring and uniqueness scoping.
 
-The agent uses **MTART as the blocking key and MAKTX (description) as the
-compared field**. The compared fields are a configurable list, not a
-hardcoded single field, so dimensions (BRGEW, NTGEW) or, for manufacturing
-customers, classification characteristics (AUSP/KSSK/KLAH) can be added later as
-a config change rather than a rewrite.
+The agent blocks on **MTART and MEINS together**, and compares **MAKTX (the
+description)**. Two records are only ever compared when they agree exactly on
+both blocking keys, so a bolt is never proposed as a duplicate of a coil, and an
+each-priced item is never matched to a kilo-priced one. That is how SAP's own
+duplicate check narrows a search, and it also removes the need for any further
+identity check, since records inside a block already agree on both fields.
+
+Compared fields are a weighted list, not one hardcoded field, so dimensions
+(BRGEW, NTGEW) or, for manufacturing customers, classification characteristics
+(AUSP/KSSK/KLAH) can be added later as a settings change rather than a rewrite.
+Categorical characteristics would become blocking keys and text ones compare
+fields at no extra cost; numeric ones need tolerance comparison ("treat two
+values as equal when they are within one percent of each other"), which is a
+third comparison type and is not built.
 
 ### Why all-pairs does not scale, and what replaces it
 
 Comparing every record against every other is $O(n^2)$. Even after blocking by
-MTART, the dominant block explodes: the HALB block alone holds roughly 2,186
+MTART alone, the dominant block explodes: the HALB block alone holds roughly 2,186
 materials, giving $\frac{2186 \times 2185}{2} \approx 2.4$ million pairs from a
-2,800-row table. At a million materials a single block is intractable.
+2,800-row table. Adding MEINS as a second blocking key cuts that sharply, but at
+a million materials a single block is still intractable.
 
 At pilot scale, brute-force comparison within a block is acceptable and simple,
 so that is what the first cut does. The design keeps a clear seam for a later
@@ -1045,44 +1061,129 @@ optimisable against the injector's labelled twin pairs with measurement in
 MLflow, and swaps from one served model to another as a configuration change
 rather than a prompt rewrite.
 
+### Clusters, not pairs, and who survives
+
+A duplicate is rarely a pair. If A matches B and B matches C, all three form one
+cluster even when A and C do not match each other directly. Every cluster records
+its weakest link, so a steward can see when a group was joined by a thin chain.
+
+The **survivor** is the record the agent recommends keeping, and it is the point
+every other member is scored against. One label rather than two, so a steward
+reads one line: keep this record, these are its duplicates, this is how close
+each one is. A member scoring below the band against the survivor is flagged,
+which is exactly the case a hub-based view would hide.
+
+```
+Case                                 Recommendation             Resolution
+-----------------------------------  -------------------------  --------------
+Identical after normalisation        any member may survive     automatic
+Above the band but not identical     the most complete record   automatic
+Most complete, and still tied        no recommendation          needs_steward
+```
+
+"Most complete" is counted in order: populated mandatory fields first, then
+populated fields overall as the tie-break. A `needs_steward` cluster is flagged
+on the existing dashboard; a dedicated merge review screen is Package 7 work.
+
 ### One declarative config
 
-Everything above collapses into a single declarative configuration, which the
-natural-language layer can later generate from a data-ops request:
+Everything above collapses into a single settings block per object, held in the
+table's schema YAML, which the natural-language layer can later generate from a
+data-ops request:
 
-```
+```yaml
 uniqueness:
-  scope:                     # optional filter, reuses the rule predicate IR
-    field: MTART
-    op: in
-    value: [FERT, HALB]
-  blocking_key: MTART        # only compare within the same value
-  compare_fields: [MAKTX]    # Phase 1: description; extend later
+  scope: null                      # optional row filter, reuses the rule IR
+  blocking_keys: [MTART, MEINS]    # exact agreement required on every key
+  compare_fields:
+   - {field: MAKT.MAKTX, weight: 1.0}
   methods:
-    fuzzy:    { metric: jaro_winkler, weight: 0.5 }
-    semantic: { model: all-MiniLM-L6-v2, weight: 0.5 }
+    fuzzy:    {metric: jaro_winkler, weight: 0.5}
+    semantic: {model: all-MiniLM-L6-v2, weight: 0.5}
   bands:
-    duplicate:   0.92        # >= this: auto-flag as duplicate
-    review_low:  0.80        # [review_low, duplicate): model adjudicates
+    duplicate:  0.92               # at or above this: a duplicate
+    review_low: 0.80               # between the two: the model decides
 ```
+
+Compare-field weights are relative, so 7 and 3 mean the same as 0.7 and 0.3.
+Setting the semantic weight to 0 is the supported way to run fuzzy only, which
+is what happens on a machine with no embeddings artefact built.
+
+Three properties come with the settings:
+
+- **Wrong settings fail while the file is read.** Bands out of order, an unknown
+  fuzzy metric, both methods weighted zero, a compare field weighted zero, and
+  the old singular `blocking_key` all raise a message naming the fix. The last
+  guard matters most, since pydantic ignores keys it does not know and an
+  unguarded old file would load with no blocking at all, comparing every record
+  against every other one.
+- **Steward first, advisory second.** An upstream advisory may raise the bands.
+  The finding records the steward's numbers, the shift, and the result, so
+  nobody concludes their setting was ignored. The shift is capped below a
+  perfect match, because a duplicate band of 1.0 would switch near-duplicate
+  detection off without saying so.
+- **Every run stamps a settings fingerprint**, a short code that changes when any
+  dial changes, so a screen can warn that a cluster on display was found under
+  different settings.
+
+The dial values are stated, not calibrated. Calibration is Package 5.
+
+Because the schema YAMLs are generated by `tools/build_schema.py`, these
+settings live in that tool's TABLE_META as well, or a rebuild erases them.
 
 ### Output, scoring and ground truth
 
-Uniqueness produces candidate duplicate pairs (and, by transitive grouping,
-clusters) each with a confidence score, rather than a binary per-row finding. The
-existing ground truth already supports evaluation: the defect injector labels each
-twin with `duplicate_of` pointing at its source, and because a twin copies its
-source's MTART, twin and source always land in the same block by construction. The
-one contract change is small - a duplicate is a pair, so `Finding.metadata` carries
-the matched partner and the score rather than a new type being introduced.
+Uniqueness produces scored clusters rather than a binary per-row finding.
+`Finding.metadata` carries the survivor, the score against it, and the cluster's
+weakest link, so no new type is introduced.
+
+**Detection is scored; survivorship is not.** The injector labels a twin as a
+duplicate of its source but holds no opinion on which of the two should be kept,
+so scoring the survivor choice would measure a business judgement against ground
+truth that has no view on it.
+
+```
+What is measured        How
+----------------------  --------------------------------------------------
+Cluster detection       Did the twin land in the same cluster as its
+(precision and recall)  labelled source? Yes or no.
+Survivorship            Not scored. It is a recommendation for a human.
+```
+
+There is a leak to guard against as well. The injector numbers every twin from
+900000000, so anything reading MATNR would score perfectly by reading a
+fingerprint the generator left behind. Nothing in blocking, scoring or
+survivorship reads the material number.
+
+Two changes to the injector make the numbers mean something. The original four
+changes (uppercase, trailing space, inserted punctuation, one character swap) all
+normalise back to the same string and score at or near 1.00, which leaves the
+uncertain band empty and the adjudicator idle. Four harder changes are added,
+sized to land in that band: a unit word ("5 inches" to "5in"), a unit symbol
+("5 inches" to 5"), a word reorder ("Hex Bolt M8" to "M8 Hex Bolt"), and an
+abbreviation ("Stainless Steel Bolt" to "SS Bolt").
+
+**Decoys** matter more. A decoy is a pair that looks similar and is genuinely two
+different materials - "Bearing 6203" against "Bearing 6204" - labelled
+`not_duplicate`. Without decoys every similar pair in the data is a real
+duplicate, the agent can never be wrong by saying yes, and precision is always
+1.000 and means nothing. Decoys turn "the model filters out wrong matches" from
+an assertion into a measured claim.
+
+The uniqueness score is taken over the **MARA row count only**. MAKT holds one
+description per material per language, so a MAKT duplicate is a key violation,
+which the profiler already finds; MAKT supplies evidence for MARA rather than
+being a subject in its own right. MARC is assumed clean. Spread across all three
+loaded tables the score would be diluted into near-invisibility.
 
 ### Trade-offs to state plainly
 
-- **Blocking by MTART assumes true duplicates share a material type.** A material
-  created once as FERT and once as HALB would be missed. This is a deliberate
-  trade of a little recall for large gains in precision and speed, and is the
-  right default for material master; if a customer needs cross-type detection the
-  blocking key becomes configurable.
+- **Blocking is exact, so a wrong blocking value hides a duplicate.** A material
+  created once as FERT and once as HALB is missed, and so is one entered in EA
+  when its twin is in KG. This is a deliberate trade of a little recall for large
+  gains in precision and speed, and it is the right default for material master.
+  It is also a reason the Validity agent and this agent need each other: a wrong
+  MEINS is a validity finding whose real cost shows up here.
 - **Description alone over-merges generic materials.** "HEX BOLT" M8 and M12 look
   identical on description; the discriminating detail lives in characteristics.
   This is why compared fields are configurable and why results are always
@@ -1114,9 +1215,9 @@ the matched partner and the score rather than a new type being introduced.
 
 These are where the Consistency Agent gets interesting:
 
-- **EQUZ-MATNR → MARA:** Equipment linked to its material master record — does that material actually exist?
-- **EQUZ-IWERK/STORT → MARC/MARD:** Equipment plant/storage location should correspond to valid plant/storage location combinations in material master
-- **EQUZ-TPLNR → IFLOT:** Equipment assigned to a functional location — does that functional location's plant match the equipment's maintenance plant?
+- **EQUZ-MATNR -> MARA:** Equipment linked to its material master record - does that material actually exist?
+- **EQUZ-IWERK/STORT -> MARC/MARD:** Equipment plant/storage location should correspond to valid plant/storage location combinations in material master
+- **EQUZ-TPLNR -> IFLOT:** Equipment assigned to a functional location - does that functional location's plant match the equipment's maintenance plant?
 - **MARA-MTART = ERSA (spare parts) referenced by equipment:** Are spare parts stocked in the same plant (MARD record exists)?
 
 ---
@@ -1125,26 +1226,26 @@ These are where the Consistency Agent gets interesting:
 
 ### Combined Approach: SAP CAL Extraction + Controlled Synthetic Generation
 
-#### Step 1 — Extract Reference Distributions from SAP CAL
+#### Step 1 - Extract Reference Distributions from SAP CAL
 
 Spin up an S/4HANA Fully-Activated Appliance on SAP Cloud Appliance Library (https://www.sap.com/sea/products/technology-platform/cloud-appliance-library.html). These come pre-loaded with realistic master data across multiple company codes and plants. Export the relevant tables as CSVs via SE16N or via CDS views / OData.
 
-The purpose is not to use this data directly as the test set — it is to extract **realistic distributions**: what percentage of materials are FERT vs ROH vs HALB, what's the typical completeness profile of each field, what do real SAP material descriptions look like, how are equipment types distributed. These distributions calibrate the synthetic generator so it produces data that *looks* like a real SAP system, not random noise.
+The purpose is not to use this data directly as the test set - it is to extract **realistic distributions**: what percentage of materials are FERT vs ROH vs HALB, what's the typical completeness profile of each field, what do real SAP material descriptions look like, how are equipment types distributed. These distributions calibrate the synthetic generator so it produces data that *looks* like a real SAP system, not random noise.
 
-#### Step 2 — Build the Synthetic Generator with Controlled Defect Injection
+#### Step 2 - Build the Synthetic Generator with Controlled Defect Injection
 
 The generator takes those distributions and produces datasets at configurable scale (1,000 to 100,000+ records) with defects injected at known rates per dimension. This is the ground truth factory:
 
-- **Completeness defects:** Null out mandatory fields at rate $r_c$ (e.g., 5%). Vary by field importance — higher rate for low-criticality fields, lower for high-criticality.
+- **Completeness defects:** Null out mandatory fields at rate $r_c$ (e.g., 5%). Vary by field importance - higher rate for low-criticality fields, lower for high-criticality.
 - **Validity defects:** Insert out-of-domain values at rate $r_v$. Wrong UoM codes, malformed postal codes, invalid material type codes.
 - **Consistency defects:** Create cross-table contradictions at rate $r_{con}$. Material typed as FERT but procurement type set to external with no purchasing info record.
 - **Accuracy defects:** Swap material descriptions between material groups at rate $r_a$. A "Hex Bolt" classified under "Lubricants."
 - **Timeliness defects:** Backdate creation dates and remove change logs at rate $r_t$. Create expired-but-active conditions.
 - **Uniqueness defects:** Generate near-duplicate clusters at rate $r_u$. Same company, slightly different name spelling, same or nearby address.
 
-Each injected defect is logged with its exact location (table, record ID, field) and dimension. This gives precision/recall/F1 per agent per dimension — proper quantitative evaluation, not just "it found some issues."
+Each injected defect is logged with its exact location (table, record ID, field) and dimension. This gives precision/recall/F1 per agent per dimension - proper quantitative evaluation, not just "it found some issues."
 
-#### Step 3 — Generate Multiple Test Scenarios
+#### Step 3 - Generate Multiple Test Scenarios
 
 Create at least three dataset variants:
 
@@ -1268,18 +1369,18 @@ agentdq/
 
 #### Week 1-2: Data Foundation
 - Extract tables from SAP sandbox via SE16N or CDS views
-- Exploratory profiling — understand the distributions, field population rates, common patterns
+- Exploratory profiling - understand the distributions, field population rates, common patterns
 - Build the synthetic generator module calibrated to those distributions
 - Define the defect injection catalogue (what defects, per which fields, per which dimension)
 - **Deliverable:** Working generator that produces labelled datasets on demand
 
 #### Week 3-5: Agent Development (individual agents)
 - Build agents one at a time, starting with the most straightforward
-- Recommended order: Completeness → Validity → Timeliness → Consistency → Uniqueness → Accuracy
-- Completeness and Validity are rule-based and fast to build — both done in week 3
-- Consistency needs the cross-entity logic — allow a full week
-- Uniqueness needs the fuzzy matching pipeline — allow a full week
-- Accuracy is the LLM-heavy agent — build last, once comfortable with DSPy signatures in this context
+- Recommended order: Completeness -> Validity -> Timeliness -> Consistency -> Uniqueness -> Accuracy
+- Completeness and Validity are rule-based and fast to build - both done in week 3
+- Consistency needs the cross-entity logic - allow a full week
+- Uniqueness needs the fuzzy matching pipeline - allow a full week
+- Accuracy is the LLM-heavy agent - build last, once comfortable with DSPy signatures in this context
 - Each agent unit-tested against synthetic data with known defects, results logged to MLflow
 - **Deliverable:** Six working agents with individual precision/recall/F1 scores
 
@@ -1287,7 +1388,7 @@ agentdq/
 - Wire all agents into LangGraph StateGraph
 - Implement the conditional routing (e.g., skip uniqueness if completeness is below threshold)
 - Build the state schema that accumulates findings across agents
-- End-to-end pipeline: dataset in → DQ scorecard out
+- End-to-end pipeline: dataset in -> DQ scorecard out
 - Integration testing across the three scenario variants (healthy, degraded, critical)
 - **Deliverable:** End-to-end pipeline producing DQ scorecards
 
@@ -1299,7 +1400,7 @@ agentdq/
 
 #### Week 9: Reporting + Documentation
 - Build the scorecard output (structured JSON + rendered HTML/Markdown report)
-- Write up the project — architecture, methodology, results
+- Write up the project - architecture, methodology, results
 - Clean up the repo for portfolio presentation
 - **Deliverable:** Polished repository and documentation
 
@@ -1340,18 +1441,18 @@ and quantify the result against known ground truth.
 
 ### What to Write Hands-on (with Claude as reviewer)
 
-- **LangGraph orchestrator** — state schema, node definitions, edge routing, conditional logic. This is the architectural core.
+- **LangGraph orchestrator** - state schema, node definitions, edge routing, conditional logic. This is the architectural core.
 - **DSPy signatures and metric functions** for the Accuracy and Uniqueness agents.
-- **Cross-entity consistency rules** — the domain logic that codifies SAP data model knowledge.
+- **Cross-entity consistency rules** - the domain logic that codifies SAP data model knowledge.
 
 ### What to Co-develop (write first, then get review)
 
-- **Individual agent logic** — write the first version of each agent, get code review for edge cases, better patterns, and challenged assumptions.
-- **Evaluation framework** — MLflow experiment structure and precision/recall calculation.
+- **Individual agent logic** - write the first version of each agent, get code review for edge cases, better patterns, and challenged assumptions.
+- **Evaluation framework** - MLflow experiment structure and precision/recall calculation.
 
 ### What to Delegate (pure plumbing)
 
-- **Synthetic data generator** — Faker configurations, distribution sampling, CSV output formatting. Specify *what* defects and at what rates; the code is mechanical.
+- **Synthetic data generator** - Faker configurations, distribution sampling, CSV output formatting. Specify *what* defects and at what rates; the code is mechanical.
 - **Data loading utilities**, schema definitions, config files.
 - **HTML/Markdown report templates**.
 
