@@ -7,6 +7,11 @@
 # v2.0 | 13-Jul-2026 | Config source moved from the retired config/objects to
 #                      config/schema, which already carried primary_key and
 #                      header_anchor. Scaffolder now emits a draft SCHEMA.
+# v2.1 | 04-Aug-2026 | Package 4a. Uniqueness moved to the schema v0.4 shape:
+#                      blocking_keys is a list, compare_fields carry a weight,
+#                      and an absent block degrades to empty lists rather than
+#                      None. Adds a guard that the scaffolder's draft actually
+#                      loads, which the old TODO-string check never proved.
 # ---------------------------------------------------------------------------
 
 from __future__ import annotations
@@ -17,8 +22,9 @@ import openpyxl
 import pandas as pd
 import pytest
 
-from src.data.schema import load_all_schemas, load_table_schema
+from src.data.schema import UniquenessConfig, load_all_schemas, load_table_schema  # v2.1
 from src.data.profiler import profile_table
+from tools import onboard_object as onboard  # v2.1
 from tools.onboard_object import detect_header, detect_key_candidates, map_roles, scaffold
 
 
@@ -34,18 +40,38 @@ SCHEMA_DIR = REPO_ROOT / "config" / "schema"
 
 def test_schema_carries_all_onboarding_fields():
     # ONE file per table is what a steward writes. The schema already had
-    # primary_key and header_anchor; v0.3 added file_pattern and uniqueness.
+    # primary_key and header_anchor; v0.3 added file_pattern and uniqueness,
+    # and v0.4 gave uniqueness its dials.
     schemas = load_all_schemas(SCHEMA_DIR)
     assert {"MARA", "MARC"}.issubset(set(schemas))
     mara = schemas["MARA"]
     assert mara.primary_key == ["MATNR"]
     assert mara.header_anchor == "MATNR"
     assert mara.resolve_file("data/raw").name == "MARA_EX_DATA.xlsx"
-    assert mara.uniqueness.blocking_key == "MTART"
-    assert mara.uniqueness.compare_fields == ["MAKT.MAKTX"]
-    # MARC has no uniqueness block: absent config degrades to None, not a crash.
+    # MARA blocks on BOTH keys: two records must agree exactly on material type
+    # AND base unit of measure before they are ever compared (schema v0.4).
+    assert mara.uniqueness.blocking_keys == ["MTART", "MEINS"]  # v2.1
+    assert [entry.field for entry in mara.uniqueness.compare_fields] == ["MAKT.MAKTX"]  # v2.1
+    # MARC has no uniqueness block: absent config degrades to empty, not a crash.
     assert schemas["MARC"].primary_key == ["MATNR", "WERKS"]
-    assert schemas["MARC"].uniqueness.blocking_key is None
+    assert schemas["MARC"].uniqueness.blocking_keys == []  # v2.1
+    assert schemas["MARC"].uniqueness.compare_fields == []  # v2.1
+
+
+def test_the_scaffolded_draft_loads_as_a_real_schema():  # v2.1
+    """The draft must PARSE, not merely contain the right words.
+
+    The old check only compared TODO strings, so the draft could have drifted
+    out of shape and nothing would have said so until a steward tried to use
+    it. Building a TableSchema from the draft is the check that matters.
+    """
+    stub: dict = onboard._uniqueness_stub()
+    config = UniquenessConfig(**stub)
+
+    assert config.blocking_keys == ["TODO"]
+    assert config.compare_fields[0].field == "TODO"
+    assert config.bands.duplicate == 0.92
+    assert config.methods.fuzzy.metric == "jaro_winkler"
 
 
 def test_schema_field_role_is_structural_not_semantic():
@@ -132,7 +158,8 @@ def test_scaffold_detects_header_key_and_roles(tmp_path: Path):
 
     # The draft SCHEMA carries TODO markers - a draft, never a silent config.
     draft = result["draft_schema"]
-    assert draft["uniqueness"]["blocking_key"] == "TODO"
+    assert draft["uniqueness"]["blocking_keys"] == ["TODO"]  # v2.1
+    assert draft["uniqueness"]["compare_fields"][0]["field"] == "TODO"  # v2.1
     assert "{table}" in draft["file_pattern"]
     assert draft["description"].startswith("TODO")
 

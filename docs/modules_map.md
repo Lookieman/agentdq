@@ -211,8 +211,12 @@ tests/test_rule_suggester_smoke.py       v1.0   Both suggestion engines +
                                                 confidence + IR round-trip
 tests/test_repository_smoke.py           v1.0   Lifecycle, ledger, session
                                                 isolation, the full closed loop
-tests/test_onboarding_smoke.py           v2.0   Schema onboarding config + the
-                                                scaffolder on a synthetic EQKT
+tests/test_onboarding_smoke.py           v2.1   Schema onboarding config + the
+                                                scaffolder on a synthetic EQKT.
+                                                v2.1 moves to the v0.4 shape and
+                                                proves the scaffolded draft
+                                                actually LOADS, not just that it
+                                                contains the right TODO strings
 tests/test_orchestrator_smoke.py         v1.1   Both graphs; assessment fan-out
                                                 with the real executor;
                                                 advisories; the no-checks guard.
@@ -342,8 +346,9 @@ tools/__init__.py          tests/__init__.py            app/__init__.py
 - **LangGraph** is a runtime dependency (Package 3 orchestration): `uv add
   langgraph`. Agents never import it; only src/state.py, src/graph_nodes.py,
   src/orchestrator.py and the graph runners do.
-- **This map is not yet in the repo.** modules_map.md lives outside the tree;
-  consider committing it (e.g. under docs/) so it travels with the code.
+- **This map now lives in the repo** under `docs/`, alongside
+  `agentdq_design.md` and `agentdq-project-plan.md`, so it travels with the
+  code. Update all three in the same session as any package build.
 - **Generated artefacts** (profiles under `data/profile/`, synthetic datasets
   under `data/synthetic/`, `mlruns/`, and the runtime stores above) are not
   source; they are reproducible outputs and are git-ignored, except the

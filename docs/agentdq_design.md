@@ -895,8 +895,8 @@ table                     EQKT                        everything
 header_anchor             EQUNR                       extract_loader
 primary_key               [EQUNR, SPRAS]              profiler key check
 file_pattern              EQKT_EX_DATA.xlsx           profiler / batch runner
-uniqueness                blocking_key, compare_      Uniqueness agent (Pkg 4)
-                          fields (per object)
+uniqueness                blocking_keys, compare_     Uniqueness agent (Pkg 4)
+                          fields, methods, bands
 ```
 
 The profiler's two hardcoded dicts become fallbacks behind a config read - the
