@@ -1,4 +1,7 @@
 # v0.1 | 27-Jun-2026 | Initial synthetic clean-baseline generator
+# v0.2 | 04-Aug-2026 | Package 4b fix. The documented output directory said
+#                      data/profile; the profiles are written to and read
+#                      from data/profiles. Corrected to the real name.
 
 """Synthetic generator for clean baseline material master data.
 
@@ -26,7 +29,7 @@ point the generator will satisfy those constraints in the baseline too.
 
 Run as a module:
 
-    python -m src.data.generator --schema config/schema --profiles data/profile \\
+    python -m src.data.generator --schema config/schema --profiles data/profiles \\  # v0.2
         --tables MARA,MARC,MAKT --materials 5000 --seed 42 --out data/synthetic/baseline
 """
 

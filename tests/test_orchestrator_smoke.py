@@ -7,6 +7,9 @@
 #                      merges findings from all three dimensions. No LLM.
 # v1.1 | 04-Aug-2026 | Package 4a. Fixture uses the schema v0.4 uniqueness
 #                      shape (blocking_keys as a list).
+# v1.2 | 04-Aug-2026 | Package 4b. Advisories are dictionaries, signal
+#                      suppression is replaced by record exclusion, and the
+#                      stub now resolves real settings.
 # ---------------------------------------------------------------------------
 """Offline throughout. The suggestion graph uses fake interpreter/suggester
 programs; the assessment graph uses the real RuleBackedAgents and the real
@@ -19,18 +22,24 @@ from types import SimpleNamespace
 from typing import Any
 
 import pandas as pd
-import pytest
 
-from src.agents.base import AgentResult
+from src import graph_nodes as nodes
 from src.agents.completeness import CompletenessAgent
 from src.agents.consistency import ConsistencyAgent
+from src.agents.uniqueness_settings import build_advisory  # v1.2
 from src.agents.validity import ValidityAgent
-from src.contracts import Comparison, Dimension, Operator, RuleArchetype, RuleSpec, Severity
+from src.contracts import (  # v1.2
+    AdvisoryAction,
+    Comparison,
+    Dimension,
+    Operator,
+    RuleArchetype,
+    RuleSpec,
+    Severity,
+)
 from src.data.schema import TableSchema, UniquenessConfig
-from src import graph_nodes as nodes
 from src.orchestrator import build_assessment_graph, build_suggestion_graph
 from src.state import merge_advisories
-
 
 # ---------------------------------------------------------------------------
 # A tiny MARA-like frame + schema + rules, with known defects
@@ -88,25 +97,35 @@ def _assessment_state() -> dict[str, Any]:
 # Reducer
 # ---------------------------------------------------------------------------
 
-def test_merge_advisories_concatenates_per_target():
-    left = {"uniqueness": ["a"]}
-    right = {"uniqueness": ["b"], "remediation": ["c"]}
+def test_merge_advisories_concatenates_per_target():  # v1.2
+    # The reducer never reads an advisory's contents, but the test uses the real
+    # dictionary shape so it fails if the shape and the reducer ever diverge.
+    first = {"action": "raise_threshold", "source": "Completeness"}
+    second = {"action": "exclude_records", "source": "Validity"}
+    third = {"action": "raise_threshold", "source": "Completeness"}
+    left = {"uniqueness": [first]}
+    right = {"uniqueness": [second], "remediation": [third]}
     merged = merge_advisories(left, right)
-    assert merged["uniqueness"] == ["a", "b"]
-    assert merged["remediation"] == ["c"]
+    assert merged["uniqueness"] == [first, second]
+    assert merged["remediation"] == [third]
     # Defensive against None on either side.
-    assert merge_advisories(None, {"x": ["1"]}) == {"x": ["1"]}
-    assert merge_advisories({"x": ["1"]}, None) == {"x": ["1"]}
+    assert merge_advisories(None, {"x": [first]}) == {"x": [first]}
+    assert merge_advisories({"x": [first]}, None) == {"x": [first]}
 
 
 # ---------------------------------------------------------------------------
 # Advisory derivations (pure)
 # ---------------------------------------------------------------------------
 
-def test_threshold_advisory_fires_on_sparse_field():
+def test_threshold_advisory_fires_on_sparse_field():  # v1.2
     advisories = nodes.derive_threshold_advisory(_assessment_state())
     assert "uniqueness" in advisories
-    assert any("MARA.MAKTX" in m and "threshold" in m for m in advisories["uniqueness"])
+    advisory = advisories["uniqueness"][0]
+    assert advisory["action"] == AdvisoryAction.RAISE_THRESHOLD.value
+    assert advisory["source"] == "Completeness"
+    assert (advisory["table"], advisory["field"]) == ("MARA", "MAKTX")
+    assert advisory["value"] == nodes.BAND_SHIFT_SPARSE
+    assert "50.0%" in advisory["why"]
 
 
 def test_threshold_advisory_silent_when_well_populated():
@@ -115,12 +134,18 @@ def test_threshold_advisory_silent_when_well_populated():
     assert nodes.derive_threshold_advisory(state) == {}
 
 
-def test_suppression_advisory_fires_on_violations():
-    # A validity result carrying a finding on MAKTX should suppress MAKTX.
+def test_exclusion_advisory_fires_on_validity_findings():  # v1.2
+    # A validity finding on MAKTX holds the offending RECORDS out of matching.
+    # It does not drop MAKTX as a signal: MARA compares one field, so dropping
+    # it would leave nothing to compare and every material would score unique.
     finding = SimpleNamespace(table="MARA", field="MAKTX")
     result = SimpleNamespace(findings=[finding])
-    advisories = nodes.derive_suppression_advisory(_assessment_state(), result)
-    assert any("drop MARA.MAKTX" in m for m in advisories["uniqueness"])
+    advisories = nodes.derive_exclusion_advisory(_assessment_state(), result)
+    advisory = advisories["uniqueness"][0]
+    assert advisory["action"] == AdvisoryAction.EXCLUDE_RECORDS.value
+    assert advisory["source"] == "Validity"
+    assert (advisory["table"], advisory["field"]) == ("MARA", "MAKTX")
+    assert advisory["value"] is None
 
 
 # ---------------------------------------------------------------------------
@@ -136,10 +161,31 @@ def test_completeness_node_emits_findings_and_threshold_advisory():
     assert "uniqueness" in out["upstream_advisories"]     # MAKTX sparse
 
 
-def test_uniqueness_stub_reads_advisories():
-    state = {"upstream_advisories": {"uniqueness": ["raise threshold for MARA.MAKTX"]}}
+def test_uniqueness_stub_resolves_the_settings_it_is_advised_about():  # v1.2
+    # The stub does not match anything yet, but it DOES resolve for real: the
+    # bands the matcher would use and the records it would hold back.
+    advisory = build_advisory(
+        action=AdvisoryAction.RAISE_THRESHOLD,
+        source="Completeness",
+        table="MAKT",
+        field="MAKTX",
+        value=0.05,
+        why="only 50.0% populated, so matching on it is unreliable",
+    )
+    state = _assessment_state()
+    state["upstream_advisories"] = {"uniqueness": [advisory]}
     out = nodes.uniqueness_node(state)
+
     assert "would honour" in out["agent_results"][0]["note"]
+    assert out["uniqueness_settings"]["resolved"]["bands"]["duplicate"] == 0.97
+    assert "raise the match bands" in out["uniqueness_settings"]["readable"][0]
+
+
+def test_uniqueness_stub_says_so_when_there_is_no_schema_to_resolve():  # v1.2
+    # A missing subject schema must be REPORTED, not silently treated as
+    # "nothing to do". Silence here would look identical to a clean result.
+    out = nodes.uniqueness_node({"upstream_advisories": {"uniqueness": []}})
+    assert "no schema for MARA" in out["agent_results"][0]["note"]
 
 
 # ---------------------------------------------------------------------------
@@ -199,7 +245,14 @@ def test_assessment_graph_fans_out_and_merges_all_dimensions():
     # and a suppression (if MAKTX had validity findings). At minimum the sparse
     # threshold advisory is present.
     advisories = final["upstream_advisories"]["uniqueness"]
-    assert any("threshold" in m for m in advisories)
+    assert any(a["action"] == AdvisoryAction.RAISE_THRESHOLD.value for a in advisories)  # v1.2
+
+    # The stub resolved REAL settings: the steward's bands, the shift the
+    # advisory asked for, and the result, all recorded together.
+    bands = final["uniqueness_settings"]["resolved"]["bands"]  # v1.2
+    assert bands["steward_duplicate"] == 0.92
+    assert bands["shift"] == nodes.BAND_SHIFT_SPARSE
+    assert bands["duplicate"] == 0.97
 
     # The stub consumed them.
     stub_notes = [r.get("note", "") for r in final["agent_results"]]
@@ -213,9 +266,10 @@ def test_assessment_graph_fans_out_and_merges_all_dimensions():
 def test_assessment_graph_agents_stay_graph_free():
     # The agents must not import langgraph - that is what keeps them unit-
     # testable. Assert it structurally.
+    import inspect
+
     import src.agents.base as base
     import src.agents.completeness as comp
-    import inspect
     for module in (base, comp):
         source = inspect.getsource(module)
         assert "langgraph" not in source

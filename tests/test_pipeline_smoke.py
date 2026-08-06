@@ -3,6 +3,12 @@
 # v0.3 | 27-Jun-2026 | Add executor-vs-ground-truth test
 # v0.4 | 27-Jun-2026 | Add agents-and-scorecard test
 # v0.5 | 27-Jun-2026 | Add assess() shared-function test
+# v0.6 | 04-Aug-2026 | Package 4b fix. PROFILE_DIR pointed at data/profile;
+#                      the profiles live in data/profiles. Seven tests had
+#                      been skipping in silence because of the missing 's'.
+#                      A skipped test reports as a pass, so the gap survived
+#                      several packages - the count in modules_map.md was
+#                      stale as a direct result.
 
 """End-to-end smoke test for the AgentDQ data foundation.
 
@@ -28,7 +34,7 @@ import pytest
 
 REPO_ROOT: Path = Path(__file__).resolve().parents[1]
 SCHEMA_DIR: Path = REPO_ROOT / "config" / "schema"
-PROFILE_DIR: Path = REPO_ROOT / "data" / "profile"
+PROFILE_DIR: Path = REPO_ROOT / "data" / "profiles"  # v0.6
 RAW_DIR: Path = REPO_ROOT / "data" / "raw"
 TABLES: list[str] = ["MARA", "MARC", "MAKT"]
 

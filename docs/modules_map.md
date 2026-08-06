@@ -6,7 +6,13 @@ spot. Versions are the latest change-log entry at the top of each file at the
 time of writing; treat them as a snapshot for verifying your working tree is in
 sync, not as a live value.
 
-*Updated 04-Aug-2026 (Package 4a - the uniqueness configuration): schema v0.4
+*Updated 04-Aug-2026 (Package 4b - structured advisories): advice between agents
+is now a small dictionary with six named keys instead of a sentence, and signal
+suppression is replaced by RECORD EXCLUSION - a description that failed a
+validity check holds its record out of deduplication. A new module,
+src/agents/uniqueness_settings.py, resolves a steward's settings against the
+advice that arrives.
+Prior update 04-Aug-2026 (Package 4a - the uniqueness configuration): schema v0.4
 extends UniquenessConfig with scope, methods and bands, turns blocking_key into
 blocking_keys (a list) and gives each compare field a weight. build_schema.py
 v0.3 fixes a real bug - TABLE_META held no file_pattern and no uniqueness block,
@@ -25,7 +31,9 @@ lives in the schema; the short-lived config/objects experiment is retired).*
 ```
 Path                    Ver    Purpose
 ----------------------  -----  -------------------------------------------------
-src/contracts.py        v0.3   Enums, Finding, DefectLabel, predicate-tree IR
+src/contracts.py        v0.4   Enums, Finding, DefectLabel, predicate-tree IR.
+                               v0.4 adds AdvisoryAction, the vocabulary one
+                               agent uses to advise another
                                (Comparison / BoolNode / RuleSpec), IS-to-DAMA map.
                                NB: CandidateSuggestion lives in rule_suggester.py
                                and PriorStrengthBlock in rule_bank.py, not here.
@@ -97,6 +105,13 @@ src/agents/base.py            v0.1   BaseAgent, RuleBackedAgent, AgentResult
 src/agents/completeness.py    v0.1   Completeness dimension (not-null rules)
 src/agents/validity.py        v0.1   Validity dimension (domain rules)
 src/agents/consistency.py     v0.1   Consistency dimension (cross-field rules)
+src/agents/uniqueness_settings.py
+                              v1.0   Resolves a steward's uniqueness settings
+                                     against the advisories that arrive:
+                                     effective bands (with the arithmetic
+                                     shown), effective compare fields, and the
+                                     records to hold out of deduplication.
+                                     Pure - no data, no pandas, no LLM
 ```
 
 ## Agents - agentic core (DSPy)
@@ -129,13 +144,16 @@ src/dspy_modules/suggestion_signatures.py   v1.1   DSPy signatures: profile
 ```
 Path                   Ver    Purpose
 ---------------------  -----  ------------------------------------------------
-src/state.py           v1.0   Typed graph state for both graphs; reducers for
+src/state.py           v1.1   Typed graph state for both graphs; reducers for
                               the parallel fan-out (findings, agent_results,
-                              upstream_advisories)
-src/graph_nodes.py     v1.1   Thin node functions (unpack -> run() -> pack) and
-                              the two advisory derivations (threshold modifier,
-                              signal suppression). v1.1 reads the field name off
-                              a CompareField rather than a plain string
+                              upstream_advisories). v1.1 carries advisories as
+                              dictionaries and adds uniqueness_settings
+src/graph_nodes.py     v1.2   Thin node functions (unpack -> run() -> pack) and
+                              the two advisory derivations. v1.1 reads the field
+                              name off a CompareField. v1.2 emits dictionaries
+                              rather than sentences, replaces signal suppression
+                              with record exclusion, and makes the uniqueness
+                              stub resolve real settings
 src/orchestrator.py    v1.0   Both compiled StateGraphs; the three-dimension
                               parallel fan-out with a join at aggregate
 ```
@@ -211,16 +229,17 @@ tests/test_rule_suggester_smoke.py       v1.0   Both suggestion engines +
                                                 confidence + IR round-trip
 tests/test_repository_smoke.py           v1.0   Lifecycle, ledger, session
                                                 isolation, the full closed loop
-tests/test_onboarding_smoke.py           v2.1   Schema onboarding config + the
-                                                scaffolder on a synthetic EQKT.
-                                                v2.1 moves to the v0.4 shape and
-                                                proves the scaffolded draft
-                                                actually LOADS, not just that it
-                                                contains the right TODO strings
-tests/test_orchestrator_smoke.py         v1.1   Both graphs; assessment fan-out
+tests/test_onboarding_smoke.py           v2.0   Schema onboarding config + the
+                                                scaffolder on a synthetic EQKT
+tests/test_orchestrator_smoke.py         v1.2   Both graphs; assessment fan-out
                                                 with the real executor;
                                                 advisories; the no-checks guard.
                                                 v1.1 fixture uses blocking_keys
+tests/test_advisories.py                 v1.0   Structured advisories: the six
+                                                keys, loud failure on an unknown
+                                                or malformed one, largest-shift
+                                                combination, and record exclusion
+                                                driven by validity findings
 tests/test_uniqueness_config.py          v1.0   Schema v0.4 uniqueness dials:
                                                 weight normalisation, band order,
                                                 band precedence, fingerprint,
@@ -230,9 +249,9 @@ tests/test_uniqueness_config.py          v1.0   Schema v0.4 uniqueness dials:
                                                 config/schema/mara.yaml
 ```
 
-Test position: 106 tests pass and 1 is skipped across the whole suite (the
-agentic-core, Package 2 and Package 3 suites, the Package 4a configuration
-suite, plus the Phase 1 pipeline suite). No LLM or API key is required for any
+Test position: 128 tests pass and 1 is skipped across the whole suite (the
+agentic-core, Package 2 and Package 3 suites, the Package 4a and 4b suites, plus
+the Phase 1 pipeline suite). No LLM or API key is required for any
 of them.
 
 ## Configuration - schema
@@ -336,6 +355,19 @@ tools/__init__.py          tests/__init__.py            app/__init__.py
   Run `git rm src/rules/loader.py` - it is dead code and re-creates the exact
   filename clash this map guards against. Likewise `src/models.py` or
   `src/schema_utils.py`, if present, are earlier-build remnants and can go.
+- **Advice that cannot be acted on FAILS.** An advisory with an unknown action,
+  a missing key, or a threshold request carrying no number raises rather than
+  being skipped. A silently dropped advisory is the worst outcome available: the
+  upstream agent would believe its advice was taken, the report would list it as
+  delivered, and nothing would ever show the gap.
+- **Record exclusion, not signal suppression.** MARA compares ONE field, so
+  dropping that field would leave nothing to compare and every material would
+  score as unique - silent, perfect and meaningless. Validity findings therefore
+  hold the offending RECORDS out of matching instead. This also removes a severe
+  false-positive mode: twenty materials described "TEST" normalise to the same
+  text, score a perfect match against each other, and would otherwise form ONE
+  cluster of genuinely different materials that the survivorship rules would
+  merge automatically.
 - **Uniqueness settings fail at load time, not at run time.** A wrong dial in a
   schema YAML raises a clear error while the file is being read: bands out of
   order, an unknown fuzzy metric, both methods weighted zero, a compare field

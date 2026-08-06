@@ -1,9 +1,12 @@
 # v0.1 | 27-Jun-2026 | Schema scaffolder: merge SAP overlay with profiler output
-
 # v0.2 | 27-Jun-2026 | Omit empty domains (no values found != nothing allowed)
 # v0.3 | 04-Aug-2026 | Package 4a. TABLE_META now carries file_pattern and,
 #                      for MARA, the uniqueness block. Both were hand-added
 #                      to mara.yaml and were erased on every rebuild.
+# v0.4 | 04-Aug-2026 | Package 4b fix. The documented output directory said
+#                      data/profile; the profiles are written to and read
+#                      from data/profiles. Corrected to the real name.
+
 """One-off scaffolder that writes the table schema YAMLs.
 
 It merges two sources:
@@ -20,7 +23,7 @@ like discrete codes, and for date fields whose sentinel values look the same.
 
 Run once, then treat config/schema/*.yaml as the editable source of truth:
 
-    python -m tools.build_schema --profiles data/profile --out config/schema
+    python -m tools.build_schema --profiles data/profiles --out config/schema  # v0.4
 """
 
 from __future__ import annotations

@@ -41,10 +41,13 @@ LangGraph graphs (a suggestion graph and an assessment graph joined by the
 repository). The assessment graph fans the three deterministic dimensions out
 in parallel and routes cross-agent advisories to the downstream uniqueness
 stage. Package 4 (Uniqueness and Remediation) is designed and its first
-step is built: the uniqueness settings now live in the table schema (blocking on
-MTART and MEINS, weighted compare fields, methods, bands), with wrong settings
-failing while the file is read rather than deep inside a scoring loop. The suite
-stands at 106 passing tests, 1 skipped, all offline. The first two AgentDQ
+two steps are built. The uniqueness settings now live in the table schema
+(blocking on MTART and MEINS, weighted compare fields, methods, bands), with
+wrong settings failing while the file is read rather than deep inside a scoring
+loop. Advice between agents is now a small structured record rather than a
+sentence, and a validity finding on a description holds that RECORD out of
+deduplication instead of dropping the description as a signal. The suite stands
+at 128 passing tests, 1 skipped, all offline. The first two AgentDQ
 LinkedIn articles are ready to write: Package 2's ("the agent proposes, the
 human disposes") and Package 3's ("where I put the human in the loop, and why").
 The delivery breakdown, the remaining packages, and the per-package designs live
@@ -75,6 +78,7 @@ Console assessment CLI        tools/run_assessment.py             done
 Streamlit dashboard           app/dashboard.py                    done
 Smoke test suite (12 tests)   tests/test_pipeline_smoke.py        done
 Uniqueness settings (v0.4)    src/data/schema.py, config/schema/  done
+Structured advisories         src/agents/uniqueness_settings.py   done
 ```
 
 What the pilot demonstrates today:
@@ -1060,6 +1064,50 @@ As a DSPy signature this returns a validated object (not text to parse), is
 optimisable against the injector's labelled twin pairs with measurement in
 MLflow, and swaps from one served model to another as a configuration change
 rather than a prompt rewrite.
+
+### How other agents advise the matcher
+
+Two agents send advice to the uniqueness stage, and the two work on different
+things:
+
+```
+Action            Sent by       Works on   What it does
+----------------  ------------  ---------  --------------------------------
+raise_threshold   Completeness  settings   A compare field is thinly
+                                           populated across the table, so
+                                           both bands go up and every pair
+                                           must show stronger evidence
+exclude_records   Validity      data       Specific records hold a
+                                           description that failed a
+                                           validity check, so those records
+                                           take no part in matching
+```
+
+An advisory is a small dictionary with six keys - action, source, table, field,
+value and why - rather than a sentence, so a consumer reads a field instead of
+searching for words. Advice that cannot be acted on FAILS: an unknown action, a
+missing key, or a threshold request carrying no number raises an error, because
+a silently dropped advisory would let the upstream agent believe its advice was
+taken while nothing showed the gap. Two threshold advisories combine by taking
+the largest shift rather than the sum, since both say the same thing.
+
+**Why records are excluded rather than the signal dropped.** MARA compares ONE
+field. Dropping it would leave nothing to compare, every material would score as
+unique, and the dimension would report a silent, perfect, meaningless 100%.
+
+Excluding the records is also safer on its own merits. A material described
+"XXXX", "OBSOLETE" or "TEST" carries no text worth matching on, and all such
+materials normalise to the SAME text and score a perfect match against each
+other. Left in, twenty of them would form one cluster of genuinely different
+materials, and because the match looks perfect the survivorship rules would
+recommend merging them without asking anybody.
+
+Today the only rule on MAKTX is a completeness check, so no validity finding
+lands on it and no record is excluded on the current data. Making the mechanism
+fire needs a rule that recognises a placeholder description, and that rule must
+come through the approval gate like any other: the Rule Suggestion Agent
+proposes it, a steward approves it, and only then does Validity flag the
+records. That is a demonstration of the whole loop rather than a gap.
 
 ### Clusters, not pairs, and who survives
 

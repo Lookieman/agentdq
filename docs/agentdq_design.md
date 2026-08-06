@@ -24,6 +24,12 @@ v1.4 | 04-Aug-2026 | Package 4 design resolved and step 4a built. Section 5
                      band precedence, the configuration fingerprint, harder
                      injected near-copies and decoy pairs. Test count to 106
                      passing, 1 skipped.
+v1.5 | 04-Aug-2026 | Package 4b built. Advisories become small dictionaries with
+                     six named keys. Signal suppression is REPLACED by record
+                     exclusion, which works on the shipped MARA settings and
+                     removes a severe false-positive mode. Test count to 128
+                     passing, 1 skipped. Adds step 4j: the dashboard moves onto
+                     the graph so Package 4 is visible in the UI.
 ```
 
 This document is the delivery counterpart to `agentdq-project-plan.md`. The plan
@@ -50,9 +56,10 @@ LinkedIn article (Package 2's story - "the agent proposes, the human disposes") 
 ready to write; Package 3's story ("where I put the human in the loop, and why")
 follows it.
 
-Package 4 is now in build. Its design is settled (section 5) and step 4a - the
-uniqueness configuration - is done: schema v0.4, the MARA dials, and 22 offline
-tests, taking the suite to 106 passing and 1 skipped. Step 4a also fixed a bug
+Package 4 is now in build. Its design is settled (section 5); steps 4a and 4b
+are done. 4a delivered the uniqueness settings (schema v0.4 and the MARA dials);
+4b turned advice between agents into small structured records and replaced signal
+suppression with record exclusion. The suite stands at 128 passing and 1 skipped. Step 4a also fixed a bug
 that predates Package 4: `tools/build_schema.py` regenerates the schema YAMLs
 from its own TABLE_META, which held neither `file_pattern` nor the `uniqueness`
 block, so every rebuild silently erased both from `config/schema/mara.yaml`.
@@ -576,6 +583,65 @@ Three design properties come with it:
 
 The dial values are stated, not calibrated. Calibration is Package 5.
 
+### 5.8a How other agents advise the matcher
+
+Two agents send advice to the uniqueness stage, and the two work on different
+things:
+
+```
+Action            Sent by       Works on   What it does
+----------------  ------------  ---------  --------------------------------
+raise_threshold   Completeness  settings   A compare field is thinly
+                                           populated across the table, so
+                                           both bands go up and every pair
+                                           must show stronger evidence
+exclude_records   Validity      data       Specific records hold a
+                                           description that failed a
+                                           validity check, so those records
+                                           take no part in matching
+```
+
+An advisory is a small dictionary with six keys - action, source, table, field,
+value and why - rather than a sentence. The reader looks up a field instead of
+searching for words inside a sentence, and a reworded message can no longer
+break a consumer.
+
+**Advice that cannot be acted on fails.** An unknown action, a missing key, or a
+threshold request carrying no number raises an error. A silently dropped
+advisory is the worst outcome available here: the upstream agent would believe
+its advice was taken, the report would list it as delivered, and nothing would
+ever show the gap.
+
+**Two threshold advisories combine by taking the largest shift, not the sum.**
+Both are saying the same thing - the text signals are weak - so adding them
+would count one problem twice and reach the cap quickly.
+
+**Why exclusion replaced signal suppression.** The earlier design had Validity
+tell uniqueness to DROP a damaged compare field. MARA compares one field, so
+dropping it would leave nothing to compare, every material would score as
+unique, and the dimension would report a silent, perfect, meaningless 100%.
+
+Excluding the records is also safer on its own merits. A material described
+"XXXX", "OBSOLETE" or "TEST" carries no text worth matching on, and, worse, all
+such materials normalise to the SAME text and score a perfect match against each
+other. Left in, twenty of them would form one cluster of genuinely different
+materials, and because the match looks perfect the survivorship rules would
+recommend merging them without asking anybody. Holding them back removes that
+whole failure.
+
+An advisory names the SIGNAL that went bad, not the records. Record keys can run
+to thousands and they are already in the findings, so the advisory stays small
+and the consumer reads the keys from the merged findings.
+
+**One limitation, stated plainly.** Today the only rule on MAKTX is a
+completeness check, so no validity finding lands on it and no record is ever
+excluded on the current data. The mechanism is proved by test. Making it fire on
+real data needs a rule that recognises a placeholder description, and that rule
+must come through the approval gate like any other - the Rule Suggestion Agent
+proposes it, a steward approves it, and only then does Validity flag those
+records. That is Package 4f work, and it is a good demonstration of the whole
+loop rather than a gap.
+
 ### 5.9 What is deliberately not built yet
 
 ```
@@ -612,7 +678,7 @@ across all three loaded tables it would be diluted into near-invisibility.
 Step  Deliverable                                   Language model?
 ----  --------------------------------------------  ---------------
 4a    Schema v0.4 uniqueness settings + MARA dials  no    (done)
-4b    Advisories become small structured records    no
+4b    Advisories become small structured records    no    (done)
 4c    tools/build_embeddings.py                     no
 4d    src/agents/uniqueness.py: block, score,       no
       cluster, choose a survivor
@@ -621,7 +687,19 @@ Step  Deliverable                                   Language model?
 4g    src/agents/remediation.py and its signature   yes
 4h    Graph reorder; Uniqueness joins the scorecard no
 4i    Tests, then the three living artefacts        no
+4j    Dashboard moves onto the graph; Duplicates    no
+      and Settings tabs added
 ```
+
+Step 4j exists because the dashboard does not use the orchestrator. It calls
+assess() in src/reporting/assessment.py, which loops the three dimension agents
+directly, so nothing built in Package 4 would appear on screen. Today the two
+paths agree by coincidence, because both run the same three agents; the moment
+uniqueness exists they diverge. Folding the dashboard onto the graph leaves one
+execution path, and Package 7's settings screen needs that anyway.
+
+AssessmentResult gains a `clusters` field, so the screen reads the clusters the
+agent already built rather than reassembling them from scattered findings.
 
 Steps 4a to 4d contain no language model at all, so real clusters on real MARA
 data can be read before a single token is spent. This mirrors how the suggester
@@ -1214,11 +1292,10 @@ a precision and recall table. Guard those two packages.
 
 ## 14. Immediate next step
 
-Packages 1 to 3 are complete and Package 4 is in build. Its design is settled in
-section 5 and step 4a - the uniqueness settings - is done. The next build is step
-4b: the two cross-agent advisories become small structured records rather than
-sentences, so the uniqueness stage can act on them by reading a field instead of
-searching for words inside a sentence. Steps 4c and 4d then produce real
+Packages 1 to 3 are complete and Package 4 is in build. Steps 4a and 4b are done:
+the uniqueness settings live in the table schema, and advice between agents is
+now a small structured record that a consumer reads by field. The next build is
+step 4c, the batch embeddings artefact, followed by 4d, which produces real
 duplicate clusters with no language model involved at all.
 
 At the end of Package 2 the loop closed for the first time: an agent suggests a

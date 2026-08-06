@@ -5,6 +5,10 @@
 #                      with reducers so the parallel dimension fan-out can write
 #                      findings, agent results and cross-agent advisories
 #                      concurrently without clobbering.
+# v1.1 | 04-Aug-2026 | Package 4b. upstream_advisories carries small dictionaries
+#                      instead of sentences, and the state gains
+#                      uniqueness_settings: the bands and the held-back records
+#                      the matcher would use, written once by the uniqueness node.
 # ---------------------------------------------------------------------------
 """Graph state for the AgentDQ orchestrations.
 
@@ -28,23 +32,30 @@ from typing import Annotated, Any, Optional, TypedDict
 
 
 def merge_advisories(
-    left: Optional[dict[str, list[str]]],
-    right: Optional[dict[str, list[str]]],
-) -> dict[str, list[str]]:
+    left: Optional[dict[str, list[dict[str, Any]]]],  # v1.1
+    right: Optional[dict[str, list[dict[str, Any]]]],  # v1.1
+) -> dict[str, list[dict[str, Any]]]:  # v1.1
     """Reducer for upstream_advisories.
 
-    upstream_advisories maps a downstream target (e.g. 'uniqueness') to a list
-    of advisory messages. When two parallel producers both advise the same
-    target, their lists concatenate rather than one overwriting the other.
-    Defensive against either side being None, since a reducer channel may start
-    empty.
-    """
-    merged: dict[str, list[str]] = dict(left or {})
-    key: str = ""
-    values: list[str] = []
+    upstream_advisories maps a downstream target (for example 'uniqueness') to a
+    list of advisories. Since v1.1 each advisory is a small dictionary with six
+    named keys rather than a sentence, so a reader looks up a field instead of
+    searching for words inside a sentence. This function never reads the
+    contents, so only its type changed: it joins the lists for each target and
+    keeps the order the producers wrote them in.
 
+    When two parallel producers advise the same target, both lists must survive.
+    Without this reducer LangGraph raises a concurrent-write error.
+    """
+    merged: dict[str, list[dict[str, Any]]] = {}  # v1.1
+    key: str = ""
+    values: list[dict[str, Any]] = []  # v1.1
+
+    for key, values in (left or {}).items():
+        merged[key] = list(values)
     for key, values in (right or {}).items():
-        merged[key] = merged.get(key, []) + list(values)
+        merged.setdefault(key, [])
+        merged[key].extend(values)
     return merged
 
 
@@ -82,9 +93,10 @@ class AssessmentState(TypedDict, total=False):
     # written by the parallel fan-out -> need reducers
     findings: Annotated[list[Any], operator.add]
     agent_results: Annotated[list[dict[str, Any]], operator.add]
-    upstream_advisories: Annotated[dict[str, list[str]], merge_advisories]
+    upstream_advisories: Annotated[dict[str, list[dict[str, Any]]], merge_advisories]  # v1.1
 
     # written once, downstream of the fan-out
+    uniqueness_settings: dict[str, Any]  # v1.1
     scorecard: Any
     remediation: list[dict[str, Any]]
     report: dict[str, Any]

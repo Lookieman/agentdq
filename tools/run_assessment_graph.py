@@ -8,6 +8,10 @@
 #                      score means "checked nothing", not "clean data". Warn
 #                      loudly, label the scorecard, and hint at --rules
 #                      config/rules. Guard logic is a testable pure helper.
+# v1.2 | 04-Aug-2026 | Package 4b. Advisories print as readable lines rather
+#                      than raw dictionaries, and the resolved uniqueness
+#                      settings (bands before and after, blocking keys, the
+#                      settings code, held-back records) print with them.
 # ---------------------------------------------------------------------------
 """Run the assessment graph over a dataset and print the scorecard.
 
@@ -31,13 +35,13 @@ import pandas as pd
 
 from src.agents.completeness import CompletenessAgent
 from src.agents.consistency import ConsistencyAgent
+from src.agents.uniqueness_settings import describe_advisory  # v1.2
 from src.agents.validity import ValidityAgent
 from src.data.schema import TableSchema, load_schemas
 from src.orchestrator import build_assessment_graph
 from src.reporting.assessment import load_frames
 from src.reporting.scorecard import compute_scorecard, print_scorecard
 from src.rules.rule_loader import load_rules
-
 
 GRAPH_DIMENSIONS: list[str] = ["Completeness", "Validity", "Consistency"]
 
@@ -125,11 +129,27 @@ def main() -> None:
 
     if warning is not None:  # v1.1
         print("\nReminder: the score above is not meaningful - 0 checks ran.")
-    advisories: list[str] = final.get("upstream_advisories", {}).get("uniqueness", [])
+    advisories: list[dict[str, Any]] = final.get("upstream_advisories", {}).get("uniqueness", [])  # v1.2
+    settings: dict[str, Any] = final.get("uniqueness_settings", {})  # v1.2
+    resolved: dict[str, Any] = settings.get("resolved", {})  # v1.2
+    bands: dict[str, Any] = resolved.get("bands", {})  # v1.2
+    advisory: dict[str, Any] = {}  # v1.2
+    table_name: str = ""  # v1.2
+    held: int = 0  # v1.2
+
     if advisories:
         print("\nCross-agent advisories (to the Uniqueness stage, Package 4):")
-        for message in advisories:
-            print(f"  - {message}")
+        for advisory in advisories:
+            print(f"  - {describe_advisory(advisory)}")  # v1.2
+    if bands:  # v1.2
+        print("\nUniqueness settings after the advisories:")
+        print(f"  steward bands   : {bands.get('steward_duplicate')} / {bands.get('steward_review_low')}")
+        print(f"  advisory shift  : {bands.get('shift')}")
+        print(f"  bands in force  : {bands.get('duplicate')} / {bands.get('review_low')}")
+        print(f"  blocking keys   : {', '.join(resolved.get('blocking_keys', [])) or '(none)'}")
+        print(f"  settings code   : {resolved.get('fingerprint', '')}")
+        for table_name, held in settings.get("excluded_counts", {}).items():
+            print(f"  held back       : {held} record(s) in {table_name}, description failed validity")
 
 
 if __name__ == "__main__":

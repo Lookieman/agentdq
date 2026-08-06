@@ -1,6 +1,10 @@
 # v0.1 | 27-Jun-2026 | Initial shared domain contracts for AgentDQ
 # v0.2 | 27-Jun-2026 | Add predicate-tree IR (Predicate, RuleSpec, Provenance); supersede Rule
 # v0.3 | 27-Jun-2026 | Add DefectLabel (ground-truth counterpart to Finding)
+# v0.4 | 04-Aug-2026 | Package 4b. Add AdvisoryAction: the vocabulary one agent
+#                      uses to advise another. Named here so a producer and a
+#                      consumer cannot drift apart, and so the consumer can
+#                      reject an action it does not know instead of ignoring it.
 
 """Shared domain contracts for AgentDQ.
 
@@ -67,6 +71,30 @@ class Severity(str, Enum):
     HIGH = "High"
     MEDIUM = "Medium"
     LOW = "Low"
+
+
+class AdvisoryAction(str, Enum):  # v0.4
+    """What one agent asks a downstream agent to do.
+
+    An advisory is a small dictionary carrying six keys: action, source, table,
+    field, value and why. This enum fixes the only part that must never be a
+    free-text guess, because a misspelt action would otherwise be dropped in
+    silence and the report would still claim the advice was delivered.
+
+    RAISE_THRESHOLD works on the SETTINGS: a compare field is thinly populated
+    across the whole table, so the match bands go up and every pair must show
+    stronger evidence. EXCLUDE_RECORDS works on the DATA: specific records hold
+    a description that failed a validity check - a placeholder such as "XXXX" or
+    "TEST" - so those records are held out of deduplication altogether.
+
+    The second one prevents a severe failure. Twenty materials all described
+    "TEST" normalise to the same text and score a perfect match against each
+    other, so without exclusion the agent would form one large cluster of
+    genuinely different materials and recommend merging them automatically.
+    """
+
+    RAISE_THRESHOLD = "raise_threshold"
+    EXCLUDE_RECORDS = "exclude_records"
 
 
 # Default IS -> DAMA mapping by IS label alone. The rules importer overrides

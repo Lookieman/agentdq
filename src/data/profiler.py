@@ -8,6 +8,9 @@
 #                      carry primary_key and header_anchor - exactly the
 #                      migration this module's own comments called for. The
 #                      short-lived config/objects/ experiment is retired.
+# v0.6 | 04-Aug-2026 | Package 4b fix. The documented output directory said
+#                      data/profile; the profiles are written to and read
+#                      from data/profiles. Corrected to the real name.
 
 """Profiler for SAP master data extracts.
 
@@ -25,7 +28,7 @@ real system.
 Run as a module:
 
     python -m src.data.profiler --input data/raw --tables MARA,MARC,MAKT \\
-        --pattern "{table}_EX_DATA.xlsx" --out data/profile
+        --pattern "{table}_EX_DATA.xlsx" --out data/profiles  # v0.6
 """
 
 from __future__ import annotations

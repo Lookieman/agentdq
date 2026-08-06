@@ -9,6 +9,13 @@
 # v1.1 | 04-Aug-2026 | Package 4a. _uniqueness_compare_fields reads the name off
 #                      a CompareField (schema v0.4) rather than treating the
 #                      entry as a plain string.
+# v1.2 | 04-Aug-2026 | Package 4b. Advisories become small dictionaries with six
+#                      named keys instead of sentences, so the downstream stage
+#                      reads a field rather than searching for words inside a
+#                      sentence. Signal suppression is replaced by record
+#                      exclusion: a description that failed validity holds its
+#                      record out of deduplication, which also stops a large
+#                      false cluster of placeholder descriptions forming.
 # ---------------------------------------------------------------------------
 """Graph nodes - the thin translation layer between graph state and agents.
 
@@ -34,14 +41,32 @@ the point: the advisory channel is general, not one hardcoded trick.
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 from src.agents.base import AgentResult
+from src.agents.uniqueness_settings import (  # v1.2
+    build_advisory,
+    describe_advisory,
+    excluded_record_keys,
+    resolve_settings,
+    summarise_settings,
+)
+from src.contracts import AdvisoryAction  # v1.2
 
 # thresholds for the advisory derivations (presentation dials; the real
 # calibration of anything like these lands in Package 5)
 SPARSE_POPULATION_PCT: float = 90.0
-SUPPRESSION_MIN_VIOLATIONS: int = 1
+EXCLUSION_MIN_VIOLATIONS: int = 1  # v1.2
+# How far the match bands move when a compare field is thinly populated. This
+# number is STATED, not calibrated: nothing has yet measured what shift is
+# right. A shift that varied with how sparse the field is would look more
+# careful and would be invented. Package 5 measures it.
+BAND_SHIFT_SPARSE: float = 0.05  # v1.2
+# The table deduplication is performed ON. MAKT holds one description per
+# material per language, so a MAKT duplicate is a key violation the profiler
+# already reports; MAKT gives evidence about MARA rather than being a subject
+# in its own right. MARC is assumed clean.
+UNIQUENESS_SUBJECT_TABLE: str = "MARA"  # v1.2
 
 
 # ---------------------------------------------------------------------------
@@ -100,7 +125,7 @@ def completeness_node(state: dict[str, Any], agent: Any) -> dict[str, Any]:
     uniqueness compare field is sparsely populated, tell uniqueness to demand
     more match confidence there."""
     result: AgentResult = _run_dimension(state, agent)
-    advisories: dict[str, list[str]] = derive_threshold_advisory(state)
+    advisories: dict[str, list[dict[str, Any]]] = derive_threshold_advisory(state)  # v1.2
     return {
         "findings": list(result.findings),
         "agent_results": [_agent_summary(result)],
@@ -109,11 +134,11 @@ def completeness_node(state: dict[str, Any], agent: Any) -> dict[str, Any]:
 
 
 def validity_node(state: dict[str, Any], agent: Any) -> dict[str, Any]:
-    """Validity fan-out branch. Emits a SIGNAL-SUPPRESSION advisory: if a
-    uniqueness compare field has domain violations, tell uniqueness to drop it
-    as a match signal."""
+    """Validity fan-out branch. Emits a RECORD-EXCLUSION advisory: if a
+    uniqueness compare field has validity findings, tell uniqueness to hold
+    those records out of deduplication."""
     result: AgentResult = _run_dimension(state, agent)
-    advisories: dict[str, list[str]] = derive_suppression_advisory(state, result)
+    advisories: dict[str, list[dict[str, Any]]] = derive_exclusion_advisory(state, result)  # v1.2
     return {
         "findings": list(result.findings),
         "agent_results": [_agent_summary(result)],
@@ -142,18 +167,39 @@ def scorecard_node(state: dict[str, Any], compute: Any) -> dict[str, Any]:
     return {"scorecard": scorecard}
 
 
-def uniqueness_node(state: dict[str, Any]) -> dict[str, Any]:
-    """STUB for Package 4. Reads the advisories addressed to it and records how
-    it WOULD adjust, so the advisory plumbing is exercised end to end now."""
-    advisories: dict[str, list[str]] = state.get("upstream_advisories", {})
-    for_uniqueness: list[str] = advisories.get("uniqueness", [])
+def uniqueness_node(state: dict[str, Any]) -> dict[str, Any]:  # v1.2
+    """STUB for Package 4d. It now RESOLVES the settings for real - the bands the
+    matcher would use and the records it would hold back - and then stops. The
+    matching itself arrives in 4d.
+
+    Resolving here means the steward-versus-advisory arithmetic is exercised
+    end to end today, on real advisories, with no matcher needed.
+    """
+    advisories: dict[str, list[dict[str, Any]]] = state.get("upstream_advisories", {})
+    for_uniqueness: list[dict[str, Any]] = advisories.get("uniqueness", [])
+    schemas: dict[str, Any] = state.get("schemas", {})
+    findings: list[Any] = state.get("findings", [])
+    subject: str = UNIQUENESS_SUBJECT_TABLE
+    schema: Any = schemas.get(subject)
+    settings: dict[str, Any] = {}
+    excluded: dict[str, set[str]] = {}
     note: str = ""
 
-    if for_uniqueness:
-        note = "uniqueness (stub) would honour: " + "; ".join(for_uniqueness)
-    else:
-        note = "uniqueness (stub): no advisories"
-    return {"agent_results": [{"agent": "Uniqueness Agent (stub)", "note": note}]}
+    if schema is None:
+        note = f"uniqueness (stub): no schema for {subject}, nothing to resolve"
+        return {"agent_results": [{"agent": "Uniqueness Agent (stub)", "note": note}]}
+
+    settings = resolve_settings(schema.uniqueness, for_uniqueness)
+    excluded = excluded_record_keys(settings, findings)
+    note = "uniqueness (stub) would honour: " + summarise_settings(settings, excluded)
+    return {
+        "agent_results": [{"agent": "Uniqueness Agent (stub)", "note": note}],
+        "uniqueness_settings": {  # v1.2
+            "resolved": settings,
+            "excluded_counts": {table: len(keys) for table, keys in excluded.items()},
+            "readable": [describe_advisory(entry) for entry in for_uniqueness],
+        },
+    }
 
 
 def remediation_node(state: dict[str, Any]) -> dict[str, Any]:
@@ -169,6 +215,7 @@ def report_node(state: dict[str, Any]) -> dict[str, Any]:
         "total_findings": len(state.get("findings", [])),
         "agent_results": state.get("agent_results", []),
         "upstream_advisories": state.get("upstream_advisories", {}),
+        "uniqueness_settings": state.get("uniqueness_settings", {}),  # v1.2
         "scorecard": scorecard,
     }
     return {"report": report}
@@ -210,11 +257,14 @@ def _uniqueness_compare_fields(state: dict[str, Any]) -> list[tuple[str, str]]:
     return pairs
 
 
-def derive_threshold_advisory(state: dict[str, Any]) -> dict[str, list[str]]:
-    """THRESHOLD MODIFIER: for each uniqueness compare field that is sparsely
-    populated in the frames, advise uniqueness to raise its match threshold."""
+def derive_threshold_advisory(state: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:  # v1.2
+    """THRESHOLD MODIFIER: for each uniqueness compare field that is thinly
+    populated across the table, ask uniqueness to demand more match evidence.
+
+    This works on the SETTINGS. It says nothing about any one record; it says
+    the signal as a whole is weak, so every pair must clear a higher bar."""
     frames: dict[str, Any] = state.get("frames", {})
-    messages: list[str] = []
+    advisories: list[dict[str, Any]] = []
     table_name: str = ""
     field_name: str = ""
     frame: Any = None
@@ -226,19 +276,39 @@ def derive_threshold_advisory(state: dict[str, Any]) -> dict[str, list[str]]:
             continue
         populated_pct = 100.0 * float(frame[field_name].notna().mean())
         if populated_pct < SPARSE_POPULATION_PCT:
-            messages.append(
-                f"raise match threshold for {table_name}.{field_name}: only "
-                f"{populated_pct:.1f}% populated, dedup on it is unreliable"
-            )
-    if messages:
-        return {"uniqueness": messages}
+            advisories.append(build_advisory(  # v1.2
+                action=AdvisoryAction.RAISE_THRESHOLD,
+                source="Completeness",
+                table=table_name,
+                field=field_name,
+                value=BAND_SHIFT_SPARSE,
+                why=f"only {populated_pct:.1f}% populated, so matching on it is unreliable",
+            ))
+    if advisories:
+        return {"uniqueness": advisories}
     return {}
 
 
-def derive_suppression_advisory(state: dict[str, Any], result: AgentResult) -> dict[str, list[str]]:
-    """SIGNAL SUPPRESSION: for each uniqueness compare field with validity
-    findings, advise uniqueness to drop it as a match signal."""
-    messages: list[str] = []
+def derive_exclusion_advisory(state: dict[str, Any], result: AgentResult) -> dict[str, list[dict[str, Any]]]:  # v1.2
+    """RECORD EXCLUSION: for each uniqueness compare field carrying validity
+    findings, ask uniqueness to hold the offending RECORDS out of matching.
+
+    This works on the DATA, not on the settings, and it replaces the earlier
+    signal-suppression advisory for a good reason. MARA has ONE compare field,
+    so dropping that field would leave nothing to compare and every material
+    would score as unique - a silent, perfect, meaningless result.
+
+    Excluding records is also the safer answer on its own merits. A material
+    described "XXXX" or "TEST" has no text worth matching on, and, worse, all
+    such materials normalise to the same text and score a perfect match against
+    each other. Left in, they would form one large cluster of genuinely
+    different materials that the survivorship rules would then merge
+    automatically. Holding them back removes that whole failure.
+
+    The advisory names the SIGNAL that went bad, not the records. Record keys
+    can run to thousands, and they are already in the findings.
+    """
+    advisories: list[dict[str, Any]] = []
     violations_by_field: dict[str, int] = {}
     finding: Any = None
     table_name: str = ""
@@ -253,11 +323,15 @@ def derive_suppression_advisory(state: dict[str, Any], result: AgentResult) -> d
     for table_name, field_name in _uniqueness_compare_fields(state):
         key = f"{table_name}.{field_name}"
         count = violations_by_field.get(key, 0)
-        if count >= SUPPRESSION_MIN_VIOLATIONS:
-            messages.append(
-                f"drop {key} as a match signal: {count} domain violation(s) make "
-                f"it unreliable for matching"
-            )
-    if messages:
-        return {"uniqueness": messages}
+        if count >= EXCLUSION_MIN_VIOLATIONS:
+            advisories.append(build_advisory(  # v1.2
+                action=AdvisoryAction.EXCLUDE_RECORDS,
+                source="Validity",
+                table=table_name,
+                field=field_name,
+                value=None,
+                why=f"{count} record(s) hold a description that failed a validity check",
+            ))
+    if advisories:
+        return {"uniqueness": advisories}
     return {}
