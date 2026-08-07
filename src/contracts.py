@@ -1,6 +1,9 @@
 # v0.1 | 27-Jun-2026 | Initial shared domain contracts for AgentDQ
 # v0.2 | 27-Jun-2026 | Add predicate-tree IR (Predicate, RuleSpec, Provenance); supersede Rule
 # v0.3 | 27-Jun-2026 | Add DefectLabel (ground-truth counterpart to Finding)
+# v0.5 | 04-Aug-2026 | Package 4d. Add DuplicateCluster and its two enums. A
+#                      duplicate is a GROUP of records, not a pair, so it needs
+#                      a shape of its own that a Finding cannot carry.
 # v0.4 | 04-Aug-2026 | Package 4b. Add AdvisoryAction: the vocabulary one agent
 #                      uses to advise another. Named here so a producer and a
 #                      consumer cannot drift apart, and so the consumer can
@@ -193,6 +196,78 @@ class BoolNode(BaseModel):
 # A predicate is either a leaf comparison or a boolean branch. The 'node'
 # discriminator keeps the union unambiguous when loaded from YAML or JSON.
 Predicate = Annotated[Union[Comparison, BoolNode], Field(discriminator="node")]
+
+
+class SurvivorReason(str, Enum):  # v0.5
+    """Why one record in a cluster is the one to keep."""
+
+    IDENTICAL = "identical"          # every text matches after normalisation
+    MOST_COMPLETE = "most_complete"  # one record carries more populated fields
+    NONE = "none"                    # a tie: only a steward can settle it
+
+
+class ClusterResolution(str, Enum):  # v0.5
+    """Whether a cluster can be settled without a person."""
+
+    AUTOMATIC = "automatic"
+    NEEDS_STEWARD = "needs_steward"
+
+
+class MatchMode(str, Enum):  # v0.5
+    """Which rungs of the score ladder actually ran.
+
+    FUZZY_ONLY is recorded on every finding of a run with no usable vector
+    file, so a partial run can never be mistaken for a full one.
+    """
+
+    FULL = "full"
+    FUZZY_ONLY = "fuzzy_only"
+
+
+class ClusterMember(BaseModel):  # v0.5
+    """One record inside a duplicate cluster.
+
+    score is measured against the SURVIVOR, not against the record that pulled
+    this one into the cluster. below_band is True when that score sits under the
+    duplicate band, which happens when the member joined through a chain.
+    """
+
+    record_id: str
+    score: float
+    below_band: bool = False
+    is_survivor: bool = False
+    populated_mandatory: int = 0
+    populated_total: int = 0
+
+
+class DuplicateCluster(BaseModel):  # v0.5
+    """A group of records that appear to describe one thing.
+
+    A duplicate is rarely a pair. If A matches B and B matches C, all three form
+    one cluster even when A and C do not match each other.
+
+    weakest_link holds the LOWEST score of any pair inside the cluster, which is
+    not always visible from the member scores. If A and C both score 0.95
+    against the survivor B, but A and C score 0.30 against each other, the
+    cluster looks tight and is not. weakest_link shows 0.30 and a steward can
+    divide the group.
+
+    The agent never merges anything. It recommends, and a person decides.
+    """
+
+    cluster_id: str
+    table: str
+    survivor_id: str
+    survivor_reason: SurvivorReason
+    resolution: ClusterResolution
+    members: list[ClusterMember] = Field(default_factory=list)
+    weakest_link: float = 1.0
+    mode: MatchMode = MatchMode.FULL
+    blocking_values: dict[str, str] = Field(default_factory=dict)
+
+    @property
+    def size(self) -> int:
+        return len(self.members)
 
 
 class Provenance(BaseModel):

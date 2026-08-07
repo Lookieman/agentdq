@@ -1,3 +1,7 @@
+# v0.2 | 04-Aug-2026 | Package 4d. A dimension can state its OWN denominator.
+#                      Uniqueness is assessed on one table and holds records
+#                      back, so the whole-run row count would dilute a real
+#                      problem and count untested rows as clean.
 # v0.1 | 27-Jun-2026 | Initial DQ scorecard, evaluation and console rendering
 
 """Scorecard and console reporting for an assessment run.
@@ -26,7 +30,6 @@ from pydantic import BaseModel, Field
 
 from src.contracts import DefectLabel, Finding
 
-
 DIMENSION_ORDER: tuple[str, ...] = (
     "Completeness",
     "Validity",
@@ -38,13 +41,24 @@ DIMENSION_ORDER: tuple[str, ...] = (
 
 
 class DimensionScore(BaseModel):
-    """Score for one dimension across all assessed tables."""
+    """Score for one dimension across the records it was assessed over.
+
+    total_records is that dimension's OWN denominator, which is not always the
+    whole run. Uniqueness is assessed on one table and holds records back, so
+    dividing its findings by every row of every table would dilute a real
+    problem into near-invisibility.
+
+    records_excluded counts the rows the dimension never checked. Without it a
+    score looks better than it is, because an untested record would otherwise
+    count as a clean one.
+    """
 
     dimension: str
     total_records: int
     findings: int
     affected_records: int
     score_pct: float
+    records_excluded: int = 0  # v0.2
 
 
 class Scorecard(BaseModel):
@@ -74,9 +88,19 @@ def compute_scorecard(
     findings: list[Finding],
     frames: dict[str, pd.DataFrame],
     dimensions: list[str],
+    dimension_totals: Optional[dict[str, dict[str, int]]] = None,  # v0.2
 ) -> Scorecard:
-    """Build a scorecard from findings and the assessed frames."""
+    """Build a scorecard from findings and the assessed frames.
+
+    dimension_totals lets one dimension state its OWN denominator, as
+    {'Uniqueness': {'assessed': 2440, 'excluded': 431}}. A dimension that says
+    nothing keeps the whole-run row count, which is right for the rule-backed
+    agents because they check every loaded table.
+    """
     total_records: int = sum(int(frame.shape[0]) for frame in frames.values())
+    totals: dict[str, dict[str, int]] = dimension_totals or {}  # v0.2
+    denominator: int = 0  # v0.2
+    excluded: int = 0  # v0.2
     by_dimension: dict[str, DimensionScore] = {}
     by_severity: Counter = Counter()
     field_counter: Counter = Counter()
@@ -94,10 +118,13 @@ def compute_scorecard(
     for dimension in dimensions:
         dimension_findings = [f for f in findings if f.dimension.value == dimension]
         affected = {(f.table, f.record_id) for f in dimension_findings}
-        score = 100.0 * (1.0 - len(affected) / total_records) if total_records else 100.0
+        denominator = int(totals.get(dimension, {}).get("assessed", total_records))  # v0.2
+        excluded = int(totals.get(dimension, {}).get("excluded", 0))  # v0.2
+        score = 100.0 * (1.0 - len(affected) / denominator) if denominator else 100.0  # v0.2
         by_dimension[dimension] = DimensionScore(
             dimension=dimension,
-            total_records=total_records,
+            total_records=denominator,  # v0.2
+            records_excluded=excluded,  # v0.2
             findings=len(dimension_findings),
             affected_records=len(affected),
             score_pct=round(score, 1),

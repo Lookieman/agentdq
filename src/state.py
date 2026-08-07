@@ -9,6 +9,9 @@
 #                      instead of sentences, and the state gains
 #                      uniqueness_settings: the bands and the held-back records
 #                      the matcher would use, written once by the uniqueness node.
+# v1.2 | 04-Aug-2026 | Package 4d. Adds data_dir (which dataset the vectors were
+#                      built for), rules, clusters and an optional injected
+#                      uniqueness_agent for tests.
 # ---------------------------------------------------------------------------
 """Graph state for the AgentDQ orchestrations.
 
@@ -89,6 +92,9 @@ class AssessmentState(TypedDict, total=False):
     schemas: dict[str, Any]         # dict[str, TableSchema]
     approved_rules: list[Any]       # list[RuleSpec]
     dataset_label: str
+    data_dir: str                   # v1.2 - where the vector file lives
+    rules: list[Any]                # v1.2
+    uniqueness_agent: Any           # v1.2 - injected by tests, built by the node
 
     # written by the parallel fan-out -> need reducers
     findings: Annotated[list[Any], operator.add]
@@ -97,6 +103,7 @@ class AssessmentState(TypedDict, total=False):
 
     # written once, downstream of the fan-out
     uniqueness_settings: dict[str, Any]  # v1.1
+    clusters: list[Any]                  # v1.2 - list[DuplicateCluster]
     scorecard: Any
     remediation: list[dict[str, Any]]
     report: dict[str, Any]

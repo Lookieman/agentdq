@@ -16,6 +16,11 @@
 #                      exclusion: a description that failed validity holds its
 #                      record out of deduplication, which also stops a large
 #                      false cluster of placeholder descriptions forming.
+# v1.3 | 04-Aug-2026 | Package 4d. The real Uniqueness agent replaces the stub.
+#                      Record exclusion now covers the BLOCKING keys as well as
+#                      the compare fields: a wrong MTART or MEINS puts a record
+#                      in the wrong block, so its duplicate is never considered
+#                      and it would otherwise be reported as unique.
 # ---------------------------------------------------------------------------
 """Graph nodes - the thin translation layer between graph state and agents.
 
@@ -44,12 +49,10 @@ from __future__ import annotations
 from typing import Any
 
 from src.agents.base import AgentResult
+from src.agents.uniqueness import UniquenessAgent  # v1.3
 from src.agents.uniqueness_settings import (  # v1.2
     build_advisory,
     describe_advisory,
-    excluded_record_keys,
-    resolve_settings,
-    summarise_settings,
 )
 from src.contracts import AdvisoryAction  # v1.2
 
@@ -167,37 +170,50 @@ def scorecard_node(state: dict[str, Any], compute: Any) -> dict[str, Any]:
     return {"scorecard": scorecard}
 
 
-def uniqueness_node(state: dict[str, Any]) -> dict[str, Any]:  # v1.2
-    """STUB for Package 4d. It now RESOLVES the settings for real - the bands the
-    matcher would use and the records it would hold back - and then stops. The
-    matching itself arrives in 4d.
+def uniqueness_node(state: dict[str, Any]) -> dict[str, Any]:  # v1.3
+    """Run the real Uniqueness agent.
 
-    Resolving here means the steward-versus-advisory arithmetic is exercised
-    end to end today, on real advisories, with no matcher needed.
+    The node stays thin, as every node does: unpack the state, call run(), pack
+    the result. The agent resolves its own settings from the advisories so it
+    can also be run and tested on its own.
+
+    data_dir names the dataset, and the agent reads the vector file that was
+    built beside it. With no data_dir, or with a file that fails its checks, the
+    agent scores with the fuzzy rung alone and says so on every finding.
     """
     advisories: dict[str, list[dict[str, Any]]] = state.get("upstream_advisories", {})
     for_uniqueness: list[dict[str, Any]] = advisories.get("uniqueness", [])
     schemas: dict[str, Any] = state.get("schemas", {})
+    frames: dict[str, Any] = state.get("frames", {})
     findings: list[Any] = state.get("findings", [])
-    subject: str = UNIQUENESS_SUBJECT_TABLE
-    schema: Any = schemas.get(subject)
-    settings: dict[str, Any] = {}
-    excluded: dict[str, set[str]] = {}
-    note: str = ""
+    agent: Any = state.get("uniqueness_agent")
+    result: Any = None
+    summary: dict[str, Any] = {}
 
-    if schema is None:
-        note = f"uniqueness (stub): no schema for {subject}, nothing to resolve"
-        return {"agent_results": [{"agent": "Uniqueness Agent (stub)", "note": note}]}
-
-    settings = resolve_settings(schema.uniqueness, for_uniqueness)
-    excluded = excluded_record_keys(settings, findings)
-    note = "uniqueness (stub) would honour: " + summarise_settings(settings, excluded)
+    if agent is None:
+        agent = UniquenessAgent(
+            advisories=for_uniqueness,
+            prior_findings=findings,
+            data_dir=state.get("data_dir"),
+        )
+    result = agent.run(frames, schemas, state.get("rules", []))
+    summary = agent.summary()
     return {
-        "agent_results": [{"agent": "Uniqueness Agent (stub)", "note": note}],
-        "uniqueness_settings": {  # v1.2
-            "resolved": settings,
-            "excluded_counts": {table: len(keys) for table, keys in excluded.items()},
+        "findings": result.findings,
+        "agent_results": [{
+            "agent": result.agent,
+            "dimension": result.dimension.value,
+            "findings": len(result.findings),
+            "clusters": len(result.clusters),
+            "records_assessed": result.records_assessed,
+            "records_excluded": result.records_excluded,
+        }],
+        "clusters": result.clusters,  # v1.3
+        "uniqueness_settings": {  # v1.3
+            "resolved": agent.settings,
+            "excluded_counts": summary["held_back"],
             "readable": [describe_advisory(entry) for entry in for_uniqueness],
+            "summary": summary,
         },
     }
 
@@ -224,6 +240,28 @@ def report_node(state: dict[str, Any]) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 # Advisory derivations (pure, testable)
 # ---------------------------------------------------------------------------
+
+def _uniqueness_blocking_fields(state: dict[str, Any]) -> list[tuple[str, str]]:  # v1.3
+    """Return (table, field) pairs a table's schema uses to BLOCK on.
+
+    A blocking key must agree exactly before two records are compared, so a
+    wrong value is not merely a weak signal. It moves the record into a block
+    where its true duplicate cannot be, and the record is then reported as
+    unique although it was never really checked."""
+    schemas: dict[str, Any] = state.get("schemas", {})
+    pairs: list[tuple[str, str]] = []
+    table_name: str = ""
+    schema: Any = None
+    key_field: str = ""
+
+    for table_name, schema in schemas.items():
+        uniqueness: Any = getattr(schema, "uniqueness", None)
+        if uniqueness is None:
+            continue
+        for key_field in getattr(uniqueness, "blocking_keys", []) or []:
+            pairs.append((table_name, key_field))
+    return pairs
+
 
 def _uniqueness_compare_fields(state: dict[str, Any]) -> list[tuple[str, str]]:
     """Return (table, field) pairs a table's schema nominates as uniqueness
@@ -305,6 +343,11 @@ def derive_exclusion_advisory(state: dict[str, Any], result: AgentResult) -> dic
     different materials that the survivorship rules would then merge
     automatically. Holding them back removes that whole failure.
 
+    Since v1.3 this covers the BLOCKING keys as well as the compare fields. A
+    wrong MTART or MEINS is not a weak signal. It moves the record into a block
+    where its true duplicate cannot be, so the record would be reported as
+    unique although nothing ever compared it to anything.
+
     The advisory names the SIGNAL that went bad, not the records. Record keys
     can run to thousands, and they are already in the findings.
     """
@@ -320,7 +363,9 @@ def derive_exclusion_advisory(state: dict[str, Any], result: AgentResult) -> dic
         key = f"{finding.table}.{finding.field}"
         violations_by_field[key] = violations_by_field.get(key, 0) + 1
 
-    for table_name, field_name in _uniqueness_compare_fields(state):
+    for table_name, field_name in (  # v1.3
+        _uniqueness_compare_fields(state) + _uniqueness_blocking_fields(state)
+    ):
         key = f"{table_name}.{field_name}"
         count = violations_by_field.get(key, 0)
         if count >= EXCLUSION_MIN_VIOLATIONS:

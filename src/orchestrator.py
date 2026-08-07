@@ -4,6 +4,8 @@
 #                      the linear suggestion graph and the assessment graph with
 #                      a parallel dimension fan-out. Agents/programs are injected
 #                      so the graphs compile and run without an LLM in tests.
+# v1.1 | 04-Aug-2026 | Package 4d. Uniqueness moves BEFORE the scorecard, so
+#                      its findings reach the score. They could not before.
 # ---------------------------------------------------------------------------
 """The two orchestrations.
 
@@ -93,10 +95,12 @@ def build_assessment_graph(
     graph.add_edge("validity", "aggregate")
     graph.add_edge("consistency", "aggregate")
 
-    # Downstream chain: scorecard, then the Package 4 stubs, then the report.
-    graph.add_edge("aggregate", "scorecard")
-    graph.add_edge("scorecard", "uniqueness")
-    graph.add_edge("uniqueness", "remediation")
+    # Downstream chain. Uniqueness runs BEFORE the scorecard (v1.1): its
+    # findings are part of the score, and computing the score first meant they
+    # could never reach it.
+    graph.add_edge("aggregate", "uniqueness")   # v1.1
+    graph.add_edge("uniqueness", "scorecard")   # v1.1
+    graph.add_edge("scorecard", "remediation")  # v1.1
     graph.add_edge("remediation", "report")
     graph.add_edge("report", END)
     return graph.compile()

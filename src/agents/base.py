@@ -1,4 +1,8 @@
 # v0.1 | 27-Jun-2026 | Initial agent base class and result contract
+# v0.2 | 04-Aug-2026 | Package 4d. AgentResult carries clusters, and the count of
+#                      records assessed and held back. Uniqueness assesses ONE
+#                      table and holds records back, so the whole-run row count
+#                      is the wrong denominator for its score.
 
 """Base classes for the dimension agents.
 
@@ -22,7 +26,7 @@ from typing import Any
 import pandas as pd
 from pydantic import BaseModel, Field
 
-from src.contracts import Dimension, Finding, RuleSpec
+from src.contracts import Dimension, DuplicateCluster, Finding, RuleSpec  # v0.2
 from src.data.schema import TableSchema
 from src.rules.executor import execute_ruleset
 
@@ -36,6 +40,10 @@ class AgentResult(BaseModel):
     rules_run: int = 0
     findings_by_table: dict[str, int] = Field(default_factory=dict)
     findings_by_field: dict[str, int] = Field(default_factory=dict)
+    # v0.2: filled by Uniqueness, left empty and zero by the rule-backed agents.
+    clusters: list[DuplicateCluster] = Field(default_factory=list)  # v0.2
+    records_assessed: int = 0  # v0.2
+    records_excluded: int = 0  # v0.2
 
 
 class BaseAgent(ABC):

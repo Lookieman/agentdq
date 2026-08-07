@@ -10,6 +10,9 @@
 # v1.2 | 04-Aug-2026 | Package 4b. Advisories are dictionaries, signal
 #                      suppression is replaced by record exclusion, and the
 #                      stub now resolves real settings.
+# v1.3 | 04-Aug-2026 | Package 4d. The stub is gone: the node runs the real
+#                      Uniqueness agent. The graph order changes too, so
+#                      uniqueness findings now reach the scorecard.
 # ---------------------------------------------------------------------------
 """Offline throughout. The suggestion graph uses fake interpreter/suggester
 programs; the assessment graph uses the real RuleBackedAgents and the real
@@ -161,9 +164,9 @@ def test_completeness_node_emits_findings_and_threshold_advisory():
     assert "uniqueness" in out["upstream_advisories"]     # MAKTX sparse
 
 
-def test_uniqueness_stub_resolves_the_settings_it_is_advised_about():  # v1.2
-    # The stub does not match anything yet, but it DOES resolve for real: the
-    # bands the matcher would use and the records it would hold back.
+def test_uniqueness_node_runs_the_agent_and_applies_the_advice():  # v1.3
+    # The node stays thin: unpack, run(), pack. The agent resolves the advice
+    # itself, so the steward-versus-advisory arithmetic reaches the matcher.
     advisory = build_advisory(
         action=AdvisoryAction.RAISE_THRESHOLD,
         source="Completeness",
@@ -176,16 +179,19 @@ def test_uniqueness_stub_resolves_the_settings_it_is_advised_about():  # v1.2
     state["upstream_advisories"] = {"uniqueness": [advisory]}
     out = nodes.uniqueness_node(state)
 
-    assert "would honour" in out["agent_results"][0]["note"]
+    assert out["agent_results"][0]["agent"] == "Uniqueness Agent"
     assert out["uniqueness_settings"]["resolved"]["bands"]["duplicate"] == 0.97
     assert "raise the match bands" in out["uniqueness_settings"]["readable"][0]
+    assert "clusters" in out
 
 
-def test_uniqueness_stub_says_so_when_there_is_no_schema_to_resolve():  # v1.2
-    # A missing subject schema must be REPORTED, not silently treated as
-    # "nothing to do". Silence here would look identical to a clean result.
-    out = nodes.uniqueness_node({"upstream_advisories": {"uniqueness": []}})
-    assert "no schema for MARA" in out["agent_results"][0]["note"]
+def test_uniqueness_node_reports_when_there_is_no_subject_table():  # v1.3
+    # A missing subject must be REPORTED, not silently treated as "nothing to
+    # do". Silence here would look identical to a clean result.
+    out = nodes.uniqueness_node({"upstream_advisories": {"uniqueness": []},
+                                 "schemas": {}, "frames": {}})
+    assert out["agent_results"][0]["findings"] == 0
+    assert out["clusters"] == []
 
 
 # ---------------------------------------------------------------------------
@@ -254,9 +260,10 @@ def test_assessment_graph_fans_out_and_merges_all_dimensions():
     assert bands["shift"] == nodes.BAND_SHIFT_SPARSE
     assert bands["duplicate"] == 0.97
 
-    # The stub consumed them.
-    stub_notes = [r.get("note", "") for r in final["agent_results"]]
-    assert any("would honour" in n for n in stub_notes)
+    # The real agent ran, and its stage now sits BEFORE the scorecard, so its
+    # findings could reach the score. They could not in v1.0 of the graph.
+    assert "Uniqueness Agent" in agents_run  # v1.3
+    assert "clusters" in final  # v1.3
 
     # The report is assembled with the scorecard.
     assert final["report"]["total_findings"] == 2

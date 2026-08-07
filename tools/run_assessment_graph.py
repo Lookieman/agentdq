@@ -8,6 +8,9 @@
 #                      score means "checked nothing", not "clean data". Warn
 #                      loudly, label the scorecard, and hint at --rules
 #                      config/rules. Guard logic is a testable pure helper.
+# v1.3 | 04-Aug-2026 | Package 4d. Passes data_dir so the agent can read its
+#                      vectors, and prints the uniqueness result: the mode, the
+#                      spread of scores, the clusters and the candidate pairs.
 # v1.2 | 04-Aug-2026 | Package 4b. Advisories print as readable lines rather
 #                      than raw dictionaries, and the resolved uniqueness
 #                      settings (bands before and after, blocking keys, the
@@ -87,6 +90,11 @@ def _scorecard_fn() -> Callable[[list[Any], dict[str, Any]], Any]:
     return compute
 
 
+def _cluster_size(cluster: Any) -> int:  # v1.3
+    """Sort key for the cluster listing. A named function, not a lambda."""
+    return cluster.size
+
+
 def main() -> None:
     parser: argparse.ArgumentParser = argparse.ArgumentParser(
         description="Run the AgentDQ assessment graph and print a scorecard."
@@ -111,6 +119,7 @@ def main() -> None:
     initial: dict[str, Any] = {
         "tables": args.tables, "frames": frames, "schemas": schemas,
         "dataset_label": args.data,
+        "data_dir": args.data,  # v1.3 - where the Uniqueness agent reads its vectors
     }
     final: dict[str, Any] = graph.invoke(initial)
 
@@ -149,7 +158,30 @@ def main() -> None:
         print(f"  blocking keys   : {', '.join(resolved.get('blocking_keys', [])) or '(none)'}")
         print(f"  settings code   : {resolved.get('fingerprint', '')}")
         for table_name, held in settings.get("excluded_counts", {}).items():
-            print(f"  held back       : {held} record(s) in {table_name}, description failed validity")
+            print(f"  held back       : {held} record(s), reason: {table_name}")
+
+    clusters: list[Any] = final.get("clusters", [])  # v1.3
+    summary: dict[str, Any] = settings.get("summary", {})  # v1.3
+    automatic: int = 0  # v1.3
+    cluster: Any = None  # v1.3
+
+    if summary:
+        print("\nUniqueness:")
+        print(f"  mode            : {summary.get('mode')} ({summary.get('mode_reason') or 'all rungs ran'})")
+        print(f"  score spread    : {summary.get('score_spread')}")
+        print(f"  candidate pairs : {summary.get('candidate_pairs')} awaiting the adjudicator (Package 4g)")
+    if clusters:
+        for cluster in clusters:
+            if cluster.resolution.value == "automatic":
+                automatic += 1
+        print(f"  clusters        : {len(clusters)} ({automatic} automatic, "
+              f"{len(clusters) - automatic} need a steward)")
+        print("\n  Largest clusters:")
+        for cluster in sorted(clusters, key=_cluster_size, reverse=True)[:5]:
+            print(f"    {cluster.cluster_id}  {cluster.size} records  "
+                  f"block={cluster.blocking_values}  weakest link={cluster.weakest_link}")
+            print(f"      keep {cluster.survivor_id} ({cluster.survivor_reason.value}, "
+                  f"{cluster.resolution.value})")
 
 
 if __name__ == "__main__":

@@ -1,5 +1,9 @@
 # v0.1 | 27-Jun-2026 | Initial reusable assessment (shared by CLI and dashboard)
 # v0.2 | 26-Jul-2026 | Add the Consistency dimension: ConsistencyAgent joins the
+# v0.3 | 04-Aug-2026 | Package 4d. ONE dimension list became TWO. It fed both
+#                      the scorecard and the ground-truth evaluation, so adding
+#                      Uniqueness to it would have put a meaningless 50% figure
+#                      beside the real ones.
 #                      agent loop and Consistency joins ASSESSED_DIMENSIONS, so
 #                      the linear assess() (and the dashboard over it) covers the
 #                      same three deterministic dimensions the graph does.
@@ -34,8 +38,27 @@ from src.reporting.scorecard import (
 )
 from src.rules.rule_loader import load_rules
 
-
-ASSESSED_DIMENSIONS: list[str] = ["Completeness", "Validity", "Consistency"]  # v0.2
+# Two lists, because they answer two different questions.
+#
+# SCORED_DIMENSIONS is what appears on the scorecard.
+#
+# LABEL_EVALUATED_DIMENSIONS is what is measured against the injected ground
+# truth, record by record. Uniqueness is deliberately absent. The injector
+# labels a twin but holds NO opinion on which of the two records deserves to
+# survive, and a twin is a full copy of its source, so the two diverge at random
+# once field defects are injected. Survivorship therefore keeps the source about
+# half the time and the twin about half the time, and a record-level score would
+# read near 50% precision and 50% recall even with perfect detection. Cluster-
+# level measurement arrives in Package 4e, with the decoy pairs that make it
+# mean something.
+SCORED_DIMENSIONS: list[str] = [  # v0.3
+    "Completeness", "Validity", "Consistency", "Uniqueness",
+]
+LABEL_EVALUATED_DIMENSIONS: list[str] = [  # v0.3
+    "Completeness", "Validity", "Consistency",
+]
+# Kept so existing callers do not break. It means "scored".
+ASSESSED_DIMENSIONS: list[str] = SCORED_DIMENSIONS  # v0.3
 
 
 class AssessmentResult(BaseModel):
@@ -116,10 +139,12 @@ def assess(
         })
         findings.extend(result.findings)
 
-    scorecard: Scorecard = compute_scorecard(findings, frames, ASSESSED_DIMENSIONS)
+    scorecard: Scorecard = compute_scorecard(findings, frames, SCORED_DIMENSIONS)  # v0.3
 
     if has_gt:
-        evaluation = evaluate_against_labels(findings, load_labels(labels_path), ASSESSED_DIMENSIONS)
+        evaluation = evaluate_against_labels(  # v0.3
+            findings, load_labels(labels_path), LABEL_EVALUATED_DIMENSIONS
+        )
 
     return AssessmentResult(
         dataset_label=data_dir,
