@@ -28,8 +28,18 @@ v1.5 | 04-Aug-2026 | Package 4b built. Advisories become small dictionaries with
                      six named keys. Signal suppression is REPLACED by record
                      exclusion, which works on the shipped MARA settings and
                      removes a severe false-positive mode. Test count to 128
-                     passing, 1 skipped. Adds step 4j: the dashboard moves onto
-                     the graph so Package 4 is visible in the UI.
+                     passing. Adds step 4j: the dashboard moves onto the graph so
+                     Package 4 is visible in the UI. Also fixes a silent
+                     directory-name defect: the pipeline test looked in
+                     data/profile while the profiles live in data/profiles, so
+                     seven tests had been skipping unnoticed for several
+                     packages.
+v1.6 | 04-Aug-2026 | Package 4c built (the embeddings artefact). The step plan
+                     is consolidated from nine steps to six: the matcher absorbs
+                     the graph reorder, the data step absorbs its own evaluation
+                     change, and the adjudicator absorbs the shared LM setup.
+                     Vectors are written BESIDE their dataset, not in one shared
+                     folder. Test count to 153 passing, 0 skipped.
 ```
 
 This document is the delivery counterpart to `agentdq-project-plan.md`. The plan
@@ -57,10 +67,15 @@ ready to write; Package 3's story ("where I put the human in the loop, and why")
 follows it.
 
 Package 4 is now in build. Its design is settled (section 5); steps 4a and 4b
-are done. 4a delivered the uniqueness settings (schema v0.4 and the MARA dials);
-4b turned advice between agents into small structured records and replaced signal
-suppression with record exclusion. The suite stands at 128 passing and 1 skipped. Step 4a also fixed a bug
-that predates Package 4: `tools/build_schema.py` regenerates the schema YAMLs
+are done, and so is 4c. 4a delivered the uniqueness settings (schema v0.4 and the
+MARA dials); 4b turned advice between agents into small structured records and
+replaced signal suppression with record exclusion; 4c built the semantic vectors
+and the shared text normaliser. The suite stands at 153 passing, 0 skipped -
+seven of those tests had been skipping in silence because the pipeline test
+looked for the profiles in data/profile while they live in data/profiles.
+
+Two defects that predate Package 4 were fixed along the way. The profiles path
+above is one. The other: `tools/build_schema.py` regenerates the schema YAMLs
 from its own TABLE_META, which held neither `file_pattern` nor the `uniqueness`
 block, so every rebuild silently erased both from `config/schema/mara.yaml`.
 
@@ -465,11 +480,32 @@ is as much a filter for wrong matches as a matcher: "Bearing 6203" and "Bearing
 scale with genuine doubt, not with the size of the dataset, and that is the cost
 control.
 
+Both rungs must see the SAME normalised text. One shared normaliser decides what
+that text is, and the embeddings builder and the matcher both call it. If they
+diverged, the two scores would describe different things and their weighted mean
+would mean nothing, with nothing failing to say so.
+
 Constraint for the demo: MiniLM embeddings are built in the **batch layer** and
 written as artefacts, because `sentence-transformers` is too heavy to load
 inside the Streamlit process on the free tier. When no artefact exists the agent
 runs **fuzzy only** and records that mode on every finding, so a partial run can
-never be mistaken for a full one. The artefacts are git-ignored and rebuilt.
+never be mistaken for a full one.
+
+Each artefact is written BESIDE its dataset, at
+`<dataset>/embeddings/<TABLE>_<FIELD>.npz`. One shared folder would hold one
+dataset's vectors at a time, so changing dataset on the dashboard would need a
+rebuild, and a rebuild needs the model that the free tier cannot load. The
+per-dataset path also keeps the artefacts git-ignored with no change to
+`.gitignore`, since `data/raw/` and `data/synthetic/` already are.
+
+An artefact carries two independent checks. The **identity code** covers the
+model, the table, the field, the language and the normalisation version, and
+answers "was this built under the same conditions?". The **content code** covers
+the record keys and their normalised text, and answers "was this built from the
+same data?". The identity code deliberately excludes the bands, the blocking
+keys and the weights: none of those changes one number in a vector, and
+including them would force a pointless rebuild every time a steward moved a
+band.
 
 ### 5.4 Clusters, not pairs
 
@@ -675,21 +711,33 @@ across all three loaded tables it would be diluted into near-invisibility.
 ### 5.10 The build order
 
 ```
-Step  Deliverable                                   Language model?
-----  --------------------------------------------  ---------------
-4a    Schema v0.4 uniqueness settings + MARA dials  no    (done)
-4b    Advisories become small structured records    no    (done)
-4c    tools/build_embeddings.py                     no
-4d    src/agents/uniqueness.py: block, score,       no
-      cluster, choose a survivor
-4e    Adjudicator DSPy signature and wiring         yes
-4f    defect_injector v0.5: harder changes, decoys  no
-4g    src/agents/remediation.py and its signature   yes
-4h    Graph reorder; Uniqueness joins the scorecard no
-4i    Tests, then the three living artefacts        no
-4j    Dashboard moves onto the graph; Duplicates    no
-      and Settings tabs added
+Step  Deliverable                                   Model?  Regenerate?
+----  --------------------------------------------  ------  -----------
+4a    Schema v0.4 uniqueness settings + MARA dials   no      no  (done)
+4b    Advisories become small structured records     no      no  (done)
+4c    Shared text normaliser + embeddings artefact   no      no  (done)
+4d    The matcher: block, score, cluster, choose a   no      no
+      survivor. Includes the graph reorder and the
+      per-dimension scorecard denominator
+4e    The data and how it is measured: harder        no      YES
+      near-copies, decoy pairs, and teaching
+      evaluate_against_labels about not_duplicate
+4f    The dashboard moves onto the graph.            no      no
+      Duplicates and Settings tabs
+4g    The adjudicator: shared LM setup + the DSPy    yes     no
+      signature and its wiring
+4h    Remediation, and its tab on the dashboard      yes     no
 ```
+
+The plan was nine steps and is now six. Three merges removed work that had no
+value on its own. The graph reorder is three edges and a dimension name, so
+splitting it from the node it wires was ceremony. The change to
+evaluate_against_labels is the same idea as the decoys that need it. The shared
+LM setup is sixty lines whose first caller is the adjudicator.
+
+The ordering carries one rule that matters: **4e comes before 4g.** Built the
+other way round, the adjudicator would face an empty uncertain band and no
+labelled non-duplicates, so its precision would read 1.000 and mean nothing.
 
 Step 4j exists because the dashboard does not use the orchestrator. It calls
 assess() in src/reporting/assessment.py, which loops the three dimension agents
@@ -701,9 +749,9 @@ execution path, and Package 7's settings screen needs that anyway.
 AssessmentResult gains a `clusters` field, so the screen reads the clusters the
 agent already built rather than reassembling them from scattered findings.
 
-Steps 4a to 4d contain no language model at all, so real clusters on real MARA
-data can be read before a single token is spent. This mirrors how the suggester
-was built: rails first, judgement second.
+Steps 4a to 4f contain no language model at all, so real clusters can be read on
+a real screen before a single token is spent. This mirrors how the suggester was
+built: rails first, judgement second.
 
 ### 5.11 One ordering fix in the graph
 
@@ -1005,7 +1053,7 @@ Step  Actor      Action                                Artefact produced
                  description_text
 4     Steward    Add new reference tables to the       config/reference/
                  manifest, drop extracts, flip status  manifest.yaml
-5     Steward    Run the profiler                      data/profile/EQUI_profile
+5     Steward    Run the profiler                      data/profiles/EQUI_profile
                                                        .json etc.
 6     Steward    Run the batch suggestion runner.      suggestions artefact
                  Roles route fields: generalised

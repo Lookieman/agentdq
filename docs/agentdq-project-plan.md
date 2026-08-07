@@ -46,8 +46,9 @@ two steps are built. The uniqueness settings now live in the table schema
 wrong settings failing while the file is read rather than deep inside a scoring
 loop. Advice between agents is now a small structured record rather than a
 sentence, and a validity finding on a description holds that RECORD out of
-deduplication instead of dropping the description as a signal. The suite stands
-at 128 passing tests, 1 skipped, all offline. The first two AgentDQ
+deduplication instead of dropping the description as a signal. The semantic
+vectors are built in a batch step and written beside their dataset. The suite
+stands at 153 passing tests, 0 skipped, all offline. The first two AgentDQ
 LinkedIn articles are ready to write: Package 2's ("the agent proposes, the
 human disposes") and Package 3's ("where I put the human in the loop, and why").
 The delivery breakdown, the remaining packages, and the per-package designs live
@@ -79,6 +80,8 @@ Streamlit dashboard           app/dashboard.py                    done
 Smoke test suite (12 tests)   tests/test_pipeline_smoke.py        done
 Uniqueness settings (v0.4)    src/data/schema.py, config/schema/  done
 Structured advisories         src/agents/uniqueness_settings.py   done
+Shared text normaliser        src/agents/text_normaliser.py       done
+Semantic vectors (batch)      tools/build_embeddings.py           done
 ```
 
 What the pilot demonstrates today:

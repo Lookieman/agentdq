@@ -6,7 +6,12 @@ spot. Versions are the latest change-log entry at the top of each file at the
 time of writing; treat them as a snapshot for verifying your working tree is in
 sync, not as a live value.
 
-*Updated 04-Aug-2026 (Package 4b - structured advisories): advice between agents
+*Updated 04-Aug-2026 (Package 4c - the embeddings artefact): a shared text
+normaliser now decides what text BOTH scoring rungs see, and the batch builder
+writes one vector file per compare field BESIDE its dataset. Each file carries
+an identity code (model, field, language, normalisation) and a content code (the
+keys and the text), so stale or foreign vectors are refused rather than used.
+Prior update 04-Aug-2026 (Package 4b - structured advisories): advice between agents
 is now a small dictionary with six named keys instead of a sentence, and signal
 suppression is replaced by RECORD EXCLUSION - a description that failed a
 validity check holds its record out of deduplication. A new module,
@@ -46,7 +51,7 @@ Path                          Ver    Purpose
 ----------------------------  -----  -------------------------------------------
 src/data/extract_loader.py    v0.3   Load SE16N/SE12 xlsx extracts (leading
                                      zeros, preamble, spacer column)
-src/data/profiler.py          v0.5   Deterministic profiler; per-field stats and
+src/data/profiler.py          v0.6   Deterministic profiler; per-field stats and
                                      composite-key uniqueness. Reads header
                                      anchor / primary key from the schema
                                      (hardcoded dicts are fallbacks)
@@ -59,7 +64,7 @@ src/data/schema.py            v0.4   Schema loader and parsers (comma decimals,
                                      methods, bands), effective_bands() for
                                      steward-versus-advisory precedence, and
                                      fingerprint() so a run records its settings
-src/data/generator.py         v0.1   Synthetic clean-baseline generator,
+src/data/generator.py         v0.2   Synthetic clean-baseline generator,
                                      calibrated to the profiles
 src/data/defect_injector.py   v0.4   Controlled defect injection with
                                      ground-truth labels
@@ -105,6 +110,12 @@ src/agents/base.py            v0.1   BaseAgent, RuleBackedAgent, AgentResult
 src/agents/completeness.py    v0.1   Completeness dimension (not-null rules)
 src/agents/validity.py        v0.1   Validity dimension (domain rules)
 src/agents/consistency.py     v0.1   Consistency dimension (cross-field rules)
+src/agents/text_normaliser.py v1.0   The ONE text normaliser. Lower case, no
+                                     accents, punctuation to space, spaces
+                                     collapsed. The embeddings builder and the
+                                     matcher both call it, so the fuzzy score
+                                     and the semantic score always describe the
+                                     same text
 src/agents/uniqueness_settings.py
                               v1.0   Resolves a steward's uniqueness settings
                                      against the advisories that arrive:
@@ -191,7 +202,13 @@ app/bank_browser.py     v1.1   Rule Bank browser + strength governance
 ```
 Path                       Ver    Purpose
 -------------------------  -----  ----------------------------------------------
-tools/build_schema.py      v0.3   Scaffold schema YAMLs from profiles + overlay.
+tools/build_embeddings.py  v1.0   Batch builder for the semantic vectors. One
+                                  .npz per compare field, written to
+                                  <dataset>/embeddings/. Never runs inside
+                                  Streamlit: the model is too heavy for the
+                                  free tier. The encoder is passed in, so the
+                                  tests never load it
+tools/build_schema.py      v0.4   Scaffold schema YAMLs from profiles + overlay.
                                   TABLE_META now carries file_pattern and MARA's
                                   uniqueness block, so a rebuild no longer
                                   erases them
@@ -219,7 +236,7 @@ tools/interrupt_example.py     v1.0  The LangGraph interrupt() primitive AgentDQ
 ```
 Path                                     Ver    Purpose
 ---------------------------------------  -----  -----------------------------
-tests/test_pipeline_smoke.py             v0.5   End-to-end Phase 1 smoke suite
+tests/test_pipeline_smoke.py             v0.6   End-to-end Phase 1 smoke suite
                                                 (execution layer)
 tests/test_rule_bank_smoke.py            v1.3   Rule bank retrieval + reference
                                                 store (incl. real extracts)
@@ -235,6 +252,13 @@ tests/test_orchestrator_smoke.py         v1.2   Both graphs; assessment fan-out
                                                 with the real executor;
                                                 advisories; the no-checks guard.
                                                 v1.1 fixture uses blocking_keys
+tests/test_embeddings.py                 v1.0   The shared normaliser and the
+                                                embeddings builder. Offline: a
+                                                small fake encoder stands in for
+                                                the model. Checks an artefact's
+                                                SHAPE and round trip, never its
+                                                numbers, because encoding is not
+                                                bit-identical across platforms
 tests/test_advisories.py                 v1.0   Structured advisories: the six
                                                 keys, loud failure on an unknown
                                                 or malformed one, largest-shift
@@ -249,7 +273,12 @@ tests/test_uniqueness_config.py          v1.0   Schema v0.4 uniqueness dials:
                                                 config/schema/mara.yaml
 ```
 
-Test position: 128 tests pass and 1 is skipped across the whole suite (the
+Test position: 153 tests pass and 0 are skipped. This number is MEASURED each
+time, not carried forward. A stale "84 passing, 1 skipped" sat in this file for
+several packages while seven tests skipped in silence, because the pipeline test
+looked for the profiles in data/profile and they live in data/profiles. A
+skipped test reports as a pass at a glance, so a wrong path can hide for a long
+time; always read the skip reasons with `uv run pytest -q -rs` across the whole suite (the
 agentic-core, Package 2 and Package 3 suites, the Package 4a and 4b suites, plus
 the Phase 1 pipeline suite). No LLM or API key is required for any
 of them.
@@ -355,6 +384,12 @@ tools/__init__.py          tests/__init__.py            app/__init__.py
   Run `git rm src/rules/loader.py` - it is dead code and re-creates the exact
   filename clash this map guards against. Likewise `src/models.py` or
   `src/schema_utils.py`, if present, are earlier-build remnants and can go.
+- **Vectors live beside their dataset, never in one shared folder.** A single
+  `artefacts/embeddings/` folder would hold one dataset's vectors at a time, so
+  changing dataset on the dashboard would need a rebuild, and a rebuild needs
+  the model that the free tier cannot load. The per-dataset path also keeps the
+  files out of git with no `.gitignore` change, since `data/raw/` and
+  `data/synthetic/` are already ignored.
 - **Advice that cannot be acted on FAILS.** An advisory with an unknown action,
   a missing key, or a threshold request carrying no number raises rather than
   being skipped. A silently dropped advisory is the worst outcome available: the
@@ -381,7 +416,7 @@ tools/__init__.py          tests/__init__.py            app/__init__.py
 - **This map now lives in the repo** under `docs/`, alongside
   `agentdq_design.md` and `agentdq-project-plan.md`, so it travels with the
   code. Update all three in the same session as any package build.
-- **Generated artefacts** (profiles under `data/profile/`, synthetic datasets
+- **Generated artefacts** (profiles under `data/profiles/`, synthetic datasets
   under `data/synthetic/`, `mlruns/`, and the runtime stores above) are not
   source; they are reproducible outputs and are git-ignored, except the
   committed generated configs (`config/rules/*`, `config/rule_bank/templates.yaml`)
