@@ -8,6 +8,10 @@
 #                      score means "checked nothing", not "clean data". Warn
 #                      loudly, label the scorecard, and hint at --rules
 #                      config/rules. Guard logic is a testable pure helper.
+# v1.4 | 04-Aug-2026 | Package 4e. Reads the ground-truth labels and the decoys
+#                      the injector wrote, and prints the uniqueness evaluation:
+#                      twin recall, decoy error rate, unlabelled joins, and the
+#                      score spread by strategy that Package 5 needs.
 # v1.3 | 04-Aug-2026 | Package 4d. Passes data_dir so the agent can read its
 #                      vectors, and prints the uniqueness result: the mode, the
 #                      spread of scores, the clusters and the candidate pairs.
@@ -32,6 +36,7 @@ Run:
 from __future__ import annotations
 
 import argparse
+from pathlib import Path  # v1.4
 from typing import Any, Callable, Optional
 
 import pandas as pd
@@ -44,6 +49,7 @@ from src.data.schema import TableSchema, load_schemas
 from src.orchestrator import build_assessment_graph
 from src.reporting.assessment import load_frames
 from src.reporting.scorecard import compute_scorecard, print_scorecard
+from src.reporting.uniqueness_eval import evaluate_uniqueness, print_evaluation  # v1.4
 from src.rules.rule_loader import load_rules
 
 GRAPH_DIMENSIONS: list[str] = ["Completeness", "Validity", "Consistency"]
@@ -182,6 +188,25 @@ def main() -> None:
                   f"block={cluster.blocking_values}  weakest link={cluster.weakest_link}")
             print(f"      keep {cluster.survivor_id} ({cluster.survivor_reason.value}, "
                   f"{cluster.resolution.value})")
+
+    # v1.4: read the ground-truth labels and decoys next to the data. When they
+    # are not there (a directory with no injected labels), we say so and stop
+    # rather than pretending numbers can be produced.
+    labels_path: Path = Path(args.data) / "ground_truth.parquet"
+    decoys_path: Path = Path(args.data) / "decoys.json"
+    if clusters and labels_path.exists():
+        evaluation = evaluate_uniqueness(
+            clusters=clusters,
+            findings=final.get("findings", []),
+            labels_path=labels_path,
+            decoys_path=decoys_path,
+            score_spread=summary.get("score_spread", {}),
+            frames=frames,
+            blocking_keys=schemas["MARA"].uniqueness.blocking_keys,
+        )
+        print_evaluation(evaluation)
+    elif clusters:
+        print("\nNo ground-truth labels beside the dataset, so no uniqueness evaluation.")
 
 
 if __name__ == "__main__":

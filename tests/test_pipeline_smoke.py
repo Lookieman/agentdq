@@ -4,6 +4,8 @@
 # v0.4 | 27-Jun-2026 | Add agents-and-scorecard test
 # v0.5 | 27-Jun-2026 | Add assess() shared-function test
 # v0.6 | 04-Aug-2026 | Package 4b fix. PROFILE_DIR pointed at data/profile;
+# v0.7 | 04-Aug-2026 | Package 4e. inject_defects returns four values (decoys);
+#                      the tests unpack that fourth one and ignore it.
 #                      the profiles live in data/profiles. Seven tests had
 #                      been skipping in silence because of the missing 's'.
 #                      A skipped test reports as a pass, so the gap survived
@@ -30,7 +32,6 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-
 
 REPO_ROOT: Path = Path(__file__).resolve().parents[1]
 SCHEMA_DIR: Path = REPO_ROOT / "config" / "schema"
@@ -189,7 +190,6 @@ def test_injector_ground_truth_is_clean() -> None:
     """Every active rule's violations equal exactly the injected labels."""
     import pandas as pd
 
-    from src.contracts import Operator
     from src.data.defect_injector import inject_defects
     from src.data.generator import generate_dataset
     from src.data.schema import load_schemas
@@ -198,7 +198,7 @@ def test_injector_ground_truth_is_clean() -> None:
     schemas = load_schemas(str(SCHEMA_DIR), TABLES)
     rules = load_rules(str(RULES_DIR))
     baseline = generate_dataset(str(SCHEMA_DIR), str(PROFILE_DIR), TABLES, n_materials=2000, seed=42)
-    frames, labels, manifest = inject_defects(baseline, schemas, rules, scenario="degraded", seed=42)
+    frames, labels, manifest, _decoys = inject_defects(baseline, schemas, rules, scenario="degraded", seed=42)  # v0.6
 
     label_frame = pd.DataFrame([label.model_dump() for label in labels])
     rule_map = {rule.rule_id: rule for rule in rules}
@@ -241,12 +241,12 @@ def test_injector_reproducible_and_scenarios_scale() -> None:
     rules = load_rules(str(RULES_DIR))
     baseline = generate_dataset(str(SCHEMA_DIR), str(PROFILE_DIR), TABLES, n_materials=2000, seed=42)
 
-    _, first, _ = inject_defects(baseline, schemas, rules, scenario="degraded", seed=7)
-    _, second, _ = inject_defects(baseline, schemas, rules, scenario="degraded", seed=7)
+    _, first, _, _ = inject_defects(baseline, schemas, rules, scenario="degraded", seed=7)  # v0.6
+    _, second, _, _ = inject_defects(baseline, schemas, rules, scenario="degraded", seed=7)  # v0.6
     assert sorted(d.defect_id for d in first) == sorted(d.defect_id for d in second)
 
-    _, healthy, _ = inject_defects(baseline, schemas, rules, scenario="healthy", seed=7)
-    _, critical, _ = inject_defects(baseline, schemas, rules, scenario="critical", seed=7)
+    _, healthy, _, _ = inject_defects(baseline, schemas, rules, scenario="healthy", seed=7)  # v0.6
+    _, critical, _, _ = inject_defects(baseline, schemas, rules, scenario="critical", seed=7)  # v0.6
     assert len(critical) > len(healthy)
 
 
@@ -265,7 +265,7 @@ def test_executor_reproduces_ground_truth() -> None:
     schemas = load_schemas(str(SCHEMA_DIR), TABLES)
     all_rules = load_rules(str(RULES_DIR))
     baseline = generate_dataset(str(SCHEMA_DIR), str(PROFILE_DIR), TABLES, n_materials=1500, seed=42)
-    frames, labels, manifest = inject_defects(baseline, schemas, all_rules, scenario="degraded", seed=42)
+    frames, labels, manifest, _decoys = inject_defects(baseline, schemas, all_rules, scenario="degraded", seed=42)  # v0.6
 
     scope = manifest["evaluation_scope"]
     active_ids = set(scope["completeness_rules"] + scope["validity_rules"] + scope["consistency_rules"])
@@ -296,7 +296,7 @@ def test_agents_and_scorecard() -> None:
     schemas = load_schemas(str(SCHEMA_DIR), TABLES)
     rules = load_rules(str(RULES_DIR))
     baseline = generate_dataset(str(SCHEMA_DIR), str(PROFILE_DIR), TABLES, n_materials=1500, seed=42)
-    frames, labels, _ = inject_defects(baseline, schemas, rules, scenario="degraded", seed=42)
+    frames, labels, _, _ = inject_defects(baseline, schemas, rules, scenario="degraded", seed=42)  # v0.6
 
     findings = []
     for agent in (CompletenessAgent(), ValidityAgent()):
@@ -329,12 +329,12 @@ def test_assess_shared_function() -> None:
     schemas = load_schemas(str(SCHEMA_DIR), TABLES)
     rules = load_rules(str(RULES_DIR))
     baseline = generate_dataset(str(SCHEMA_DIR), str(PROFILE_DIR), TABLES, n_materials=800, seed=42)
-    frames, labels, manifest = inject_defects(baseline, schemas, rules, scenario="degraded", seed=42)
+    frames, labels, manifest, _decoys = inject_defects(baseline, schemas, rules, scenario="degraded", seed=42)  # v0.6
 
     with tempfile.TemporaryDirectory() as tmp:
         from src.data.defect_injector import _persist
 
-        _persist(frames, labels, manifest, __import__("pathlib").Path(tmp))
+        _persist(frames, labels, manifest, _decoys, __import__("pathlib").Path(tmp))  # v0.7
         result = assess(tmp, str(SCHEMA_DIR), str(RULES_DIR), TABLES, "parquet")
 
     assert result.total_records > 0

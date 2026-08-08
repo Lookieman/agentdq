@@ -40,6 +40,23 @@ v1.6 | 04-Aug-2026 | Package 4c built (the embeddings artefact). The step plan
                      change, and the adjudicator absorbs the shared LM setup.
                      Vectors are written BESIDE their dataset, not in one shared
                      folder. Test count to 153 passing, 0 skipped.
+v1.7 | 04-Aug-2026 | Package 4d built (the matcher). Uniqueness now runs BEFORE
+                     the scorecard, a dimension can state its own denominator,
+                     and the ONE dimension list became TWO so uniqueness is
+                     scored without being measured record by record against a
+                     ground truth that has no opinion on survivorship. Record
+                     exclusion extends to the blocking keys. Test count to 181
+                     passing, 0 skipped.
+v1.8 | 04-Aug-2026 | Package 4e built (the data and how it is measured). The
+                     baseline generator (v0.3) is genuinely clean: a fourth
+                     description word and a similarity check under 0.85 remove
+                     the accidental duplicates that would have drowned the
+                     injected twins. The injector (v0.5) has four harder near-
+                     copies, writes the change name onto every twin label, and
+                     plants 28 decoy pairs. New module
+                     src/reporting/uniqueness_eval.py reports twin recall,
+                     decoy error rate (headline precision), unlabelled joins,
+                     and the score spread by change. Test count to 201.
 ```
 
 This document is the delivery counterpart to `agentdq-project-plan.md`. The plan
@@ -67,10 +84,11 @@ ready to write; Package 3's story ("where I put the human in the loop, and why")
 follows it.
 
 Package 4 is now in build. Its design is settled (section 5); steps 4a and 4b
-are done, and so is 4c. 4a delivered the uniqueness settings (schema v0.4 and the
-MARA dials); 4b turned advice between agents into small structured records and
-replaced signal suppression with record exclusion; 4c built the semantic vectors
-and the shared text normaliser. The suite stands at 153 passing, 0 skipped -
+are done, and so are 4c and 4d. 4a delivered the uniqueness settings (schema v0.4
+and the MARA dials); 4b turned advice between agents into small structured
+records and replaced signal suppression with record exclusion; 4c built the
+semantic vectors and the shared text normaliser; 4d built the matcher itself.
+The suite stands at 181 passing, 0 skipped -
 seven of those tests had been skipping in silence because the pipeline test
 looked for the profiles in data/profile while they live in data/profiles.
 
@@ -678,6 +696,131 @@ proposes it, a steward approves it, and only then does Validity flag those
 records. That is Package 4f work, and it is a good demonstration of the whole
 loop rather than a gap.
 
+### 5.8b Three things the matcher must not do quietly
+
+Package 4d found three faults that would each have produced a plausible, wrong
+answer with no error and no warning.
+
+**One dimension list fed two functions.** `ASSESSED_DIMENSIONS` was passed both
+to `compute_scorecard` and to `evaluate_against_labels`. Adding "Uniqueness" to
+it would have put uniqueness into the record-level ground-truth evaluation as
+well as onto the scorecard, and the figure would have been about 50% precision
+and 50% recall even with perfect detection.
+
+The cause is in the injector. A twin is a FULL COPY of its source row, with only
+the material number changed, and field defects are injected afterwards across
+all rows independently. So twin and source diverge at random, survivorship keeps
+each about half the time, and findings land on the source about half the time.
+The list is now two lists: SCORED_DIMENSIONS, which includes Uniqueness, and
+LABEL_EVALUATED_DIMENSIONS, which does not.
+
+**A record key from one table does not match another.** A validity finding on
+MAKT.MAKTX names its record `MATNR=...|SPRAS=E`, because MAKT is keyed on both.
+A MARA record is keyed `MATNR=...`. The two never matched, so every exclusion
+driven by a bad description was lost without a word. The agent now rewrites a
+foreign key into the subject's key before it compares.
+
+**The fuzzy-only fallback scored everything at half.** With no vector file, the
+semantic rung's share of the weight was not returned to the fuzzy rung, so a
+perfect text match scored 0.5, no pair could reach the 0.92 band, and the agent
+reported that nothing at all was a duplicate. Each fault now has a test named
+after it.
+
+### 5.8c Exclusion covers the blocking keys as well
+
+A validity finding on a COMPARE field means the description is junk, so there is
+nothing to match on. A validity finding on a BLOCKING key is worse. It puts the
+record in a block where its true duplicate cannot be, so nothing is ever
+compared, and the record is then reported as unique.
+
+In the synthetic degraded dataset the validity injector corrupts MTART and
+MEINS, which are exactly the blocking keys. About 430 of 4,000 MARA rows carry a
+broken one. Left in, the agent would call all 430 unique. Held out, the agent
+says "I did not check these, and here is why". The first statement is honest.
+
+### 5.8d The clean baseline is now genuinely clean
+
+The v0.1 generator drew descriptions from 20 nouns, 10 qualifiers and a size
+number. That gave 200 word pairs, and 4,000 materials therefore shared each
+word pair with about 20 others. "Pump Precision 123" against "Pump Precision
+456" scored 0.933; "Bearing Stainless 42" against "Bearing Stainless 907"
+scored 0.951. Both are above the 0.92 duplicate band. Hundreds of unrelated
+pairs would join, and the twelve real twins would be lost in the noise.
+
+The v0.3 generator applies two fixes together. **Fix A** adds a fourth word
+(the material), so the description space grows by a factor of eight. **Fix B**
+rejects any new description whose Jaro-Winkler score against an already-
+accepted description is above 0.85. On 4,000 rows the number of pairs above
+the review band fell from 18 to 9 on the same random sample, and no pair
+remained above the duplicate band.
+
+The 0.85 limit is a design dial; Package 5 measures it. It was chosen so that
+plausible catalogue pairs are still allowed and only the ones that would land
+as false duplicates are rejected.
+
+### 5.8e Harder near-copies
+
+The v0.1 injector had four changes: `upper`, `trail_space`, `punct`, `swap`.
+All four normalise back to the source text and score near 1.00 in fuzzy
+scoring. On the clean baseline they would land above the duplicate band and
+would not exercise the review band.
+
+The v0.5 injector adds four more, each sized to score lower and to test the
+combined ladder rather than fuzzy alone: `abbrev` swaps a phrase for its
+abbreviation ("Stainless Steel" to "SS"), `word_order` moves a word from the
+end to the front, `unit_word` shortens "5 inches" to "5in", and `unit_symbol`
+uses the double quote.
+
+Every twin label now carries `strategy` in its `detail`, so the evaluator
+reports twin recall AND the average score by strategy. That table is what
+Package 5 will read to place the bands.
+
+### 5.8f Decoy pairs
+
+A decoy is two DIFFERENT materials given a confusable description, so the
+deterministic ladder joins them and the adjudicator has to catch that they
+are two different materials. Without decoys, every similar pair in the data
+is a real duplicate, the agent cannot be wrong by saying yes, and precision
+is always 1.000 and means nothing.
+
+Twenty-eight decoys are planted per degraded run. Six kinds cover the cases
+the adjudicator must tell apart: part numbers (6203 against 6204), size
+numbers (5 against 10), size codes (M8 against M10), grade words (Steel
+against Carbon Steel), grade codes (304 against 316), and directions (Left
+Hand against Right Hand). Decoys never overwrite a null cell, or a
+completeness label would silently point at a value that is no longer missing.
+
+Decoys travel in a separate file, `decoys.json`. A DefectLabel means "this
+is a claim of a defect"; a decoy is a correct pair the ladder is expected to
+fail on. Mixing the two would force every consumer to check a boolean before
+trusting the label.
+
+### 5.8g Three numbers, honestly named
+
+The evaluator reports three numbers:
+
+```
+Number                    What it says
+------------------------  --------------------------------------------
+Twin recall               Of the injected twins, how many landed in
+                          the same cluster as their source?
+Decoy error rate          Of the decoy pairs, how many did the agent
+                          wrongly join? This is the HEADLINE precision.
+Unlabelled joins          A count of pairs the agent joined that
+                          neither the labels nor the decoys knew about.
+                          Not a rate.
+```
+
+Twin recall has one further subtlety. The validity injector runs AFTER the
+uniqueness injector and can corrupt MTART or MEINS on a twin. A twin whose
+blocking key was later corrupted lands in a DIFFERENT block from its source,
+and no matcher could ever have found them. That count is reported separately
+as `hidden_by_other_defect`, and the evaluator also reports "recall on the
+matchable set". This is more useful than a single figure: it separates a
+matcher failure from a data condition. In one 1,000-row test run, 20 of 60
+twins were hidden this way; recall on the matchable set was 62.5% while the
+overall figure was 41.7%.
+
 ### 5.9 What is deliberately not built yet
 
 ```
@@ -716,12 +859,12 @@ Step  Deliverable                                   Model?  Regenerate?
 4a    Schema v0.4 uniqueness settings + MARA dials   no      no  (done)
 4b    Advisories become small structured records     no      no  (done)
 4c    Shared text normaliser + embeddings artefact   no      no  (done)
-4d    The matcher: block, score, cluster, choose a   no      no
+4d    The matcher: block, score, cluster, choose a   no      no  (done)
       survivor. Includes the graph reorder and the
       per-dimension scorecard denominator
-4e    The data and how it is measured: harder        no      YES
-      near-copies, decoy pairs, and teaching
-      evaluate_against_labels about not_duplicate
+4e    The data and how it is measured: harder        no      YES (done)
+      near-copies, decoy pairs, and the uniqueness
+      evaluator
 4f    The dashboard moves onto the graph.            no      no
       Duplicates and Settings tabs
 4g    The adjudicator: shared LM setup + the DSPy    yes     no
@@ -1340,11 +1483,10 @@ a precision and recall table. Guard those two packages.
 
 ## 14. Immediate next step
 
-Packages 1 to 3 are complete and Package 4 is in build. Steps 4a and 4b are done:
-the uniqueness settings live in the table schema, and advice between agents is
-now a small structured record that a consumer reads by field. The next build is
-step 4c, the batch embeddings artefact, followed by 4d, which produces real
-duplicate clusters with no language model involved at all.
+Packages 1 to 3 are complete and Package 4 is in build. Steps 4a to 4e are done:
+settings, structured advisories, embeddings, the matcher, and the data and its
+measurement. The next build is step 4f, which moves the dashboard onto the
+graph so Package 4 becomes visible on screen.
 
 At the end of Package 2 the loop closed for the first time: an agent suggests a
 rule, a human approves it, and the approved rule runs and changes the score.

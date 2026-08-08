@@ -2,6 +2,14 @@
 # v0.2 | 27-Jun-2026 | Inject uniqueness twins onto the clean canvas before field-level injection
 # v0.3 | 27-Jun-2026 | Follow rename of rules loader to rule_loader
 # v0.4 | 27-Jun-2026 | Never corrupt or null a primary-key field in any dimension
+# v0.5 | 04-Aug-2026 | Package 4e. Harder near-copies (abbreviation, word order,
+#                      unit forms). Every twin label now names the strategy that
+#                      made it, so the score spread report can group by change.
+#                      Decoy pairs: two DIFFERENT materials given confusable
+#                      descriptions and written to decoys.json. Without decoys,
+#                      every similar pair in the data is a real duplicate, the
+#                      agent cannot be wrong by saying yes, and precision is
+#                      always 1.000 and means nothing.
 # v0.5 | 26-Jul-2026 | Handle OR-style (DNF) cross-field consistency rules, not
 #                      just IMPLIES: conform the baseline and inject+label them,
 #                      so every executed consistency rule has ground truth (no
@@ -68,7 +76,6 @@ from src.data.schema import TableSchema, load_schemas
 from src.rules.executor import PandasRuleExecutor  # v0.5
 from src.rules.rule_loader import load_rules  # v0.3
 
-
 # Per-dimension defect rate presets (fraction of eligible records per dimension).
 SCENARIO_RATES: dict[str, float] = {
     "healthy": 0.015,
@@ -85,6 +92,29 @@ INJECTED_DIMENSIONS: tuple[Dimension, ...] = (
 
 TWIN_MATNR_START: int = 900000000
 MATNR_WIDTH: int = 18
+
+# v0.5: how many decoy pairs to plant. A decoy is a pair of DIFFERENT materials
+# given a confusable description, so the fuzzy rung joins them and the
+# adjudicator has to catch that they are not the same thing. Without decoys, no
+# similar pair carries a "not_duplicate" label, so the agent cannot be wrong by
+# saying yes, and precision is always 1.000 and means nothing. About 25 to 30
+# is enough to make one wrong join equal a few percent of precision, which is
+# a useful signal on your test scale.
+DECOY_COUNT: dict[str, int] = {
+    "clean": 0, "degraded": 28, "critical": 28,
+}
+
+# Every decoy REWRITES two existing MARA-block partners into a confusable pair,
+# and records the pair. The six kinds span the cases the adjudicator has to
+# tell apart: numeric part codes, sizes, grades and directions.
+_DECOY_KINDS: tuple[tuple[str, str, str], ...] = (
+    ("part_number",  "Bearing 6203 Deep Groove",     "Bearing 6204 Deep Groove"),
+    ("size_number",  "Ball Bearing Steel 5",         "Ball Bearing Steel 10"),
+    ("size_code",    "Hex Bolt Stainless M8",        "Hex Bolt Stainless M10"),
+    ("grade_word",   "Ball Bearing Steel 10",        "Ball Bearing Carbon Steel 10"),
+    ("grade_code",   "Ball Bearing Steel 304",       "Ball Bearing Steel 316"),
+    ("direction",    "Coupling Precision Left Hand", "Coupling Precision Right Hand"),
+)
 
 
 # --- small predicate evaluation, only what the injector needs -----------------
@@ -671,29 +701,141 @@ def _inject_consistency(
             ))
 
 
-_PERTURBATIONS: tuple[str, ...] = ("upper", "trail_space", "punct", "swap")
+# Every near-copy change the injector can apply. The name of the change stays on
+# the twin's label so the score spread can be reported by strategy in Package
+# 4e's evaluation. The four v0.1 strategies all normalise back to the source
+# text and score near 1.00; the four v0.5 strategies are sized to land LOWER,
+# so the uncertain band and the adjudicator have real work to do.
+_PERTURBATIONS: tuple[str, ...] = (  # v0.5
+    "upper", "trail_space", "punct", "swap",
+    "abbrev", "word_order", "unit_word", "unit_symbol",
+)
+
+# A small dictionary of abbreviations used by the "abbrev" strategy. Both
+# directions are drawn from the same source so the abbreviator can pick either
+# way at random. The keys are matched in the normalised (lower-case) text.
+_ABBREVIATIONS: tuple[tuple[str, str], ...] = (  # v0.5
+    ("stainless steel", "ss"),
+    ("carbon steel", "cs"),
+    ("cast steel", "cast"),
+    ("precision", "prec"),
+    ("heavy duty", "hd"),
+    ("high speed", "hs"),
+    ("industrial", "ind"),
+    ("reinforced", "reinf"),
+    ("aluminium", "al"),
+    ("modular", "mod"),
+    ("standard", "std"),
+    ("compact", "comp"),
+)
 
 
-def _perturb(text: str, rng: np.random.Generator) -> str:
-    """Return a near-duplicate variant of a description."""
+def _apply_abbrev(text: str, rng: np.random.Generator) -> str:
+    """Swap a long word or phrase for its short form, or the reverse.
+
+    Two materials that mean the same thing look different: "Pump Precision
+    Stainless Steel 123" against "Pump Prec SS 123". Fuzzy scoring drops as
+    the letters change; semantic scoring should hold up, and 4g will show
+    whether it does.
+    """
+    lower: str = text.lower()
+    long_form: str = ""
+    short_form: str = ""
+
+    for long_form, short_form in _ABBREVIATIONS:
+        if long_form in lower:
+            return _preserve_case(text, long_form, short_form)
+        if f" {short_form} " in f" {lower} ":
+            return _preserve_case(text, short_form, long_form)
+    # No abbreviatable word in this description. Fall back to a text change
+    # that still scores below 1.00 rather than returning the source unchanged.
+    return text.replace(" ", "  ", 1)
+
+
+def _preserve_case(text: str, from_form: str, to_form: str) -> str:
+    """Case-insensitive replace that keeps the surrounding text as it was."""
+    lower: str = text.lower()
+    pos: int = lower.find(from_form)
+    if pos < 0:
+        return text
+    return text[:pos] + to_form + text[pos + len(from_form):]
+
+
+def _apply_word_order(text: str, rng: np.random.Generator) -> str:
+    """Move a word from one end of the description to the other.
+
+    "Pump Precision Steel 123" -> "Steel Pump Precision 123". The fuzzy
+    score drops sharply because the prefix changes; the semantic score
+    should stay high, which is the whole point of the semantic rung.
+    """
+    words: list[str] = text.split()
+    if len(words) < 3:
+        return text
+    return " ".join([words[-2]] + words[:-2] + [words[-1]])
+
+
+def _apply_unit_word(text: str, rng: np.random.Generator) -> str:
+    """Swap 'inches' for 'in', 'millimeters' for 'mm', and the reverse."""
+    replacements: tuple[tuple[str, str], ...] = (
+        ("inches", "in"), ("inch", "in"),
+        ("millimeters", "mm"), ("millimetres", "mm"), ("millimeter", "mm"),
+        ("centimeters", "cm"),
+    )
+    lower: str = text.lower()
+    long_form: str = ""
+    short_form: str = ""
+
+    for long_form, short_form in replacements:
+        if long_form in lower:
+            return _preserve_case(text, long_form, short_form)
+    return text + " mm"
+
+
+def _apply_unit_symbol(text: str, rng: np.random.Generator) -> str:
+    """Swap 'inches' for the symbol, and 'degrees' for the symbol."""
+    if "inches" in text.lower():
+        return _preserve_case(text, "inches", '"')
+    if "inch" in text.lower():
+        return _preserve_case(text, "inch", '"')
+    if "degrees" in text.lower():
+        return _preserve_case(text, "degrees", "deg")
+    return text + '"'
+
+
+def _perturb(text: str, rng: np.random.Generator) -> tuple[str, str]:  # v0.5
+    """Return the near-copy AND the name of the change.
+
+    The name goes on the twin's label so the score spread report can group by
+    it. Returning a tuple keeps the change name from being lost between the
+    injector and the label.
+    """
     strategy: str = str(rng.choice(_PERTURBATIONS))
     chars: list[str] = []
     pos: int = 0
 
     if not text:
-        return text
+        return text, strategy
     if strategy == "upper":
-        return text.upper()
+        return text.upper(), strategy
     if strategy == "trail_space":
-        return text + "  "
+        return text + "  ", strategy
     if strategy == "punct":
-        return text.replace(" ", " - ", 1)
-    # swap two adjacent characters
-    chars = list(text)
-    if len(chars) >= 4:
-        pos = int(rng.integers(0, len(chars) - 1))
-        chars[pos], chars[pos + 1] = chars[pos + 1], chars[pos]
-    return "".join(chars)
+        return text.replace(" ", " - ", 1), strategy
+    if strategy == "swap":
+        chars = list(text)
+        if len(chars) >= 4:
+            pos = int(rng.integers(0, len(chars) - 1))
+            chars[pos], chars[pos + 1] = chars[pos + 1], chars[pos]
+        return "".join(chars), strategy
+    if strategy == "abbrev":
+        return _apply_abbrev(text, rng), strategy
+    if strategy == "word_order":
+        return _apply_word_order(text, rng), strategy
+    if strategy == "unit_word":
+        return _apply_unit_word(text, rng), strategy
+    if strategy == "unit_symbol":
+        return _apply_unit_symbol(text, rng), strategy
+    return text, strategy
 
 
 def _inject_uniqueness(
@@ -735,8 +877,9 @@ def _inject_uniqueness(
                 makt_row = makt_src.iloc[0].to_dict()
                 original_desc = makt_row.get("MAKTX", "")
                 makt_row["MATNR"] = twin_matnr
-                makt_row["MAKTX"] = _perturb(str(original_desc), rng)
-                makt_row["MAKTG"] = str(makt_row["MAKTX"]).upper()
+                new_maktx, strategy = _perturb(str(original_desc), rng)  # v0.5
+                makt_row["MAKTX"] = new_maktx  # v0.5
+                makt_row["MAKTG"] = str(new_maktx).upper()
                 new_makt.append(makt_row)
 
         if marc is not None:
@@ -755,7 +898,7 @@ def _inject_uniqueness(
             rule_id=None,
             original_value=source_matnr,
             corrupted_value=twin_matnr,
-            detail={"duplicate_of": source_matnr},
+            detail={"duplicate_of": source_matnr, "strategy": strategy},  # v0.5
         ))
 
     if new_mara:
@@ -767,6 +910,96 @@ def _inject_uniqueness(
 
 
 # --- orchestration ------------------------------------------------------------
+
+def _inject_decoys(  # v0.5
+    frames: dict[str, pd.DataFrame],
+    count: int,
+    rng: np.random.Generator,
+) -> list[dict[str, str]]:
+    """Plant decoy pairs. A decoy is TWO DIFFERENT MATNRs given a confusable
+    description, so the deterministic ladder joins them and the adjudicator
+    has to catch that they are two different materials.
+
+    Only descriptions are changed. The two records already share MTART and
+    MEINS in the block they were picked from, so blocking passes them through
+    to scoring.
+
+    Returns the list of decoy pairs, so the caller can write them to
+    decoys.json. Nothing goes into DefectLabel: a decoy is not a defect, it is
+    a correct pair that the ladder is expected to fail on. Mixing the two
+    would force every consumer to check a boolean before trusting the label.
+    """
+    mara: pd.DataFrame = frames.get("MARA")
+    makt: pd.DataFrame = frames.get("MAKT")
+    pairs: list[dict[str, str]] = []
+    block_index: dict[tuple, list[int]] = {}
+    key_field: str = ""
+    row: dict = {}
+    idx: int = 0
+    block_key: tuple = ()
+    used_matnrs: set[str] = set()
+    kind_index: int = 0
+    kind: str = ""
+    text_left: str = ""
+    text_right: str = ""
+    candidates: list[tuple] = []
+    left_row: int = 0
+    right_row: int = 0
+    matnr_left: str = ""
+    matnr_right: str = ""
+
+    if mara is None or makt is None or count <= 0:
+        return pairs
+
+    # Every MARA row that is NOT a twin is a candidate. A twin's presence would
+    # add a real duplicate to the decoy pair and confuse the evaluation.
+    for idx, row in mara.reset_index().iterrows():
+        if str(row["MATNR"]).startswith("9"):
+            continue
+        block_key = (str(row.get("MTART", "")).strip(), str(row.get("MEINS", "")).strip())
+        block_index.setdefault(block_key, []).append(int(row["index"]))
+
+    for kind_index in range(count):
+        kind, text_left, text_right = _DECOY_KINDS[kind_index % len(_DECOY_KINDS)]
+        candidates = [rows for rows in block_index.values() if len(rows) >= 2]
+        if not candidates:
+            break
+        block_key_rows = candidates[int(rng.integers(0, len(candidates)))]
+        left_row = int(rng.choice(block_key_rows))
+        right_row = int(rng.choice([row for row in block_key_rows if row != left_row]))
+        matnr_left = str(mara.at[left_row, "MATNR"])
+        matnr_right = str(mara.at[right_row, "MATNR"])
+        if matnr_left in used_matnrs or matnr_right in used_matnrs:
+            continue
+        # Do not OVERWRITE existing MAKTX values that carry ground-truth
+        # labels: a decoy must not rewrite a null cell into text, or a
+        # completeness label points at a value that is no longer missing.
+        left_maktx = makt.loc[makt["MATNR"] == matnr_left, "MAKTX"]
+        right_maktx = makt.loc[makt["MATNR"] == matnr_right, "MAKTX"]
+        if left_maktx.empty or right_maktx.empty:
+            continue
+        if left_maktx.isna().any() or right_maktx.isna().any():
+            continue
+        if str(left_maktx.iloc[0]).strip() == "" or str(right_maktx.iloc[0]).strip() == "":
+            continue
+        used_matnrs.add(matnr_left)
+        used_matnrs.add(matnr_right)
+
+        makt.loc[makt["MATNR"] == matnr_left, "MAKTX"] = text_left
+        makt.loc[makt["MATNR"] == matnr_left, "MAKTG"] = text_left.upper()
+        makt.loc[makt["MATNR"] == matnr_right, "MAKTX"] = text_right
+        makt.loc[makt["MATNR"] == matnr_right, "MAKTG"] = text_right.upper()
+
+        pairs.append({
+            "kind": kind,
+            "left_matnr": matnr_left,
+            "left_maktx": text_left,
+            "right_matnr": matnr_right,
+            "right_maktx": text_right,
+            "block": {"MTART": mara.at[left_row, "MTART"], "MEINS": mara.at[left_row, "MEINS"]},
+        })
+    return pairs
+
 
 def _reconcile_consistency_labels(  # v0.5
     frames: dict[str, pd.DataFrame],
@@ -824,8 +1057,10 @@ def inject_defects(
     scenario: str = "degraded",
     seed: int = 42,
     rates: Optional[dict[str, float]] = None,
-) -> tuple[dict[str, pd.DataFrame], list[DefectLabel], dict[str, Any]]:
-    """Conform the baseline, inject labelled defects, and return everything."""
+    decoy_count: Optional[int] = None,  # v0.5
+) -> tuple[dict[str, pd.DataFrame], list[DefectLabel], dict[str, Any], list[dict[str, str]]]:  # v0.5
+    """Conform the baseline, inject labelled defects, plant decoy pairs, and
+    return everything the caller needs to persist."""
     frames: dict[str, pd.DataFrame] = deepcopy(baseline)
     rng: np.random.Generator = np.random.default_rng(seed)
     grouped: dict[str, list[RuleSpec]] = _group_rules(rules, schemas)  # v0.3
@@ -855,8 +1090,15 @@ def inject_defects(
     _inject_consistency(frames, grouped["consistency"], dim_rates["consistency"], rng, schemas, used, labels)
     _reconcile_consistency_labels(frames, grouped["consistency"], schemas, labels)  # v0.5
 
+    decoys: list[dict[str, str]] = _inject_decoys(  # v0.5
+        frames,
+        count=decoy_count if decoy_count is not None else DECOY_COUNT.get(scenario, 0),
+        rng=rng,
+    )
+
     manifest: dict[str, Any] = _manifest(scenario, seed, dim_rates, grouped, labels)
-    return frames, labels, manifest
+    manifest["decoy_count"] = len(decoys)  # v0.5
+    return frames, labels, manifest, decoys  # v0.5
 
 
 def _manifest(
@@ -894,9 +1136,11 @@ def _persist(
     frames: dict[str, pd.DataFrame],
     labels: list[DefectLabel],
     manifest: dict[str, Any],
+    decoys: list[dict[str, str]],  # v0.5
     out_dir: Path,
 ) -> None:
-    """Write corrupted tables, the ground-truth labels and the manifest."""
+    """Write corrupted tables, the ground-truth labels, the decoys and the
+    manifest."""
     out_dir.mkdir(parents=True, exist_ok=True)
     table: str = ""
     frame: pd.DataFrame = None
@@ -908,8 +1152,11 @@ def _persist(
     labels_frame.to_parquet(out_dir / "ground_truth.parquet", index=False)
     with (out_dir / "manifest.json").open("w", encoding="utf-8") as handle:
         json.dump(manifest, handle, indent=2)
+    with (out_dir / "decoys.json").open("w", encoding="utf-8") as handle:  # v0.5
+        json.dump(decoys, handle, indent=2)  # v0.5
 
     print(f"wrote corrupted dataset and {len(labels)} labels to {out_dir}")
+    print(f"decoys: {len(decoys)} pair(s)")
     for dimension, count in manifest["defects_by_dimension"].items():
         print(f"  {dimension}: {count} defects")
 
@@ -942,8 +1189,8 @@ def main() -> None:
     baseline: dict[str, pd.DataFrame] = _load_baseline(args.baseline, table_list)
     schemas: dict[str, TableSchema] = load_schemas(args.schema, table_list)
     rules: list[RuleSpec] = load_rules(args.rules)
-    frames, labels, manifest = inject_defects(baseline, schemas, rules, args.scenario, args.seed)
-    _persist(frames, labels, manifest, Path(args.out))
+    frames, labels, manifest, decoys = inject_defects(baseline, schemas, rules, args.scenario, args.seed)  # v0.5
+    _persist(frames, labels, manifest, decoys, Path(args.out))  # v0.5
 
 
 if __name__ == "__main__":

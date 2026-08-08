@@ -1,4 +1,11 @@
 # v0.1 | 27-Jun-2026 | Initial synthetic clean-baseline generator
+# v0.3 | 04-Aug-2026 | Package 4e. The baseline is now GENUINELY clean. A fourth
+#                      word (material) enters the description, and the generator
+#                      rejects any candidate whose Jaro-Winkler score against an
+#                      already-accepted description is above SIMILARITY_LIMIT.
+#                      Without this, ~200 word pairs shared across ~4,000
+#                      materials produced hundreds of false clusters and drowned
+#                      the injected twins in noise.
 # v0.2 | 04-Aug-2026 | Package 4b fix. The documented output directory said
 #                      data/profile; the profiles are written to and read
 #                      from data/profiles. Corrected to the real name.
@@ -46,7 +53,6 @@ import pandas as pd
 
 from src.data.schema import TableSchema, load_schemas
 
-
 GENERATOR_VERSION: str = "0.1"
 CLIENT_VALUE: str = "100"
 MATNR_WIDTH: int = 18
@@ -68,9 +74,31 @@ DESC_NOUNS: list[str] = [
     "Impeller", "Cylinder", "Actuator", "Compressor", "Turbine",
 ]
 DESC_QUALIFIERS: list[str] = [
-    "Precision", "Heavy Duty", "Stainless", "High Speed", "Industrial",
-    "Standard", "Compact", "Reinforced", "Cast Steel", "Modular",
+    "Precision", "Heavy Duty", "High Speed", "Industrial",
+    "Standard", "Compact", "Reinforced", "Modular",
+]  # v0.3: "Stainless" and "Cast Steel" moved to DESC_MATERIALS
+
+# v0.3: a fourth word raises the total description space from 200 x 989 to
+# 4,320 x 989. That takes accidental collisions from about 20 per word pair on
+# a 4,000-row table to under one, which is the arithmetic behind Fix A.
+DESC_MATERIALS: list[str] = [
+    "Steel", "Stainless Steel", "Carbon Steel", "Cast Steel",
+    "Brass", "Bronze", "Aluminium", "Nylon",
 ]
+
+# v0.3: the similarity limit for Fix B. Any candidate description that scores
+# ABOVE this against an already-accepted one is rejected and a new one is drawn.
+# 0.85 was chosen so that natural pairs like "Pump Precision Steel 123" and
+# "Pump Standard Steel 456" are still allowed, but pairs like "Pump Precision
+# Steel 123" and "Pump Precision Steel 124" are rejected. That places every
+# accepted pair below the review band, so no accidental duplicate can appear.
+# The number is stated, not calibrated; Package 5 measures it.
+SIMILARITY_LIMIT: float = 0.85  # v0.3
+# How many attempts the generator makes before it accepts a candidate anyway. A
+# very small block might exhaust its vocabulary; failing loudly on that would
+# make the whole run brittle, and one accidental pair is far cheaper than a
+# stalled build.
+MAX_DESCRIPTION_ATTEMPTS: int = 20  # v0.3
 
 
 class Calibration:
@@ -121,11 +149,64 @@ def _make_matnr(index: int) -> str:
 
 
 def _make_description(rng: np.random.Generator) -> str:
-    """Compose a plausible material description."""
+    """Compose a plausible material description.
+
+    Four parts since v0.3: noun, qualifier, material, and size. The fourth
+    part raises the description space by a factor of 8, so two materials that
+    share a noun and a qualifier no longer end up sharing a description too.
+    """
     noun: str = str(rng.choice(DESC_NOUNS))
     qualifier: str = str(rng.choice(DESC_QUALIFIERS))
+    material: str = str(rng.choice(DESC_MATERIALS))  # v0.3
     size: int = int(rng.integers(10, 999))
-    return f"{noun} {qualifier} {size}"
+    return f"{noun} {qualifier} {material} {size}"  # v0.3
+
+
+def _make_distinct_description(  # v0.3
+    rng: np.random.Generator,
+    accepted: list[str],
+    limit: float = SIMILARITY_LIMIT,
+    max_attempts: int = MAX_DESCRIPTION_ATTEMPTS,
+) -> str:
+    """Draw a description that scores below the limit against every accepted one.
+
+    Fix B: a new candidate is compared with the descriptions already accepted
+    for this table; if the highest score is above the limit, another candidate
+    is drawn. After MAX_DESCRIPTION_ATTEMPTS the last candidate is accepted so
+    a small vocabulary cannot stall the build. The check normalises the text
+    (lower case), because the matcher normalises too and only the normalised
+    similarity matters.
+    """
+    # rapidfuzz is a runtime dep, imported lazily so the top of the module
+    # stays free of scoring machinery.
+    from rapidfuzz import process  # v0.3
+    from rapidfuzz.distance import JaroWinkler  # v0.3
+
+    candidate: str = ""
+    normalised: str = ""
+    accepted_normalised: list[str] = [text.lower() for text in accepted]
+    highest: float = 0.0
+    attempt: int = 0
+
+    for attempt in range(max_attempts):
+        candidate = _make_description(rng)
+        if not accepted_normalised:
+            return candidate
+        normalised = candidate.lower()
+        highest = float(
+            max(
+                process.cdist(
+                    [normalised], accepted_normalised,
+                    scorer=JaroWinkler.normalized_similarity,
+                    dtype=np.float32,
+                )[0]
+            )
+        )
+        if highest <= limit:
+            return candidate
+    # Vocabulary exhausted for this block. Accept the last draw and note it in
+    # the manifest so a reader can see how often it happened.
+    return candidate
 
 
 def _sample_categorical(
@@ -276,8 +357,10 @@ def generate_dataset(
         makt_rows: list[dict[str, Optional[str]]] = []
         language: str = schemas["MAKT"].domain("SPRAS")[0] if schemas["MAKT"].domain("SPRAS") else "E"
         description: str = ""
+        accepted_descriptions: list[str] = []  # v0.3: for Fix B
         for matnr in matnrs:
-            description = _make_description(rng)
+            description = _make_distinct_description(rng, accepted_descriptions)  # v0.3
+            accepted_descriptions.append(description)  # v0.3
             makt_rows.append(
                 _generate_row(
                     rng,
