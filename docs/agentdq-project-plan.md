@@ -33,22 +33,28 @@ design, not as a plan.
 
 ## Build Status
 
-**Delivery status (04-Aug-2026): Packages 1, 2 and 3 complete; Package 4 in
-build.** The agentic
-loop closes end to end - an agent suggests a rule, a human governs it at the
-approval gate, and the approved rule is executable - now orchestrated as two
-LangGraph graphs (a suggestion graph and an assessment graph joined by the
-repository). The assessment graph fans the three deterministic dimensions out
-in parallel and routes cross-agent advisories to the downstream uniqueness
-stage. Package 4 (Uniqueness and Remediation) is designed and its first
-two steps are built. The uniqueness settings now live in the table schema
-(blocking on MTART and MEINS, weighted compare fields, methods, bands), with
-wrong settings failing while the file is read rather than deep inside a scoring
-loop. Advice between agents is now a small structured record rather than a
-sentence, and a validity finding on a description holds that RECORD out of
-deduplication instead of dropping the description as a signal. The semantic
-vectors are built in a batch step and written beside their dataset. The suite
-stands at 153 passing tests, 0 skipped, all offline. The first two AgentDQ
+**Delivery status (05-Aug-2026): Packages 1, 2 and 3 complete; Package 4 in
+build - five of eight steps done (4a to 4e).** The agentic loop closes end to
+end: an agent suggests a rule, a human governs it at the approval gate, and the
+approved rule is executable, orchestrated as two LangGraph graphs (a suggestion
+graph and an assessment graph joined by the repository). The assessment graph
+fans the three deterministic dimensions out in parallel and routes structured
+advisories to the downstream Uniqueness stage.
+
+Package 4 (Uniqueness and Remediation) is designed. Five of the eight steps are
+built: the uniqueness settings live in the table schema; advice between agents
+travels as a small structured record; a validity finding on a description or
+blocking key holds the RECORD out of deduplication; the semantic vectors are
+built in a batch step and written beside their dataset; the matcher produces
+scored duplicate clusters with a recommended survivor; the data is honest to
+measure against, with the baseline genuinely clean, 28 decoy pairs planted, and
+a dedicated evaluator that reports twin recall, decoy error rate and unlabelled
+joins. A late fuzzy-method review replaced the MARA default (jaro_winkler to
+token_sort_ratio), which cut the decoy error rate from 78% to 39% and moved
+word_order recall from 0 of 41 to 24 of 41. Three steps remain: the dashboard
+on the graph (4f), the adjudicator with the shared LM setup (4g), and
+remediation with its dashboard tab (4h). The suite stands at 202 passing
+tests, 0 skipped, all offline. The first two AgentDQ
 LinkedIn articles are ready to write: Package 2's ("the agent proposes, the
 human disposes") and Package 3's ("where I put the human in the loop, and why").
 The delivery breakdown, the remaining packages, and the per-package designs live
@@ -82,6 +88,8 @@ Uniqueness settings (v0.4)    src/data/schema.py, config/schema/  done
 Structured advisories         src/agents/uniqueness_settings.py   done
 Shared text normaliser        src/agents/text_normaliser.py       done
 Semantic vectors (batch)      tools/build_embeddings.py           done
+Uniqueness matcher            src/agents/uniqueness.py            done
+Uniqueness evaluator          src/reporting/uniqueness_eval.py    done
 ```
 
 What the pilot demonstrates today:
@@ -101,24 +109,135 @@ Core" below):
 ```
 Item                                       Notes
 -----------------------------------------  ----------------------------------
-Reposition IS rules as a rule bank         templates/priors, not active set
-Profiling Agent (DSPy)                     interpret the profile; feed suggestion
-Rule Suggestion Agent (DSPy)               centrepiece: bank-match + inference
-Rules repository + approval lifecycle      approved / versioned store
-Approval + authoring UI                    Streamlit: review, edit, add per dim
-Execution reads approved repository        agents point at approved rules
-Remediation Agent (DSPy)                   grouped findings -> ranked actions
-Uniqueness agent                           block, score, cluster, then a model
-                                           on the uncertain band only
+Package 4 remaining (see WBS below)        4f: dashboard on the graph
+                                           4g: adjudicator + shared LM setup
+                                           4h: remediation + dashboard tab
 Timeliness agent + defect stub             needs MARA date fields (re-export in)
-Accuracy agent (DSPy)                       LLM judgement on real-world truth
-LangGraph orchestrator                      wire the flow with the human gate
-MLflow experiment tracking                  suggestion quality + per-run scores
+Accuracy agent (DSPy)                      LLM judgement on real-world truth
+MLflow experiment tracking                 suggestion quality + per-run scores
 ```
+
+Note: the earlier "Still to build" list has been thinned. Items delivered by
+Packages 1 to 3 (rule bank, profiling agent, suggestion agent, approval gate,
+authoring UI, approved-rules execution, LangGraph orchestrator) are done and
+recorded in the "Done" table above. The Uniqueness agent is done under Package
+4d. Remaining work is either inside Package 4 (see the WBS below), or is a
+future package.
 
 Note: the Consistency agent is now built (deterministic execution layer). The
 three execution-layer agents (Completeness, Validity, Consistency) are complete
 and scored at 1.000; the pivot adds the agentic layer around them.
+
+### Package 4 - Work Breakdown Structure
+
+The eight steps of Package 4, with status, output files and a one-line summary
+of what each delivered. This WBS is the plan we work to for the rest of the
+package; the wider design of Package 4 lives in `agentdq_design.md` section 5.
+
+```
+Step   Status       Output files                          What it delivered
+-----  -----------  ------------------------------------  ---------------------------
+4a     done         config/schema/mara.yaml               Uniqueness settings live in
+                    src/data/schema.py                    the table schema. Wrong
+                                                          settings fail at load time,
+                                                          not deep in a scoring loop.
+
+4b     done         src/agents/uniqueness_settings.py     Advice between agents is a
+                    src/graph_nodes.py                    small structured record
+                    src/state.py                          rather than a sentence. A
+                    src/contracts.py                      validity finding on a
+                                                          compare field or a blocking
+                                                          key holds the RECORD out of
+                                                          deduplication.
+
+4c     done         src/agents/text_normaliser.py         The shared normaliser that
+                    src/agents/embedding_store.py         both scoring rungs use, and
+                    tools/build_embeddings.py             the batch builder for the
+                                                          semantic vectors. Each file
+                                                          is stored beside its dataset
+                                                          with an identity code and a
+                                                          content code, so stale or
+                                                          foreign vectors are refused.
+
+4d     done         src/agents/uniqueness.py              The matcher: block, score,
+                    src/reporting/scorecard.py            cluster, choose a survivor.
+                    src/reporting/assessment.py           Uniqueness now runs BEFORE
+                    src/orchestrator.py                   the scorecard, a dimension
+                                                          states its own denominator,
+                                                          and one dimension list
+                                                          became two so uniqueness is
+                                                          scored without being
+                                                          measured against a ground
+                                                          truth that has no opinion
+                                                          on survivorship.
+
+4e     done         src/data/generator.py                 The clean baseline is now
+                    src/data/defect_injector.py           genuinely clean: a fourth
+                    src/reporting/uniqueness_eval.py      description word and a
+                    tools/run_assessment_graph.py         similarity limit under 0.85
+                                                          remove the accidental
+                                                          duplicates that would have
+                                                          drowned the injected twins.
+                                                          The injector has four
+                                                          harder near-copies, writes
+                                                          the change name on every
+                                                          twin label, and plants 28
+                                                          decoy pairs. The evaluator
+                                                          reports twin recall, decoy
+                                                          error rate (headline
+                                                          precision), unlabelled
+                                                          joins, and the score
+                                                          spread by change strategy.
+
+4f     not started  (planned) app/dashboard.py            The dashboard moves onto
+                    (planned) src/reporting/assessment.py the graph. New tabs:
+                                                          Duplicates (clusters,
+                                                          survivors, weakest link)
+                                                          and Settings (read-only:
+                                                          bands, blocking keys,
+                                                          advisories in force, the
+                                                          settings code).
+
+4g     not started  (planned) src/dspy_modules/lm_config  The adjudicator: a shared
+                    (planned) src/agents/adjudicator.py   language-model config for
+                                                          every DSPy program in the
+                                                          repo, plus the DSPy
+                                                          signature that judges an
+                                                          uncertain pair or cluster.
+                                                          Cluster-level judgement is
+                                                          the working design.
+
+4h     not started  (planned) src/agents/remediation.py   The Remediation agent
+                    (planned) app/dashboard.py            groups findings into ranked
+                                                          actions, and its dashboard
+                                                          tab lets a steward see the
+                                                          plan for a run.
+```
+
+**Late change: the MARA fuzzy method.** During 4e testing, a review of the fuzzy
+method for MARA showed that `jaro_winkler` was the wrong default: it flattered
+pairs that shared a starting word and missed pairs that shared an ending. The
+default moved to `token_sort_ratio`, which cut the decoy error rate from 78% to
+39% and moved word_order twin recall from 0 of 41 to 24 of 41. This was one
+line in `config/schema/mara.yaml`. It sits alongside 4e in the work log.
+
+**Deferred items from the Package 4 build.** Five items came out during Package
+4 but were held back so Package 4 could ship. They are recorded in
+`agentdq_design.md` section 6.4, and moved into Package 5's plan:
+
+1. Attribute veto (extract 6203 vs 6204, "Steel" vs "Brass", cap the score
+   when they disagree). Now a Package 5 sub-step, because the decoy error rate
+   cannot fall below 30% without it.
+2. Character n-gram TF-IDF for candidate retrieval (a speed improvement for
+   customer-sized data).
+3. A steward score-report CLI tool (so a steward sets the bands from evidence,
+   not from a hunch).
+4. Soft TF-IDF and Monge-Elkan measurement (waiting on `py_stringmatching`
+   compatibility with Python 3.14).
+5. Narrower band setting (0.92 / 0.95), now measurable on the new score spread.
+
+For every future package: the WBS is set when the package is broken down. The
+project plan is updated with it before any code is written.
 
 ---
 

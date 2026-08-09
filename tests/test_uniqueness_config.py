@@ -211,7 +211,9 @@ def test_the_shipped_mara_schema_loads_and_carries_the_agreed_dials():
     config = schema.uniqueness
     assert config.blocking_keys == ["MTART", "MEINS"]
     assert [entry.field for entry in config.compare_fields] == ["MAKT.MAKTX"]
-    assert config.methods.fuzzy.metric == "jaro_winkler"
+    # Uniqueness fuzzy method: token_sort_ratio since Package 4f preparation.
+    # See config/schema/mara.yaml for why and for the alternatives allowed.
+    assert config.methods.fuzzy.metric == "token_sort_ratio"
     assert config.bands.duplicate == 0.92
     assert config.bands.review_low == 0.8
 

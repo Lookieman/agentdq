@@ -6,12 +6,7 @@ spot. Versions are the latest change-log entry at the top of each file at the
 time of writing; treat them as a snapshot for verifying your working tree is in
 sync, not as a live value.
 
-*Updated 04-Aug-2026 (Package 4e - the data and its measurement): the baseline
-generator is genuinely clean, the injector has four harder near-copies and
-plants 28 decoy pairs, and a new evaluator reports twin recall, decoy error
-rate, unlabelled joins and the score spread by change. Twin labels now carry
-the strategy that made them, so Package 5 can see where each change lands.
-Prior update 04-Aug-2026 (Package 4c - the embeddings artefact): a shared text
+*Updated 04-Aug-2026 (Package 4c - the embeddings artefact): a shared text
 normaliser now decides what text BOTH scoring rungs see, and the batch builder
 writes one vector file per compare field BESIDE its dataset. Each file carries
 an identity code (model, field, language, normalisation) and a content code (the
@@ -170,7 +165,7 @@ src/graph_nodes.py     v1.2   Thin node functions (unpack -> run() -> pack) and
                               rather than sentences, replaces signal suppression
                               with record exclusion, and makes the uniqueness
                               stub resolve real settings
-src/orchestrator.py    v1.1   Both compiled StateGraphs; the three-dimension
+src/orchestrator.py    v1.0   Both compiled StateGraphs; the three-dimension
                               parallel fan-out with a join at aggregate
 ```
 
@@ -183,14 +178,9 @@ design doc 4.3).
 ```
 Path                           Ver    Purpose
 -----------------------------  -----  ------------------------------------------
-src/reporting/scorecard.py     v0.2   DQ scorecard, ground-truth evaluation,
-                                      v0.2: a dimension can state its OWN
-                                      denominator and its excluded count
+src/reporting/scorecard.py     v0.1   DQ scorecard, ground-truth evaluation,
                                       console rendering
-src/reporting/assessment.py    v0.3   Shared assess() used by CLI and dashboard.
-                                      v0.3: ONE dimension list became TWO, so
-                                      Uniqueness is scored without being
-                                      measured record by record
+src/reporting/assessment.py    v0.1   Shared assess() used by CLI and dashboard
 ```
 
 ## Application
@@ -234,7 +224,7 @@ tools/run_suggestion.py    v1.2   Batch runner: profile -> interpret -> suggest
                                   the LM (loads .env, --model flag)
 tools/run_suggestion_graph.py  v1.0  Suggestion graph runner (LangGraph); reuses
                                      run_suggestion's helpers
-tools/run_assessment_graph.py  v1.3  Assessment graph runner (LangGraph): the
+tools/run_assessment_graph.py  v1.1  Assessment graph runner (LangGraph): the
                                      parallel dimension fan-out, real scorecard;
                                      no-checks guard (0 rules -> warn, not 100%)
 tools/interrupt_example.py     v1.0  The LangGraph interrupt() primitive AgentDQ
@@ -258,16 +248,11 @@ tests/test_repository_smoke.py           v1.0   Lifecycle, ledger, session
                                                 isolation, the full closed loop
 tests/test_onboarding_smoke.py           v2.0   Schema onboarding config + the
                                                 scaffolder on a synthetic EQKT
-tests/test_orchestrator_smoke.py         v1.3   Both graphs; assessment fan-out
+tests/test_orchestrator_smoke.py         v1.2   Both graphs; assessment fan-out
                                                 with the real executor;
                                                 advisories; the no-checks guard.
                                                 v1.1 fixture uses blocking_keys
-tests/test_uniqueness_agent.py           v1.0   The matcher: blocking, scoring,
-                                                chaining, survivorship, the
-                                                records held back and the
-                                                fuzzy-only fallback. Two tests
-                                                are named after bugs they caught
-tests/test_embeddings.py                 v1.1   The shared normaliser and the
+tests/test_embeddings.py                 v1.0   The shared normaliser and the
                                                 embeddings builder. Offline: a
                                                 small fake encoder stands in for
                                                 the model. Checks an artefact's
@@ -288,7 +273,7 @@ tests/test_uniqueness_config.py          v1.0   Schema v0.4 uniqueness dials:
                                                 config/schema/mara.yaml
 ```
 
-Test position: 181 tests pass and 0 are skipped. This number is MEASURED each
+Test position: 153 tests pass and 0 are skipped. This number is MEASURED each
 time, not carried forward. A stale "84 passing, 1 skipped" sat in this file for
 several packages while seven tests skipped in silence, because the pipeline test
 looked for the profiles in data/profile and they live in data/profiles. A
@@ -418,6 +403,7 @@ tools/__init__.py          tests/__init__.py            app/__init__.py
   text, score a perfect match against each other, and would otherwise form ONE
   cluster of genuinely different materials that the survivorship rules would
   merge automatically.
+- **Every schema dial gets listed options and a stated reason for its default.** The Jaro-Winkler default was chosen without either, and the cost showed several packages later when the review found it flattered prefix matches and missed suffix matches. Package 4f-prep moved MARA to `token_sort_ratio`; the alternatives sit in a comment above the setting in `config/schema/mara.yaml`.
 - **Uniqueness settings fail at load time, not at run time.** A wrong dial in a
   schema YAML raises a clear error while the file is being read: bands out of
   order, an unknown fuzzy metric, both methods weighted zero, a compare field

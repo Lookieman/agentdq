@@ -13,9 +13,20 @@ uniqueness:
   compare_fields:
   - field: MAKT.MAKTX
     weight: 1.0
+  # Fuzzy method: token_sort_ratio (rapidfuzz).
+  # Sorts the words in each description, then measures the edit similarity.
+  # Chosen because it handles word-order changes ("Steel Pump 123" vs
+  # "Pump Steel 123") and has no built-in prefix bias. Jaro-Winkler was the
+  # earlier default, but it flattered pairs that shared a starting word
+  # (a "Pump Precision Steel 123" vs "Pump Precision Brass 456" case) and
+  # missed pairs that shared an ending. Alternatives allowed at this key are:
+  #   ratio            classic Levenshtein similarity, sensitive to order
+  #   token_set_ratio  ignores repeated words; risks false positives when the
+  #                    difference is one added qualifier
+  #   jaro_winkler     the earlier default; kept for comparison runs
   methods:
     fuzzy:
-      metric: jaro_winkler
+      metric: token_sort_ratio
       weight: 0.5
     semantic:
       model: all-MiniLM-L6-v2
