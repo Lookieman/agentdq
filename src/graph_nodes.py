@@ -16,6 +16,14 @@
 #                      exclusion: a description that failed validity holds its
 #                      record out of deduplication, which also stops a large
 #                      false cluster of placeholder descriptions forming.
+# v1.4 | 10-Aug-2026 | Package 4f. Two gaps closed. scorecard_node now passes
+#                      dimension_totals, so the per-dimension denominator built
+#                      in 4d finally reaches the scorecard; without it the
+#                      Uniqueness score divided its findings by every row of
+#                      every loaded table and read far better than the truth.
+#                      uniqueness_node also passes the LIST of candidate pairs,
+#                      not only their count, because the screen and the
+#                      adjudicator (4g) both need the pairs themselves.
 # v1.3 | 04-Aug-2026 | Package 4d. The real Uniqueness agent replaces the stub.
 #                      Record exclusion now covers the BLOCKING keys as well as
 #                      the compare fields: a wrong MTART or MEINS puts a record
@@ -164,9 +172,39 @@ def aggregate_node(state: dict[str, Any]) -> dict[str, Any]:
     return {}
 
 
+def dimension_totals(agent_results: list[dict[str, Any]]) -> dict[str, dict[str, int]]:  # v1.4
+    """Collect the denominators the agents state for themselves.
+
+    Most agents check every row of every loaded table, so the whole-run row
+    count is the right denominator and they say nothing. Uniqueness checks ONE
+    table and holds records back, so it reports records_assessed and
+    records_excluded, and those numbers must reach the scorecard. Divided by the
+    whole run instead, a real duplicate problem shrinks to near-invisibility and
+    a record that was never compared counts as a clean one.
+
+    A pure function over the agent results, so it is testable without a graph.
+    """
+    totals: dict[str, dict[str, int]] = {}
+    entry: dict[str, Any] = {}
+    name: str = ""
+
+    for entry in agent_results or []:
+        if "records_assessed" not in entry:
+            continue
+        name = str(entry.get("dimension", ""))
+        if not name:
+            continue
+        totals[name] = {
+            "assessed": int(entry.get("records_assessed", 0)),
+            "excluded": int(entry.get("records_excluded", 0)),
+        }
+    return totals
+
+
 def scorecard_node(state: dict[str, Any], compute: Any) -> dict[str, Any]:
     """Compute the scorecard from the merged findings and the frames."""
-    scorecard: Any = compute(state["findings"], state["frames"])
+    totals: dict[str, dict[str, int]] = dimension_totals(state.get("agent_results", []))  # v1.4
+    scorecard: Any = compute(state["findings"], state["frames"], totals)  # v1.4
     return {"scorecard": scorecard}
 
 
@@ -197,7 +235,11 @@ def uniqueness_node(state: dict[str, Any]) -> dict[str, Any]:  # v1.3
             data_dir=state.get("data_dir"),
         )
     result = agent.run(frames, schemas, state.get("rules", []))
-    summary = agent.summary()
+    # v1.4: the agent's own summary knows how it matched; the AgentResult knows
+    # how many records it matched over. A screen needs both in one place.
+    summary = dict(agent.summary())  # v1.4
+    summary["records_assessed"] = result.records_assessed  # v1.4
+    summary["records_excluded"] = result.records_excluded  # v1.4
     return {
         "findings": result.findings,
         "agent_results": [{
@@ -214,6 +256,9 @@ def uniqueness_node(state: dict[str, Any]) -> dict[str, Any]:  # v1.3
             "excluded_counts": summary["held_back"],
             "readable": [describe_advisory(entry) for entry in for_uniqueness],
             "summary": summary,
+            # v1.4: the pairs themselves, not only how many. The summary keeps
+            # the count so no existing reader breaks.
+            "candidate_pairs": list(agent.candidate_pairs),  # v1.4
         },
     }
 

@@ -56,6 +56,43 @@ v1.8 | 04-Aug-2026 | Package 4e built (the data and how it is measured). The
                      src/reporting/uniqueness_eval.py reports twin recall, decoy
                      error rate (headline precision), unlabelled joins and the
                      score spread by change. Test count to 201.
+v2.1 | 10-Aug-2026 | Package 4f fix. The block pair ceiling becomes a schema
+                     dial (uniqueness.max_block_pairs, default 20,000,000) and
+                     a block above it is HELD BACK instead of raising. The old
+                     hard-coded 5,000,000 ended a whole assessment over one
+                     block, and it fired on a run that takes seven seconds. The
+                     clean baseline dataset crashed where the degraded one did
+                     not, because degraded holds 342 records back and that alone
+                     kept its largest block under the limit. A held-back block
+                     leaves the uniqueness denominator, so a block nobody
+                     compared never reads as a clean one, and the Settings tab
+                     names the block. Test count to 244 passing, 1 skipped.
+                     SEPARATE FINDING, not yet acted on: on the clean baseline
+                     the matcher reports 807 clusters over 1,700 of 5,000
+                     records and a Uniqueness score of 66%, where only 14
+                     descriptions are genuine exact repeats. token_sort_ratio
+                     scores "Motor Reinforced Bronze 209" against "Motor
+                     Reinforced Bronze 79" at 0.94, because the part number is
+                     three characters of a twenty-seven character string. This
+                     is the same weakness the decoy error rate reports at about
+                     39%, and it is the case for the attribute veto in Package 5.
+v2.0 | 10-Aug-2026 | Package 4f built (the dashboard moves onto the graph).
+                     assess() now BUILDS and INVOKES the assessment graph, so
+                     the dashboard, the console driver and the graph runner run
+                     ONE path. Two defects were found and fixed on the way, both
+                     of which had made the Uniqueness work invisible: the graph
+                     runner scored three dimensions and left Uniqueness out, and
+                     scorecard_node called the compute function with two
+                     arguments, so the per-dimension denominator built in 4d
+                     never arrived. On the degraded scenario the Uniqueness score
+                     read 97.2% with the whole-run denominator and reads 87.7%
+                     with the honest one. New module src/reporting/cluster_view.py
+                     holds the display shaping, so the tables a reader sees are
+                     testable without Streamlit. The dashboard gains a Duplicates
+                     tab, a read-only Settings tab, a rules-directory selector,
+                     a match-mode banner and the no-checks guard. Test count to
+                     236 passing, 1 skipped (the skip needs the real CAL extract
+                     in data/raw).
 v1.9 | 04-Aug-2026 | The default fuzzy method for MARA moves from jaro_winkler
                      to token_sort_ratio. The old default flattered pairs that
                      shared a starting word ("Pump Precision Steel 123" vs
@@ -84,9 +121,12 @@ system.
 
 ## 1. Where the build stands
 
-Packages 1, 2 and 3 are complete. The deterministic spine, the full agentic front
-half, the approval gate, and the LangGraph orchestration exist, are tested offline
-(84 passing tests, 1 skipped), and run on real SAP CAL extracts. The loop closes:
+Packages 1, 2 and 3 are complete, and Package 4 is complete through step 4f. The
+deterministic spine, the full agentic front half, the approval gate, the LangGraph
+orchestration and the uniqueness stage exist, are tested offline (244 passing
+tests, 1 skipped), and run on real SAP CAL extracts. Every surface now runs ONE
+path: assess() builds and invokes the assessment graph, and the dashboard, the
+console driver and the graph runner all call it. The loop closes:
 an agent suggests a rule, a human approves it, and the approved rule is loadable
 and runnable by the execution layer - now orchestrated as two graphs. The first
 LinkedIn article (Package 2's story - "the agent proposes, the human disposes") is
@@ -743,10 +783,10 @@ Step  Deliverable                                   Model?  Regenerate?
 4a    Schema v0.4 uniqueness settings + MARA dials   no      no  (done)
 4b    Advisories become small structured records     no      no  (done)
 4c    Shared text normaliser + embeddings artefact   no      no  (done)
-4d    The matcher: block, score, cluster, choose a   no      no
+4d    The matcher: block, score, cluster, choose a   no      no  (done)
       survivor. Includes the graph reorder and the
       per-dimension scorecard denominator
-4e    The data and how it is measured: harder        no      YES
+4e    The data and how it is measured: harder        no      YES (done)
       near-copies, decoy pairs, and teaching
       evaluate_against_labels about not_duplicate
 4f    The dashboard moves onto the graph.            no      no
@@ -766,7 +806,8 @@ The ordering carries one rule that matters: **4e comes before 4g.** Built the
 other way round, the adjudicator would face an empty uncertain band and no
 labelled non-duplicates, so its precision would read 1.000 and mean nothing.
 
-Step 4j exists because the dashboard does not use the orchestrator. It calls
+Step 4f (formerly numbered 4j) existed because the dashboard did not use the
+orchestrator. It calls
 assess() in src/reporting/assessment.py, which loops the three dimension agents
 directly, so nothing built in Package 4 would appear on screen. Today the two
 paths agree by coincidence, because both run the same three agents; the moment
@@ -884,7 +925,7 @@ without this rule.
 
 ### 6.5 Deferred list (from the Package 4 build)
 
-Four items came out of the Package 4 build that would improve uniqueness quality
+Six items came out of the Package 4 build that would improve uniqueness quality
 but were held back so Package 4 could ship. Each is listed here with its cause
 and the smallest useful next step, so nothing is forgotten.
 
@@ -919,6 +960,14 @@ band would ignore genuine twins from the `abbrev` and `unit_word` strategies.
 Next step: measure the score spread on the token_sort_ratio + semantic
 combination, then decide the bands from evidence. The change is one line in
 `config/schema/mara.yaml`.
+
+**6. A display label for a finding with no field.**
+Cause: a Uniqueness finding is about a RECORD, so it carries no field, and the
+scorecard's worst-offending-fields list renders it as `MARA.None`. The number is
+right and the label is wrong. Found during the Package 4f build.
+Next step: one line in `src/reporting/scorecard.py` to render a finding with no
+field as `MARA (record)`. Held back because it moves a shared reporting model
+for a cosmetic reason, and it deserves its own decision.
 
 **One principle I owe from this list.** Every schema dial in future gets a
 listed set of alternatives with a short reason for the default before I write

@@ -4,6 +4,10 @@
 #                      the linear suggestion graph and the assessment graph with
 #                      a parallel dimension fan-out. Agents/programs are injected
 #                      so the graphs compile and run without an LLM in tests.
+# v1.2 | 10-Aug-2026 | Package 4f. The injected scorecard callable takes a third
+#                      argument: the per-dimension denominators. Uniqueness is
+#                      assessed on one table, so it must not be divided by the
+#                      whole run.
 # v1.1 | 04-Aug-2026 | Package 4d. Uniqueness moves BEFORE the scorecard, so
 #                      its findings reach the score. They could not before.
 # ---------------------------------------------------------------------------
@@ -66,11 +70,13 @@ def build_assessment_graph(
     validity_agent: Any,
     consistency_agent: Any,
     load_rules: Callable[[dict[str, Any]], list[Any]],
-    compute_scorecard: Callable[[list[Any], dict[str, Any]], Any],
+    compute_scorecard: Callable[[list[Any], dict[str, Any], dict[str, Any]], Any],  # v1.2
 ) -> Any:
     """Compile the assessment graph with the three dimension agents fanning out
     in parallel. load_rules yields the approved rules from state; compute_
-    scorecard turns merged findings + frames into a scorecard."""
+    scorecard turns merged findings + frames + per-dimension denominators into a
+    scorecard. The third argument arrived in v1.2 (Package 4f): Uniqueness
+    states its own denominator and it has to reach the score."""
     graph: StateGraph = StateGraph(AssessmentState)
 
     graph.add_node("load_approved", partial(nodes.load_approved_node, load_rules=load_rules))

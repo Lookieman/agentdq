@@ -36,7 +36,11 @@ from src.agents.embedding_store import (
     identity_code,
     write_artefact,
 )
-from src.agents.uniqueness import MAX_BLOCK_PAIRS, UniquenessAgent
+from src.agents.uniqueness import (  # v1.1
+    DEFAULT_MAX_BLOCK_PAIRS,
+    HELD_BLOCK_TOO_LARGE,
+    UniquenessAgent,
+)
 from src.agents.uniqueness_settings import build_advisory
 from src.contracts import (
     AdvisoryAction,
@@ -513,19 +517,40 @@ def test_a_missing_vector_file_degrades_rather_than_failing(tmp_path):
 # The guard on block size
 # ---------------------------------------------------------------------------
 
-def test_an_oversized_block_raises_and_names_the_block(monkeypatch):
-    # A clear stop beats a run that appears to hang. The largest block in the
-    # synthetic degraded dataset is 2,632 records, which is 3.46 million pairs.
-    monkeypatch.setattr("src.agents.uniqueness.MAX_BLOCK_PAIRS", 2)
-    with pytest.raises(ValueError) as error:
-        _run([
-            {"MATNR": "A", "MAKTX": "Hex Bolt M8"},
-            {"MATNR": "B", "MAKTX": "Hex Bolt M9"},
-            {"MATNR": "C", "MAKTX": "Hex Bolt M7"},
-        ])
-    assert "HALB" in str(error.value)
-    assert "3 records" in str(error.value)
+def test_an_oversized_block_is_held_back_and_named(monkeypatch):  # v1.1
+    # v1.1 changed the behaviour deliberately. Raising ended the WHOLE
+    # assessment over one block, so a dataset with eighty healthy blocks and
+    # one large one got no answer at all. The block is now held back, which is
+    # the same treatment a record with no description already gets.
+    schema = _schema()
+    schema.uniqueness.max_block_pairs = 2
+    agent, result = _run([
+        {"MATNR": "A", "MAKTX": "Hex Bolt M8"},
+        {"MATNR": "B", "MAKTX": "Hex Bolt M9"},
+        {"MATNR": "C", "MAKTX": "Hex Bolt M7"},
+    ], schema=schema)
+    summary = agent.summary()
+
+    assert summary["oversized_blocks"], "the block should be reported, not silently skipped"
+    assert summary["oversized_blocks"][0]["records"] == 3
+    assert summary["oversized_blocks"][0]["block"]["MTART"] == "HALB"
+    assert summary["held_back"][HELD_BLOCK_TOO_LARGE] == 3
 
 
-def test_the_guard_is_set_where_the_design_says():
-    assert MAX_BLOCK_PAIRS == 5_000_000
+def test_a_held_back_block_leaves_the_denominator(monkeypatch):  # v1.1
+    # The whole point. A block nobody compared must not read as a clean one.
+    schema = _schema()
+    schema.uniqueness.max_block_pairs = 2
+    agent, result = _run([
+        {"MATNR": "A", "MAKTX": "Hex Bolt M8"},
+        {"MATNR": "B", "MAKTX": "Hex Bolt M9"},
+        {"MATNR": "C", "MAKTX": "Hex Bolt M7"},
+    ], schema=schema)
+
+    assert result.records_assessed == 0
+    assert result.records_excluded == 3
+    assert result.findings == []
+
+
+def test_the_ceiling_default_is_set_where_the_design_says():  # v1.1
+    assert DEFAULT_MAX_BLOCK_PAIRS == 20_000_000

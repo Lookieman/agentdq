@@ -3,6 +3,10 @@
 # v0.3 | 04-Aug-2026 | Package 4a. TABLE_META now carries file_pattern and,
 #                      for MARA, the uniqueness block. Both were hand-added
 #                      to mara.yaml and were erased on every rebuild.
+# v0.5 | 10-Aug-2026 | Package 4f fix. TABLE_META held jaro_winkler as the MARA
+#                      fuzzy metric; the default moved to token_sort_ratio in
+#                      Package 4e, so a rebuild would have reverted it. Adds the
+#                      max_block_pairs dial for the same reason.
 # v0.4 | 04-Aug-2026 | Package 4b fix. The documented output directory said
 #                      data/profile; the profiles are written to and read
 #                      from data/profiles. Corrected to the real name.
@@ -78,10 +82,14 @@ TABLE_META: dict[str, dict[str, Any]] = {
             "blocking_keys": ["MTART", "MEINS"],
             "compare_fields": [{"field": "MAKT.MAKTX", "weight": 1.0}],
             "methods": {
-                "fuzzy": {"metric": "jaro_winkler", "weight": 0.5},
+                # v0.5: token_sort_ratio, NOT jaro_winkler. The default moved in
+                # Package 4e after a benchmark, and this file still held the old
+                # value, so the next rebuild would have silently reverted it.
+                "fuzzy": {"metric": "token_sort_ratio", "weight": 0.5},  # v0.5
                 "semantic": {"model": "all-MiniLM-L6-v2", "weight": 0.5},
             },
             "bands": {"duplicate": 0.92, "review_low": 0.8},
+            "max_block_pairs": 20000000,  # v0.5
         },
     },
     "MARC": {

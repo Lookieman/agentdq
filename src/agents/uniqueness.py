@@ -1,5 +1,12 @@
 # ---------------------------------------------------------------------------
 # src/agents/uniqueness.py
+# v1.1 | 10-Aug-2026 | Package 4f fix. A block above the pair ceiling is now
+#                      HELD BACK instead of raising, so one oversized block
+#                      cannot end a whole assessment. The ceiling moves from a
+#                      module constant to a schema dial. Found when the CLEAN
+#                      baseline dataset crashed and the DEGRADED one did not:
+#                      degraded holds 342 records back, and that alone kept its
+#                      largest block under the old 5,000,000 limit.
 # v1.0 | 04-Aug-2026 | Package 4d. The matcher. Blocks on exact agreement, scores
 #                      the remaining pairs with the fuzzy and semantic rungs,
 #                      chains matched pairs into clusters, and recommends a
@@ -67,17 +74,24 @@ from src.contracts import (
 from src.data.schema import COMPARE_LANGUAGE, TableSchema
 from src.rules.executor import PandasRuleExecutor
 
-# All pairs inside one block is n(n-1)/2. The largest block in the synthetic
-# degraded dataset holds 2,632 rows, which is 3.46 million pairs and a few
-# seconds of work. This guard stops a customer-sized block from appearing to
-# hang: a clear error naming the block is far better than a run that never ends.
-MAX_BLOCK_PAIRS: int = 5_000_000  # v1.0
+# All pairs inside one block is n(n-1)/2, so a large block is the only way this
+# stage becomes slow. The ceiling now lives in the table schema
+# (uniqueness.max_block_pairs), where a steward can see it and change it with a
+# reason. This value is the fallback for a schema that declares none.
+#
+# It is a HOLD-BACK threshold, not an error. A block above it takes no part in
+# matching and its records leave the uniqueness denominator, which is the same
+# treatment a record with no description gets. Raising an error instead ended
+# the whole assessment over one block, and a dataset with 80 healthy blocks and
+# one large one deserves an answer about the 80.
+DEFAULT_MAX_BLOCK_PAIRS: int = 20_000_000  # v1.1
 
 # Reasons a record takes no part in matching. Kept apart so a steward can tell
 # "the description is junk" from "the material type is junk".
 HELD_VALIDITY: str = "validity_failed"
 HELD_NO_TEXT: str = "no_description"
 HELD_NO_BLOCK: str = "no_blocking_key"
+HELD_BLOCK_TOO_LARGE: str = "block_too_large"  # v1.1
 
 # Every fuzzy metric is brought to the same 0 to 1 scale here, because rapidfuzz
 # returns 0 to 100 for some scorers and 0 to 1 for others.
@@ -161,6 +175,9 @@ class UniquenessAgent(BaseAgent):
         # Filled during run() so a caller can read them afterwards.
         self.settings: dict[str, Any] = {}
         self.held_back: dict[str, str] = {}
+        # v1.1: blocks that were too large to compare, kept so the summary can
+        # name them. A steward needs to know WHICH block went unchecked.
+        self.oversized_blocks: list[dict[str, Any]] = []  # v1.1
         self.score_spread: dict[str, int] = {}
         self.candidate_pairs: list[dict[str, Any]] = []
         self.mode: MatchMode = MatchMode.FULL
@@ -394,8 +411,13 @@ class UniquenessAgent(BaseAgent):
         value: Any = None
         key_field: str = ""
         missing_block: bool = False
+        ceiling: int = 0  # v1.1
+        block_size: int = 0  # v1.1
+        block_pairs: int = 0  # v1.1
+        oversized_keys: set[str] = set()  # v1.1
 
         self.held_back = {}
+        self.oversized_blocks = []  # v1.1
         self.candidate_pairs = []
         self.score_spread = {"duplicate": 0, "uncertain": 0, "below": 0}
 
@@ -463,8 +485,38 @@ class UniquenessAgent(BaseAgent):
             )
             blocks.setdefault(block_key, []).append(record_key)
 
+        # -- stage 2b: apply the pair ceiling (v1.1)
+        # A block above the ceiling is held back whole. Its members leave
+        # candidate_keys, so records_assessed shrinks and records_excluded
+        # grows: a block nobody compared must never read as a clean one.
+        ceiling = schema.uniqueness.max_block_pairs  # v1.1
+        for block_key in sorted(blocks):  # v1.1
+            block_size = len(blocks[block_key])
+            if block_size < 2:
+                continue
+            block_pairs = block_size * (block_size - 1) // 2
+            if block_pairs <= ceiling:
+                continue
+            self.oversized_blocks.append({
+                "block": dict(zip(blocking_keys, block_key)),
+                "records": block_size,
+                "pairs": block_pairs,
+                "ceiling": ceiling,
+            })
+            for record_key in blocks[block_key]:
+                self.held_back[record_key] = HELD_BLOCK_TOO_LARGE
+            oversized_keys.update(blocks[block_key])
+            blocks[block_key] = []
+        if oversized_keys:  # v1.1
+            candidate_keys = [
+                record_key for record_key in candidate_keys
+                if record_key not in oversized_keys
+            ]
+
         # -- stages 3 to 5, block by block
         for block_key in sorted(blocks):
+            if len(blocks[block_key]) < 2:  # v1.1
+                continue
             clusters.extend(self._assess_block(
                 subject=subject,
                 schema=schema,
@@ -530,13 +582,10 @@ class UniquenessAgent(BaseAgent):
 
         if size < 2:
             return clusters
+        # v1.1: the pair ceiling is applied in _assess, BEFORE this runs, so an
+        # oversized block is held back rather than scored. By the time a block
+        # reaches this method it is known to be affordable.
         pair_count = size * (size - 1) // 2
-        if pair_count > MAX_BLOCK_PAIRS:
-            raise ValueError(
-                f"block {dict(zip(blocking_keys, block_key))} holds {size} records, "
-                f"which is {pair_count} pairs and above the {MAX_BLOCK_PAIRS} limit. "
-                f"Narrow the search with another blocking key or a scope filter."
-            )
 
         metric = schema.uniqueness.methods.fuzzy.metric
         combined = np.zeros((size, size), dtype=np.float32)
@@ -730,6 +779,7 @@ class UniquenessAgent(BaseAgent):
             "mode_reason": self.mode_reason,
             "held_back": reasons,
             "held_back_total": len(self.held_back),
+            "oversized_blocks": list(self.oversized_blocks),  # v1.1
             "score_spread": dict(self.score_spread),
             "candidate_pairs": len(self.candidate_pairs),
             "bands": self.settings.get("bands", {}),

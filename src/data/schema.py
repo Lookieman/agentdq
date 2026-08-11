@@ -228,6 +228,20 @@ class UniquenessConfig(BaseModel):  # v0.4
     compare_fields: list[CompareField] = Field(default_factory=list)
     methods: UniquenessMethods = Field(default_factory=UniquenessMethods)  # v0.4
     bands: UniquenessBands = Field(default_factory=UniquenessBands)  # v0.4
+    # v0.5: the ceiling on ONE block. Comparison inside a block is all-pairs,
+    # so cost is n(n-1)/2 and a big block is the only way this stage becomes
+    # slow. A block above the ceiling is HELD BACK rather than compared, and
+    # its records are excluded from the uniqueness denominator, so a block
+    # nobody looked at never counts as a clean one.
+    #
+    # 20,000,000 pairs is about 20 to 25 seconds of scoring on the fuzzy rung
+    # alone and roughly double that with the semantic rung. Alternatives: 5M
+    # (the previous value, which a 3,180-record block already exceeds and
+    # which fires on datasets that take seconds to score), or 50M (about two
+    # minutes, which never fires on anything in this repository). 20M was
+    # chosen because it holds the wait on a screen under a minute and still
+    # covers every block in the synthetic and real datasets here.
+    max_block_pairs: int = 20_000_000  # v0.5
 
     @model_validator(mode="before")  # v0.4
     @classmethod

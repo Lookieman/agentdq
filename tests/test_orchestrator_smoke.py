@@ -219,10 +219,11 @@ def _load_rules_from_state(state):
     return state["approved_rules"]
 
 
-def _compute_scorecard(findings, frames):
+def _compute_scorecard(findings, frames, totals):
     # A light stand-in for reporting.compute_scorecard (avoids its dimension
-    # constant); the real function is wired in the CLI runner.
-    return {"total_findings": len(findings)}
+    # constant); the real function is wired in assess() and the CLI runner.
+    # totals arrived with Package 4f: a dimension may state its own denominator.
+    return {"total_findings": len(findings), "dimension_totals": totals}
 
 
 def test_assessment_graph_fans_out_and_merges_all_dimensions():
@@ -267,7 +268,15 @@ def test_assessment_graph_fans_out_and_merges_all_dimensions():
 
     # The report is assembled with the scorecard.
     assert final["report"]["total_findings"] == 2
-    assert final["report"]["scorecard"] == {"total_findings": 2}
+    assert final["report"]["scorecard"]["total_findings"] == 2
+
+    # v1.4 (Package 4f): the denominator Uniqueness states for ITSELF reaches
+    # the scorecard. Before this the node called the compute function with two
+    # arguments, so the third was never passed and the Uniqueness score divided
+    # its findings by every row of every loaded table.
+    totals = final["report"]["scorecard"]["dimension_totals"]
+    assert "Uniqueness" in totals
+    assert totals["Uniqueness"]["assessed"] + totals["Uniqueness"]["excluded"] > 0
 
 
 def test_assessment_graph_agents_stay_graph_free():

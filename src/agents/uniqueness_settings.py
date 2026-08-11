@@ -1,5 +1,12 @@
 # ---------------------------------------------------------------------------
 # src/agents/uniqueness_settings.py
+# v1.2 | 10-Aug-2026 | Package 4f fix. The block pair ceiling joins the resolved
+#                      settings, so a steward can see on screen what it is and
+#                      why a block went uncompared.
+# v1.1 | 10-Aug-2026 | Package 4f. resolve_settings also reports the fuzzy metric
+#                      and the semantic model by name. Both were already in
+#                      force and neither was visible, so a steward could not see
+#                      on screen which comparison method actually ran.
 # v1.0 | 04-Aug-2026 | Package 4b. Turns a steward's uniqueness settings plus the
 #                      advisories from upstream agents into the settings the
 #                      matcher will actually use. Pure: no data, no pandas, no
@@ -163,6 +170,9 @@ def resolve_settings(
         ],
         "compare_weights": config.normalised_compare_weights(),
         "method_weights": config.normalised_method_weights(),
+        "fuzzy_metric": config.methods.fuzzy.metric,  # v1.1
+        "semantic_model": config.methods.semantic.model,  # v1.1
+        "max_block_pairs": config.max_block_pairs,  # v1.2
         "blocking_keys": list(config.blocking_keys),
         "exclusion_targets": exclusion_targets,
         "advisories_applied": applied,

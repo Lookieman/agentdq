@@ -33,8 +33,8 @@ design, not as a plan.
 
 ## Build Status
 
-**Delivery status (05-Aug-2026): Packages 1, 2 and 3 complete; Package 4 in
-build - five of eight steps done (4a to 4e).** The agentic loop closes end to
+**Delivery status (10-Aug-2026): Packages 1, 2 and 3 complete; Package 4 in
+build - six of eight steps done (4a to 4f).** The agentic loop closes end to
 end: an agent suggests a rule, a human governs it at the approval gate, and the
 approved rule is executable, orchestrated as two LangGraph graphs (a suggestion
 graph and an assessment graph joined by the repository). The assessment graph
@@ -51,10 +51,22 @@ measure against, with the baseline genuinely clean, 28 decoy pairs planted, and
 a dedicated evaluator that reports twin recall, decoy error rate and unlabelled
 joins. A late fuzzy-method review replaced the MARA default (jaro_winkler to
 token_sort_ratio), which cut the decoy error rate from 78% to 39% and moved
-word_order recall from 0 of 41 to 24 of 41. Three steps remain: the dashboard
-on the graph (4f), the adjudicator with the shared LM setup (4g), and
-remediation with its dashboard tab (4h). The suite stands at 202 passing
-tests, 0 skipped, all offline. The first two AgentDQ
+word_order recall from 0 of 41 to 24 of 41. Step 4f puts the dashboard on the
+graph: assess() now BUILDS and INVOKES the assessment graph, so the dashboard,
+the console driver and the graph runner run one path and cannot report different
+numbers for one dataset. Two defects surfaced during that step, both of which had
+made the uniqueness work invisible - the graph runner scored three dimensions and
+omitted Uniqueness, and the scorecard node never passed the per-dimension
+denominator, so the Uniqueness score on the degraded scenario read 97.2% where the
+honest figure is 87.7%. The dashboard gains a Duplicates tab, a read-only Settings
+tab, a rules-directory selector, a match-mode banner and the no-checks guard, and
+the display shaping lives in a testable module rather than in the Streamlit file.
+Two steps remain: the adjudicator with the shared LM setup (4g), and remediation
+with its dashboard tab (4h). A follow-on fix in the same session made the block pair ceiling a schema dial and
+turned it into a hold-back rather than an error, after the clean baseline dataset
+crashed on a block of 3,180 records where the degraded one did not. The suite
+stands at 244 passing tests, 1 skipped
+(the skip needs the real CAL extract in data/raw), all offline. The first two AgentDQ
 LinkedIn articles are ready to write: Package 2's ("the agent proposes, the
 human disposes") and Package 3's ("where I put the human in the loop, and why").
 The delivery breakdown, the remaining packages, and the per-package designs live
@@ -82,7 +94,8 @@ Validity agent                src/agents/validity.py              done
 Scorecard + evaluation        src/reporting/scorecard.py          done
 Shared assess() function      src/reporting/assessment.py         done
 Console assessment CLI        tools/run_assessment.py             done
-Streamlit dashboard           app/dashboard.py                    done
+Streamlit dashboard (6 tabs)  app/dashboard.py                    done
+Cluster + settings display    src/reporting/cluster_view.py       done
 Smoke test suite (12 tests)   tests/test_pipeline_smoke.py        done
 Uniqueness settings (v0.4)    src/data/schema.py, config/schema/  done
 Structured advisories         src/agents/uniqueness_settings.py   done
@@ -109,8 +122,7 @@ Core" below):
 ```
 Item                                       Notes
 -----------------------------------------  ----------------------------------
-Package 4 remaining (see WBS below)        4f: dashboard on the graph
-                                           4g: adjudicator + shared LM setup
+Package 4 remaining (see WBS below)        4g: adjudicator + shared LM setup
                                            4h: remediation + dashboard tab
 Timeliness agent + defect stub             needs MARA date fields (re-export in)
 Accuracy agent (DSPy)                      LLM judgement on real-world truth

@@ -8,6 +8,12 @@
 #                      score means "checked nothing", not "clean data". Warn
 #                      loudly, label the scorecard, and hint at --rules
 #                      config/rules. Guard logic is a testable pure helper.
+# v1.5 | 10-Aug-2026 | Package 4f. Two corrections. The scorecard now covers the
+#                      SAME dimensions the linear path covers, so Uniqueness is
+#                      scored rather than run and then ignored; and the
+#                      per-dimension denominator reaches it. The no-checks guard
+#                      moved to src/reporting/assessment.py so the dashboard can
+#                      use it too, and is re-exported here for existing callers.
 # v1.4 | 04-Aug-2026 | Package 4e. Reads the ground-truth labels and the decoys
 #                      the injector wrote, and prints the uniqueness evaluation:
 #                      twin recall, decoy error rate, unlabelled joins, and the
@@ -47,38 +53,19 @@ from src.agents.uniqueness_settings import describe_advisory  # v1.2
 from src.agents.validity import ValidityAgent
 from src.data.schema import TableSchema, load_schemas
 from src.orchestrator import build_assessment_graph
-from src.reporting.assessment import load_frames
+from src.reporting.assessment import (  # v1.5
+    SCORED_DIMENSIONS,
+    load_frames,
+    no_checks_warning,
+)
 from src.reporting.scorecard import compute_scorecard, print_scorecard
 from src.reporting.uniqueness_eval import evaluate_uniqueness, print_evaluation  # v1.4
 from src.rules.rule_loader import load_rules
 
-GRAPH_DIMENSIONS: list[str] = ["Completeness", "Validity", "Consistency"]
-
-
-def no_checks_warning(rules_loaded: int, rules_run: int, rules_dir: str) -> Optional[str]:  # v1.1
-    """Return a warning when the run executed no checks, else None.
-
-    A scorecard of 100% is produced by 100 * (1 - affected/total) with zero
-    findings - which is exactly what happens when NO rules run. That reads as
-    'perfect data' but means 'checked nothing', so it must be flagged. The two
-    causes read differently: no rules were found at all, or rules were found but
-    none executed (not executable, or none for the assessed tables)."""
-    hint: str = "point --rules at a directory of rules (e.g. --rules config/rules)"
-    detail: str = ""
-
-    if rules_run > 0:
-        return None
-    if rules_loaded == 0:
-        detail = f"no rules were found in {rules_dir}"
-    else:
-        detail = (f"{rules_loaded} rule(s) loaded from {rules_dir}, but none executed "
-                  f"(none executable, or none for the assessed tables)")
-    return (
-        "WARNING: 0 checks ran, so the scores below reflect NOTHING CHECKED, "
-        "not clean data.\n"
-        f"         {detail}.\n"
-        f"         To assess against real rules, {hint}."
-    )
+# v1.5: ONE dimension list, imported rather than declared. The local list left
+# Uniqueness out, so the agent ran, produced clusters, and its score never
+# reached the screen. Two lists in two files is how that happens.
+GRAPH_DIMENSIONS: list[str] = SCORED_DIMENSIONS  # v1.5
 
 
 def _preloaded_loader(rules: list[Any]) -> Callable[[dict[str, Any]], list[Any]]:  # v1.1
@@ -89,10 +76,18 @@ def _preloaded_loader(rules: list[Any]) -> Callable[[dict[str, Any]], list[Any]]
     return loader
 
 
-def _scorecard_fn() -> Callable[[list[Any], dict[str, Any]], Any]:
-    """Return a compute callable bound to the graph's three dimensions."""
-    def compute(findings: list[Any], frames: dict[str, pd.DataFrame]) -> Any:
-        return compute_scorecard(findings, frames, GRAPH_DIMENSIONS)
+def _scorecard_fn() -> Callable[[list[Any], dict[str, Any], dict[str, Any]], Any]:  # v1.5
+    """Return a compute callable bound to the scored dimensions.
+
+    The third argument carries the denominators a dimension states for itself,
+    so the Uniqueness score is taken over the records it really compared.
+    """
+    def compute(
+        findings: list[Any],
+        frames: dict[str, pd.DataFrame],
+        totals: dict[str, Any],
+    ) -> Any:
+        return compute_scorecard(findings, frames, GRAPH_DIMENSIONS, totals)  # v1.5
     return compute
 
 

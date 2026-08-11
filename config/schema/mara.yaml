@@ -34,6 +34,19 @@ uniqueness:
   bands:
     duplicate: 0.92
     review_low: 0.8
+  # Ceiling on ONE block. Comparison inside a block is all-pairs, so a block of
+  # n records costs n(n-1)/2 comparisons and a large block is the only way this
+  # stage becomes slow. A block above the ceiling is HELD BACK, not compared,
+  # and its records leave the uniqueness denominator, so a block nobody looked
+  # at is never counted as a clean one.
+  # 20,000,000 pairs is about 20 to 25 seconds on the fuzzy rung alone and
+  # roughly double that with the semantic rung. Alternatives at this key:
+  #   5000000    the earlier hard-coded value; a 3,180-record block already
+  #              exceeds it, and it fires on a run that takes 7 seconds
+  #   50000000   about two minutes; never fires on any dataset in this repo
+  # 20000000 was chosen to hold the wait on a screen under a minute and still
+  # cover every block in the synthetic and real datasets here.
+  max_block_pairs: 20000000
 formatting:
   decimal_separator: ','
   thousands_separator: .

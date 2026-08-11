@@ -6,7 +6,25 @@ spot. Versions are the latest change-log entry at the top of each file at the
 time of writing; treat them as a snapshot for verifying your working tree is in
 sync, not as a live value.
 
-*Updated 04-Aug-2026 (Package 4c - the embeddings artefact): a shared text
+*Updated 10-Aug-2026 (Package 4f fix - the block pair ceiling): a block above the
+ceiling is HELD BACK rather than raising, so one large block cannot end a whole
+assessment, and the ceiling moves from a module constant to a schema dial
+(uniqueness.max_block_pairs, default 20,000,000). Found because the CLEAN
+baseline dataset crashed and the DEGRADED one did not: degraded holds 342
+records back, and that alone kept its largest block under the old 5,000,000
+limit. tools/build_schema.py also still held jaro_winkler as the MARA fuzzy
+metric, so the next schema rebuild would have reverted the Package 4e default.
+Prior update 10-Aug-2026 (Package 4f - the dashboard moves onto the graph): assess()
+now BUILDS and INVOKES the assessment graph, so the dashboard, the console driver
+and the graph runner run ONE path and cannot disagree. A new module,
+src/reporting/cluster_view.py, holds the display shaping for the Duplicates and
+Settings tabs, so those tables are testable without Streamlit. Two defects were
+fixed: the graph runner scored three dimensions and left Uniqueness out, and
+scorecard_node never passed the per-dimension denominator, so the Uniqueness score
+was divided by every row of every loaded table. ACTION: src/agents/uniqueness_eval.py
+is a byte-identical duplicate of src/reporting/uniqueness_eval.py, imported by
+nothing - run `git rm src/agents/uniqueness_eval.py`.
+Prior update 04-Aug-2026 (Package 4c - the embeddings artefact): a shared text
 normaliser now decides what text BOTH scoring rungs see, and the batch builder
 writes one vector file per compare field BESIDE its dataset. Each file carries
 an identity code (model, field, language, normalisation) and a content code (the
@@ -178,9 +196,21 @@ design doc 4.3).
 ```
 Path                           Ver    Purpose
 -----------------------------  -----  ------------------------------------------
-src/reporting/scorecard.py     v0.1   DQ scorecard, ground-truth evaluation,
-                                      console rendering
-src/reporting/assessment.py    v0.1   Shared assess() used by CLI and dashboard
+src/reporting/scorecard.py     v0.2   DQ scorecard, ground-truth evaluation,
+                                      console rendering. A dimension may state
+                                      its OWN denominator
+src/reporting/assessment.py    v0.4   Shared assess(): builds and invokes the
+                                      assessment graph, returns the scorecard,
+                                      the clusters, the resolved uniqueness
+                                      settings and the cluster-level evaluation.
+                                      Also holds the no-checks guard, so the
+                                      dashboard need not import from tools/
+src/reporting/uniqueness_eval  v1.0   Twin recall, decoy error rate, unlabelled
+  .py                                 joins and the score spread by change
+src/reporting/cluster_view.py  v1.1   Display shaping for the Duplicates and
+                                      Settings tabs: cluster tables, candidate
+                                      pairs, the settings in force, the match
+                                      mode note. Pure - no Streamlit import
 ```
 
 ## Application
@@ -188,8 +218,10 @@ src/reporting/assessment.py    v0.1   Shared assess() used by CLI and dashboard
 ```
 Path                    Ver    Purpose
 ----------------------  -----  -------------------------------------------------
-app/dashboard.py        v0.1   Streamlit dashboard (scorecard, findings,
-                               evidence, Phase 2 case)
+app/dashboard.py        v0.3   Streamlit dashboard, 6 tabs: Scorecard,
+                               Findings, Duplicates, Evidence, Settings,
+                               About. Rules-directory selector, no-checks
+                               guard, match-mode banner
 app/gate.py             v1.1   Suggestion review surface (the approval gate):
                                decomposed confidence card, approve / edit /
                                reject, manual rule authoring
@@ -212,7 +244,9 @@ tools/build_schema.py      v0.4   Scaffold schema YAMLs from profiles + overlay.
                                   TABLE_META now carries file_pattern and MARA's
                                   uniqueness block, so a rebuild no longer
                                   erases them
-tools/run_assessment.py    v0.2   Console assessment driver (calls assess())
+tools/run_assessment.py    v0.3   Console assessment driver (calls assess()).
+                                  Prints the uniqueness stage and the cluster-
+                                  level evaluation
 tools/build_rule_bank.py   v1.1   Wrap the imported RuleSpecs into rule-bank
                                   templates with match metadata
 tools/onboard_object.py    v2.1   Deterministic onboarding scaffolder: detects
@@ -273,7 +307,8 @@ tests/test_uniqueness_config.py          v1.0   Schema v0.4 uniqueness dials:
                                                 config/schema/mara.yaml
 ```
 
-Test position: 153 tests pass and 0 are skipped. This number is MEASURED each
+Test position: 244 tests pass and 1 is skipped (the skipped one needs the real
+CAL extract in data/raw). This number is MEASURED each
 time, not carried forward. A stale "84 passing, 1 skipped" sat in this file for
 several packages while seven tests skipped in silence, because the pipeline test
 looked for the profiles in data/profile and they live in data/profiles. A
@@ -378,7 +413,10 @@ tools/__init__.py          tests/__init__.py            app/__init__.py
   a short-lived parallel onboarding config. The schema already carried
   primary_key and header_anchor, so onboarding config was folded back into the
   schema (v0.3). Remove both if they appear in your tree.
-- **Stale leftovers (action needed).** The repo still contains
+- **Stale leftovers (action needed).** `src/agents/uniqueness_eval.py` is a
+  byte-identical duplicate of `src/reporting/uniqueness_eval.py`. Nothing
+  imports it, and its own header names the reporting path. Run
+  `git rm src/agents/uniqueness_eval.py`. The repo also still contains
   `src/rules/loader.py` (v0.1) - the pre-rename original of `rule_loader.py`
   (v0.2). Its own changelog records the rename; the old file was never deleted.
   Run `git rm src/rules/loader.py` - it is dead code and re-creates the exact
