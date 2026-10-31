@@ -1,5 +1,10 @@
 # ---------------------------------------------------------------------------
 # src/reporting/cluster_view.py
+# v1.2 | 11-Aug-2026 | Package 4g/4h. Verdict and action frames for the two new
+#                      screen areas: the adjudicator's answers, and the ranked
+#                      remediation plan.
+# v1.1 | 10-Aug-2026 | Package 4f fix. The oversized-blocks frame, so held-back
+#                      blocks are visible on the Settings tab.
 # v1.0 | 10-Aug-2026 | Package 4f. Turns clusters, candidate pairs and resolved
 #                      uniqueness settings into display tables. Pure: pandas
 #                      and the contracts only, no Streamlit, so every shape here
@@ -398,5 +403,54 @@ def decoy_frame(evaluation: Any) -> pd.DataFrame:
             "Decoy kind": kind,
             "Wrongly joined": counts.get("wrongly_joined", 0),
             "Total": counts.get("total", 0),
+        })
+    return pd.DataFrame(rows)
+
+
+def verdict_frame(  # v1.2
+    verdicts: list[dict[str, Any]],
+    texts: Optional[dict[str, dict[str, str]]] = None,
+) -> pd.DataFrame:
+    """The adjudicator's answers, one row per judged pair.
+
+    The reasoning is shown whole, because the reasoning is the product: a
+    steward acts on the sentence, not on the yes or no.
+    """
+    rows: list[dict[str, Any]] = []
+    by_field: dict[str, dict[str, str]] = texts or {}
+    entry: dict[str, Any] = {}
+    first_field: dict[str, str] = {}
+
+    if by_field:
+        first_field = by_field[sorted(by_field)[0]]
+    for entry in verdicts or []:
+        rows.append({
+            "Verdict": str(entry.get("decision", "")),
+            "Confidence": entry.get("confidence", 0.0),
+            "Record A": entry.get("left_id", ""),
+            "A text": first_field.get(str(entry.get("left_id", "")), NO_TEXT),
+            "Record B": entry.get("right_id", ""),
+            "B text": first_field.get(str(entry.get("right_id", "")), NO_TEXT),
+            "Score": entry.get("score", 0.0),
+            "Reasoning": entry.get("reasoning", ""),
+        })
+    return pd.DataFrame(rows)
+
+
+def actions_frame(actions: list[Any]) -> pd.DataFrame:  # v1.2
+    """The ranked remediation plan, one row per action."""
+    rows: list[dict[str, Any]] = []
+    action: Any = None
+
+    for action in actions or []:
+        rows.append({
+            "Rank": action.rank,
+            "Dimension": action.dimension.value,
+            "Table": action.table,
+            "Field": action.field or "",
+            "Action": action.action,
+            "Why": action.rationale,
+            "Records": action.affected_records,
+            "Severity": action.severity.value,
         })
     return pd.DataFrame(rows)

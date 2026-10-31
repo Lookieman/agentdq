@@ -47,6 +47,23 @@ uniqueness:
   # 20000000 was chosen to hold the wait on a screen under a minute and still
   # cover every block in the synthetic and real datasets here.
   max_block_pairs: 20000000
+  # The attribute veto: a deterministic no-vote BEFORE any model call. Two
+  # descriptions that differ only in a digit group ("Bearing 6203" against
+  # "Bearing 6204") or only in a material word ("Bolt Steel" against "Bolt
+  # Brass") name two different materials. When both sides carry a value and
+  # the values differ, the pair's score is capped at `cap`. Absence is not
+  # disagreement: a side with no digits or no material word never vetoes.
+  # cap alternatives:
+  #   0.75  (default) below the review floor, so a vetoed pair leaves the
+  #         uncertain band and costs no model call
+  #   0.85  keeps vetoed pairs in the band for the model to judge; spends
+  #         money on pairs the veto already settled
+  #   0.0   removes vetoed pairs from every report
+  attribute_veto:
+    enabled: true
+    cap: 0.75
+    material_words: [stainless steel, carbon steel, steel, brass, bronze,
+                     nylon, aluminium, copper, plastic, rubber, titanium]
 formatting:
   decimal_separator: ','
   thousands_separator: .

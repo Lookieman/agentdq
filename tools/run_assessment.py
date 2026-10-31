@@ -1,3 +1,6 @@
+# v0.4 | 11-Aug-2026 | Package 4g/4h. Prints the adjudicator's verdict summary
+#                      and the top of the ranked remediation plan, so the
+#                      console shows what the screen shows.
 # v0.3 | 10-Aug-2026 | Package 4f. assess() now runs the graph, so this driver
 #                      reports what the graph produced: the no-checks guard, the
 #                      uniqueness settings, the clusters and the cluster-level
@@ -37,11 +40,32 @@ from src.reporting.scorecard import print_evaluation, print_examples, print_scor
 # v0.3: two functions share the name print_evaluation and measure different
 # things, so the uniqueness one is imported under a name of its own.
 from src.reporting.uniqueness_eval import print_evaluation as print_uniqueness_evaluation  # v0.3
+from src.reporting.uniqueness_eval import print_verdict_evaluation  # v0.4
 
 
 def _cluster_size(cluster: Any) -> int:  # v0.3
     """Sort key for the cluster listing. A named function, not a lambda."""
     return cluster.size
+
+
+def print_actions(result: AssessmentResult, top: int = 8) -> None:  # v0.4
+    """Print the top of the ranked remediation plan."""
+    action: Any = None
+
+    if not result.actions:
+        return
+    print(f"\nRemediation plan ({len(result.actions)} action(s); top {min(top, len(result.actions))}):")
+    if result.narrative_stale:
+        print("  NOTE: a narrative plan exists under OTHER settings and was not attached.")
+    elif result.narrative_attached:
+        print(f"  Model narrative attached to {result.narrative_attached} action(s).")
+    if result.executive_summary:
+        print(f"  Summary: {result.executive_summary}")
+    for action in result.actions[:top]:
+        print(f"  {action.rank:>3}. [{action.severity.value:<8}] {action.table}"
+              f"{'.' + action.field if action.field else ''} "
+              f"({action.affected_records} records, {action.dimension.value})")
+        print(f"       {action.action}")
 
 
 def print_uniqueness(result: AssessmentResult) -> None:  # v0.3
@@ -71,7 +95,15 @@ def print_uniqueness(result: AssessmentResult) -> None:  # v0.3
     for reason, held in (summary.get("held_back", {}) or {}).items():
         print(f"    held back     : {held} record(s), reason: {reason}")
     print(f"  score spread    : {summary.get('score_spread')}")
-    print(f"  candidate pairs : {summary.get('candidate_pairs')} awaiting the adjudicator")
+    print(f"  candidate pairs : {summary.get('candidate_pairs')} open, awaiting the adjudicator")
+    verdict_info = summary.get("verdicts", {}) or {}  # v0.4
+    if verdict_info.get("stale"):  # v0.4
+        print("  verdicts        : STALE - the verdicts file was made under other "
+              "settings and was not applied")
+    elif verdict_info.get("confirmed", 0) or verdict_info.get("rejected", 0):  # v0.4
+        print(f"  verdicts        : {verdict_info.get('confirmed', 0)} confirmed, "
+              f"{verdict_info.get('rejected', 0)} rejected "
+              f"(model {verdict_info.get('model', '-')})")
     for line in settings.get("readable", []) or []:
         print(f"  advisory        : {line}")
 
@@ -133,6 +165,9 @@ def main() -> None:
         print_evaluation(result.evaluation)
     if result.uniqueness_evaluation is not None:  # v0.3
         print_uniqueness_evaluation(result.uniqueness_evaluation)
+        if result.uniqueness_evaluation.verdicts is not None:  # v0.4
+            print_verdict_evaluation(result.uniqueness_evaluation.verdicts)
+    print_actions(result)  # v0.4
 
 
 if __name__ == "__main__":

@@ -5,6 +5,12 @@
 #                      to onboard an object. primary_key and header_anchor were
 #                      already here; the profiler's hardcoded dicts now defer to
 #                      the schema, as its own comments always intended.
+# v0.6 | 11-Aug-2026 | Package 4g. AttributeVeto joins UniquenessConfig: a
+#                      deterministic no-vote on pairs whose digit groups or
+#                      material words disagree, with the cap as a dial.
+# v0.5 | 10-Aug-2026 | Package 4f fix. max_block_pairs becomes a schema dial
+#                      (default 20,000,000) so the block pair ceiling is
+#                      visible and adjustable without a code change.
 # v0.4 | 04-Aug-2026 | Package 4a. UniquenessConfig gains scope, methods and
 #                      bands; blocking_key becomes blocking_keys (a list, so
 #                      MTART AND MEINS both narrow the search) and
@@ -204,6 +210,54 @@ class UniquenessBands(BaseModel):  # v0.4
         return self
 
 
+# The material vocabulary the veto looks for. Longest phrases are matched
+# first, so "stainless steel" is one word, not "steel" twice. A steward can
+# replace the list per table in the schema YAML.
+DEFAULT_MATERIAL_WORDS: list[str] = [  # v0.6
+    "stainless steel", "carbon steel", "steel", "brass", "bronze", "nylon",
+    "aluminium", "copper", "plastic", "rubber", "titanium",
+]
+
+
+def default_material_words() -> list[str]:  # v0.6
+    """A copy of the default vocabulary. A named function, not a lambda."""
+    return list(DEFAULT_MATERIAL_WORDS)
+
+
+class AttributeVeto(BaseModel):  # v0.6
+    """A deterministic no-vote on a pair whose attributes disagree.
+
+    Two descriptions that differ ONLY in a part number ("Bearing 6203" against
+    "Bearing 6204") or ONLY in a material word ("Bolt Steel" against "Bolt
+    Brass") name two different materials, and no text metric can see that. The
+    veto extracts the digit groups and the material words from each side, and
+    when BOTH sides carry a value and the values differ, it caps the pair's
+    score at `cap`.
+
+    Absence is not disagreement: a side with no digits or no material word
+    never triggers the veto, for the same reason a record with no description
+    is excluded rather than scored.
+
+    cap default 0.75 sits BELOW the review band floor (0.80), so a vetoed pair
+    leaves the uncertain band and costs no model call. Alternatives: 0.85
+    keeps vetoed pairs in the band for the model to judge (spends money on
+    pairs the veto already settled); 0.0 removes them from every report. The
+    design document's 0.85 conflicted with its own stated goal ("falls below
+    the review band"), so the dial exists and the default honours the goal.
+    """
+
+    enabled: bool = True
+    cap: float = 0.75
+    material_words: list[str] = Field(default_factory=default_material_words)
+
+    @field_validator("cap")
+    @classmethod
+    def _cap_in_range(cls, value: float) -> float:
+        if not 0.0 <= value <= 1.0:
+            raise ValueError(f"attribute_veto.cap must be between 0 and 1, got {value}")
+        return value
+
+
 class UniquenessConfig(BaseModel):  # v0.4
     """Per-object configuration for the Uniqueness agent (Package 4).
 
@@ -242,6 +296,7 @@ class UniquenessConfig(BaseModel):  # v0.4
     # chosen because it holds the wait on a screen under a minute and still
     # covers every block in the synthetic and real datasets here.
     max_block_pairs: int = 20_000_000  # v0.5
+    attribute_veto: AttributeVeto = Field(default_factory=AttributeVeto)  # v0.6
 
     @model_validator(mode="before")  # v0.4
     @classmethod

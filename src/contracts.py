@@ -1,3 +1,8 @@
+# v0.6 | 11-Aug-2026 | Package 4g/4h. Add PairVerdict (the adjudicator's answer
+#                      on one uncertain pair) and RemediationAction (one ranked
+#                      step in the remediation plan). Both are contracts because
+#                      a CLI writes them, a graph node reads them, and a screen
+#                      shows them, and three consumers must not drift apart.
 # v0.1 | 27-Jun-2026 | Initial shared domain contracts for AgentDQ
 # v0.2 | 27-Jun-2026 | Add predicate-tree IR (Predicate, RuleSpec, Provenance); supersede Rule
 # v0.3 | 27-Jun-2026 | Add DefectLabel (ground-truth counterpart to Finding)
@@ -362,6 +367,54 @@ class DefectLabel(BaseModel):
     original_value: Optional[Any] = None
     corrupted_value: Optional[Any] = None
     detail: dict[str, Any] = Field(default_factory=dict)
+
+
+class VerdictDecision(str, Enum):  # v0.6
+    """The adjudicator's answer on one pair."""
+
+    DUPLICATE = "duplicate"
+    NOT_DUPLICATE = "not_duplicate"
+
+
+class PairVerdict(BaseModel):  # v0.6
+    """One judged pair from the uncertain band.
+
+    The deterministic methods put the pair in the band because the scores could
+    not settle it. The model settles it, and this record keeps the answer, the
+    stated confidence, and the reasons. fingerprint is the settings code of the
+    run that produced the pair; a verdict whose fingerprint does not match the
+    current settings is stale, and a consumer must say so rather than use it.
+    """
+
+    table: str
+    left_id: str
+    right_id: str
+    decision: VerdictDecision
+    confidence: float = 0.0
+    reasoning: str = ""
+    score: float = 0.0
+    model: str = ""
+    fingerprint: str = ""
+
+
+class RemediationAction(BaseModel):  # v0.6
+    """One ranked step in the remediation plan.
+
+    The rank and the affected count are arithmetic over evidence already in
+    the system. The action text and the rationale can come from a template
+    (offline) or from the model narrative (when a plan artefact exists). The
+    agent recommends; it never writes to data.
+    """
+
+    rank: int
+    dimension: Dimension
+    table: str
+    field: Optional[str] = None
+    action: str
+    rationale: str = ""
+    affected_records: int = 0
+    finding_refs: list[str] = Field(default_factory=list)
+    severity: Severity = Severity.MEDIUM
 
 
 # Resolve the forward reference in BoolNode.operands now that Predicate exists.

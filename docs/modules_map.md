@@ -6,7 +6,24 @@ spot. Versions are the latest change-log entry at the top of each file at the
 time of writing; treat them as a snapshot for verifying your working tree is in
 sync, not as a live value.
 
-*Updated 10-Aug-2026 (Package 4f fix - the block pair ceiling): a block above the
+*Updated 11-Aug-2026 (Packages 4g and 4h - the adjudicator and remediation;
+Package 4 complete): the attribute veto (src/agents/text_normaliser.py v1.1,
+tapped in src/agents/uniqueness.py v1.2) caps a pair whose digit groups or
+material words disagree, BEFORE any model call; the dials live in the schema
+(uniqueness.attribute_veto, cap default 0.75, alternatives in mara.yaml). The
+adjudicator (src/agents/adjudicator.py) judges the uncertain band through a
+batch CLI (tools/run_adjudication.py) that writes verdicts.json BESIDE the
+dataset; uniqueness_node applies it offline: confirmed pairs become
+needs_steward clusters and findings carrying the model's confidence, rejected
+pairs leave the open list, and a fingerprint mismatch applies NOTHING and is
+shown as stale. Remediation (src/agents/remediation.py) groups findings,
+ranks by severity x affected records with a 1.5 mandatory lift, turns
+held-back records and fuzzy-only mode into actions, and attaches the model
+narrative from a plan artefact (tools/run_remediation.py) only under a
+matching fingerprint. Shared LM setup: src/dspy_modules/lm_config.py (CLI
+flag, then AGENTDQ_MODEL, then openai/gpt-4o-mini, temperature 0).*
+
+*Prior update 10-Aug-2026 (Package 4f fix - the block pair ceiling): a block above the
 ceiling is HELD BACK rather than raising, so one large block cannot end a whole
 assessment, and the ceiling moves from a module constant to a schema dial
 (uniqueness.max_block_pairs, default 20,000,000). Found because the CLEAN
@@ -33,6 +50,12 @@ Prior update 04-Aug-2026 (Package 4b - structured advisories): advice between ag
 is now a small dictionary with six named keys instead of a sentence, and signal
 suppression is replaced by RECORD EXCLUSION - a description that failed a
 validity check holds its record out of deduplication. A new module,
+src/agents/adjudicator.py     v1.0   judge() (capped model calls on the band),
+                               the verdicts artefact, and apply_verdicts():
+                               deterministic application with the stale gate.
+src/agents/remediation.py     v1.0   group_findings, build_actions (rank =
+                               severity x records x mandatory lift), the plan
+                               artefact and attach_narrative with a stale gate.
 src/agents/uniqueness_settings.py, resolves a steward's settings against the
 advice that arrives.
 Prior update 04-Aug-2026 (Package 4a - the uniqueness configuration): schema v0.4
@@ -54,7 +77,8 @@ lives in the schema; the short-lived config/objects experiment is retired).*
 ```
 Path                    Ver    Purpose
 ----------------------  -----  -------------------------------------------------
-src/contracts.py        v0.4   Enums, Finding, DefectLabel, predicate-tree IR.
+src/contracts.py        v0.6   Enums, Finding, DefectLabel, predicate-tree IR,
+                               DuplicateCluster, PairVerdict, RemediationAction.
                                v0.4 adds AdvisoryAction, the vocabulary one
                                agent uses to advise another
                                (Comparison / BoolNode / RuleSpec), IS-to-DAMA map.
@@ -73,7 +97,7 @@ src/data/profiler.py          v0.6   Deterministic profiler; per-field stats and
                                      composite-key uniqueness. Reads header
                                      anchor / primary key from the schema
                                      (hardcoded dicts are fallbacks)
-src/data/schema.py            v0.4   Schema loader and parsers (comma decimals,
+src/data/schema.py            v0.6   Schema loader and parsers (comma decimals,
                                      null-date sentinel, record keys). The
                                      single onboarding contract: primary_key,
                                      header_anchor, file_pattern, uniqueness.
@@ -128,7 +152,8 @@ src/agents/base.py            v0.1   BaseAgent, RuleBackedAgent, AgentResult
 src/agents/completeness.py    v0.1   Completeness dimension (not-null rules)
 src/agents/validity.py        v0.1   Validity dimension (domain rules)
 src/agents/consistency.py     v0.1   Consistency dimension (cross-field rules)
-src/agents/text_normaliser.py v1.0   The ONE text normaliser. Lower case, no
+src/agents/text_normaliser.py v1.1   The ONE text normaliser, plus the veto
+                               signatures (digit groups, material words).
                                      accents, punctuation to space, spaces
                                      collapsed. The embeddings builder and the
                                      matcher both call it, so the fuzzy score
@@ -162,6 +187,13 @@ src/agents/rule_suggester.py       v1.0   Rule Suggestion Agent: bank-match
 ```
 Path                                        Ver    Purpose
 ------------------------------------------  -----  ----------------------------
+src/dspy_modules/lm_config.py               v1.0   Shared LM setup for every DSPy
+                                                   program: CLI flag, then
+                                                   AGENTDQ_MODEL, then
+                                                   openai/gpt-4o-mini, temp 0.
+src/dspy_modules/adjudication_signatures.py v1.0   PairAdjudication (one uncertain
+                                                   pair) and RemediationSynthesis
+                                                   (the plan narrative, one call).
 src/dspy_modules/suggestion_signatures.py   v1.1   DSPy signatures: profile
                                                    interpretation, bank-match
                                                    adjudication, data-driven
@@ -177,7 +209,7 @@ src/state.py           v1.1   Typed graph state for both graphs; reducers for
                               the parallel fan-out (findings, agent_results,
                               upstream_advisories). v1.1 carries advisories as
                               dictionaries and adds uniqueness_settings
-src/graph_nodes.py     v1.2   Thin node functions (unpack -> run() -> pack) and
+src/graph_nodes.py     v1.5   Thin node functions (unpack -> run() -> pack) and
                               the two advisory derivations. v1.1 reads the field
                               name off a CompareField. v1.2 emits dictionaries
                               rather than sentences, replaces signal suppression
@@ -199,7 +231,7 @@ Path                           Ver    Purpose
 src/reporting/scorecard.py     v0.2   DQ scorecard, ground-truth evaluation,
                                       console rendering. A dimension may state
                                       its OWN denominator
-src/reporting/assessment.py    v0.4   Shared assess(): builds and invokes the
+src/reporting/assessment.py    v0.5   Shared assess(): builds and invokes the
                                       assessment graph, returns the scorecard,
                                       the clusters, the resolved uniqueness
                                       settings and the cluster-level evaluation.
@@ -207,7 +239,7 @@ src/reporting/assessment.py    v0.4   Shared assess(): builds and invokes the
                                       dashboard need not import from tools/
 src/reporting/uniqueness_eval  v1.0   Twin recall, decoy error rate, unlabelled
   .py                                 joins and the score spread by change
-src/reporting/cluster_view.py  v1.1   Display shaping for the Duplicates and
+src/reporting/cluster_view.py  v1.2   Display shaping for the Duplicates, Actions and
                                       Settings tabs: cluster tables, candidate
                                       pairs, the settings in force, the match
                                       mode note. Pure - no Streamlit import
@@ -218,7 +250,7 @@ src/reporting/cluster_view.py  v1.1   Display shaping for the Duplicates and
 ```
 Path                    Ver    Purpose
 ----------------------  -----  -------------------------------------------------
-app/dashboard.py        v0.3   Streamlit dashboard, 6 tabs: Scorecard,
+app/dashboard.py        v0.5   Streamlit dashboard, 7 tabs: Scorecard,
                                Findings, Duplicates, Evidence, Settings,
                                About. Rules-directory selector, no-checks
                                guard, match-mode banner
@@ -240,11 +272,12 @@ tools/build_embeddings.py  v1.0   Batch builder for the semantic vectors. One
                                   Streamlit: the model is too heavy for the
                                   free tier. The encoder is passed in, so the
                                   tests never load it
-tools/build_schema.py      v0.4   Scaffold schema YAMLs from profiles + overlay.
+tools/build_schema.py      v0.6   Scaffold schema YAMLs from profiles + overlay.
                                   TABLE_META now carries file_pattern and MARA's
                                   uniqueness block, so a rebuild no longer
                                   erases them
-tools/run_assessment.py    v0.3   Console assessment driver (calls assess()).
+tools/run_assessment.py    v0.4   Console assessment driver (calls assess());
+                               prints verdicts and the ranked plan.
                                   Prints the uniqueness stage and the cluster-
                                   level evaluation
 tools/build_rule_bank.py   v1.1   Wrap the imported RuleSpecs into rule-bank
@@ -253,9 +286,15 @@ tools/onboard_object.py    v2.1   Deterministic onboarding scaffolder: detects
                                   header + composite key, maps roles, reports
                                   reference readiness, emits a DRAFT schema.
                                   v2.1 emits the schema v0.4 uniqueness shape
-tools/run_suggestion.py    v1.2   Batch runner: profile -> interpret -> suggest
+tools/run_suggestion.py    v1.3   Batch runner: profile -> interpret -> suggest
                                   -> write the suggestions artefact; configures
                                   the LM (loads .env, --model flag)
+tools/run_adjudication.py  v1.0   Judge the uncertain band (capped, highest
+                               first, artefact-as-cache); writes verdicts.json
+                               beside the dataset.
+tools/run_remediation.py   v1.0   One model call writes the plan narrative into
+                               artefacts/remediation/; a failed validation
+                               writes nothing and the template plan stands.
 tools/run_suggestion_graph.py  v1.0  Suggestion graph runner (LangGraph); reuses
                                      run_suggestion's helpers
 tools/run_assessment_graph.py  v1.1  Assessment graph runner (LangGraph): the
@@ -307,7 +346,7 @@ tests/test_uniqueness_config.py          v1.0   Schema v0.4 uniqueness dials:
                                                 config/schema/mara.yaml
 ```
 
-Test position: 244 tests pass and 1 is skipped (the skipped one needs the real
+Test position: 282 tests pass and 1 is skipped (the skipped one needs the real
 CAL extract in data/raw). This number is MEASURED each
 time, not carried forward. A stale "84 passing, 1 skipped" sat in this file for
 several packages while seven tests skipped in silence, because the pipeline test

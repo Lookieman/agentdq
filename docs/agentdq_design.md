@@ -76,6 +76,33 @@ v2.1 | 10-Aug-2026 | Package 4f fix. The block pair ceiling becomes a schema
                      three characters of a twenty-seven character string. This
                      is the same weakness the decoy error rate reports at about
                      39%, and it is the case for the attribute veto in Package 5.
+v2.1 | 11-Aug-2026 | Packages 4g and 4h built; Package 4 is complete. The
+                     attribute veto moved forward from Package 5 into 4g as a
+                     cost gate: on a generated degraded example (1,200
+                     materials, fuzzy-only) it cut the uncertain band from 405
+                     pairs to 8 and the decoy error rate from 27.8% to 0.0%,
+                     at a cost of one chained word_order twin (recall 64.7% to
+                     62.7% on matchable). The veto cap is a dial
+                     (attribute_veto.cap, default 0.75) because the old design
+                     text ("cap at 0.85 so the pair falls below the review
+                     band") contradicted itself: 0.85 sits INSIDE the band.
+                     The adjudicator follows the Package 2 pattern: a batch
+                     CLI judges the band and writes verdicts.json BESIDE the
+                     dataset; every later assessment applies it offline.
+                     Confirmed pairs become needs_steward clusters and
+                     findings that carry the MODEL'S confidence; rejected
+                     pairs leave the open list and are kept; a fingerprint
+                     mismatch applies nothing and says so on screen.
+                     Remediation groups findings by dimension, table, field
+                     and rule, ranks by severity times affected records with a
+                     1.5 lift for mandatory fields, and turns the matcher's
+                     own accounting (held-back records, fuzzy-only mode) into
+                     actions. The model owns the words, never the numbers: one
+                     RemediationSynthesis call writes the narrative into a plan
+                     artefact that attaches only under a matching fingerprint.
+                     Shared LM setup lands in src/dspy_modules/lm_config.py
+                     (CLI flag, then AGENTDQ_MODEL, then openai/gpt-4o-mini at
+                     temperature 0). Test count to 282 passing, 1 skipped.
 v2.0 | 10-Aug-2026 | Package 4f built (the dashboard moves onto the graph).
                      assess() now BUILDS and INVOKES the assessment graph, so
                      the dashboard, the console driver and the graph runner run
@@ -908,7 +935,7 @@ scores; dataset versions; and the baseline-versus-optimised comparison runs that
 Package 6 depends on. LangSmith is complementary for development-time LLM trace
 inspection.
 
-### 6.4 Attribute veto is a Package 5 sub-step
+### 6.4 Attribute veto (built in 4g; measurement stays here)
 
 The Package 4f fuzzy method change cut the decoy error rate from 78% to 39%.
 Half the decoys still land wrong: the ones that change ONLY a size number or

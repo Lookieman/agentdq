@@ -1,3 +1,8 @@
+# v0.5 | 11-Aug-2026 | Package 4g/4h. AssessmentResult carries the remediation
+#                      actions the graph computed, the verdict summary, and the
+#                      executive summary from the plan artefact when one matches
+#                      the run. assess() attaches the narrative, so the console
+#                      and the dashboard read one result.
 # v0.4 | 10-Aug-2026 | Package 4f. assess() no longer loops the agents itself.
 #                      It builds the assessment graph and invokes it, so the
 #                      dashboard, the console driver and the graph runner all
@@ -54,7 +59,8 @@ from pydantic import BaseModel, Field
 from src.agents.completeness import CompletenessAgent
 from src.agents.consistency import ConsistencyAgent  # v0.2
 from src.agents.validity import ValidityAgent
-from src.contracts import DefectLabel, DuplicateCluster, Finding  # v0.4
+from src.agents.remediation import attach_narrative, load_plan  # v0.5
+from src.contracts import DefectLabel, DuplicateCluster, Finding, RemediationAction  # v0.5
 from src.data.extract_loader import load_sap_table
 from src.data.schema import TableSchema, load_schemas
 from src.orchestrator import build_assessment_graph  # v0.4
@@ -64,7 +70,11 @@ from src.reporting.scorecard import (
     compute_scorecard,
     evaluate_against_labels,
 )
-from src.reporting.uniqueness_eval import UniquenessEvaluation, evaluate_uniqueness  # v0.4
+from src.reporting.uniqueness_eval import (  # v0.5
+    UniquenessEvaluation,
+    evaluate_uniqueness,
+    evaluate_verdicts,
+)
 from src.rules.rule_loader import load_rules
 
 # See the module docstring for why there are two lists and not one.
@@ -102,6 +112,10 @@ class AssessmentResult(BaseModel):
     rules_dir: str = ""  # v0.4
     rules_loaded: int = 0  # v0.4
     rules_run: int = 0  # v0.4
+    actions: list[RemediationAction] = Field(default_factory=list)  # v0.5
+    executive_summary: str = ""  # v0.5
+    narrative_attached: int = 0  # v0.5
+    narrative_stale: bool = False  # v0.5
 
 
 def load_frames(data_dir: str, tables: list[str], data_format: str) -> dict[str, pd.DataFrame]:
@@ -216,6 +230,7 @@ def assess(
     rules_dir: str,
     tables: list[str],
     data_format: str,
+    artefacts_dir: str = "artefacts",  # v0.5
 ) -> AssessmentResult:
     """Run the assessment graph over a dataset and return a structured result.
 
@@ -262,6 +277,12 @@ def assess(
     clusters = list(final.get("clusters", []))
     settings = dict(final.get("uniqueness_settings", {}))
     summary = dict(settings.get("summary", {}))
+    actions = [RemediationAction.model_validate(entry) for entry in final.get("remediation", [])]  # v0.5
+    narrative = attach_narrative(  # v0.5
+        actions,
+        load_plan(artefacts_dir, data_dir, rules_dir),
+        str(settings.get("resolved", {}).get("fingerprint", "")),
+    )
 
     if has_gt:
         evaluation = evaluate_against_labels(  # v0.3
@@ -281,6 +302,19 @@ def assess(
             frames=frames,
             blocking_keys=blocking_keys,
         )
+        applied = settings.get("applied_verdicts", [])  # v0.5
+        if applied:
+            import json as _json  # local: only the labelled path needs it
+            from src.contracts import PairVerdict
+            decoys = []
+            if decoys_path.exists():
+                with decoys_path.open(encoding="utf-8") as handle:
+                    decoys = _json.load(handle)
+            uniqueness_evaluation.verdicts = evaluate_verdicts(  # v0.5
+                [PairVerdict.model_validate(entry) for entry in applied],
+                load_labels(labels_path),
+                decoys,
+            )
 
     return AssessmentResult(
         dataset_label=data_dir,
@@ -298,4 +332,8 @@ def assess(
         rules_dir=rules_dir,  # v0.4
         rules_loaded=len(rules),  # v0.4
         rules_run=_count_rules_run(agent_summaries),  # v0.4
+        actions=actions,  # v0.5
+        executive_summary=narrative["executive_summary"],  # v0.5
+        narrative_attached=narrative["attached"],  # v0.5
+        narrative_stale=narrative["stale"],  # v0.5
     )

@@ -1,5 +1,12 @@
 # ---------------------------------------------------------------------------
 # src/agents/uniqueness.py
+# v1.2 | 11-Aug-2026 | Package 4g. The attribute veto taps in AFTER the combined
+#                      score and BEFORE the bands. A pair whose digit groups or
+#                      material words disagree on both sides is capped at the
+#                      schema's veto cap, so it leaves the uncertain band and
+#                      costs no model call. The veto writes into the score
+#                      matrix, so clusters and weakest links see the same
+#                      numbers the bands saw.
 # v1.1 | 10-Aug-2026 | Package 4f fix. A block above the pair ceiling is now
 #                      HELD BACK instead of raising, so one oversized block
 #                      cannot end a whole assessment. The ceiling moves from a
@@ -58,6 +65,11 @@ from src.agents.embedding_store import (
     load_verified,
     resolve_compare_field,
     subject_tables,
+)
+from src.agents.text_normaliser import (  # v1.2
+    digit_signature,
+    material_signature,
+    signatures_disagree,
 )
 from src.agents.uniqueness_settings import excluded_record_keys, resolve_settings
 from src.contracts import (
@@ -178,6 +190,12 @@ class UniquenessAgent(BaseAgent):
         # v1.1: blocks that were too large to compare, kept so the summary can
         # name them. A steward needs to know WHICH block went unchecked.
         self.oversized_blocks: list[dict[str, Any]] = []  # v1.1
+        # v1.2: pairs the veto capped, by reason. The count is the money the
+        # veto saved: every one of these was a pair the model no longer sees.
+        self.vetoed_pairs: dict[str, int] = {"digits": 0, "material": 0}  # v1.2
+        # v1.2: the joined normalised text per record key, kept so the
+        # adjudicator judges the SAME text the two rungs scored.
+        self.combined_texts: dict[str, str] = {}  # v1.2
         self.score_spread: dict[str, int] = {}
         self.candidate_pairs: list[dict[str, Any]] = []
         self.mode: MatchMode = MatchMode.FULL
@@ -418,6 +436,8 @@ class UniquenessAgent(BaseAgent):
 
         self.held_back = {}
         self.oversized_blocks = []  # v1.1
+        self.vetoed_pairs = {"digits": 0, "material": 0}  # v1.2
+        self.combined_texts = {}  # v1.2
         self.candidate_pairs = []
         self.score_spread = {"duplicate": 0, "uncertain": 0, "below": 0}
 
@@ -465,6 +485,7 @@ class UniquenessAgent(BaseAgent):
             combined_text[record_key] = " ".join(
                 texts_by_field[name].get(record_key, "") for name in texts_by_field
             ).strip()
+            self.combined_texts[record_key] = combined_text[record_key]  # v1.2
             if not combined_text[record_key]:
                 self.held_back[record_key] = HELD_NO_TEXT
                 continue
@@ -613,9 +634,33 @@ class UniquenessAgent(BaseAgent):
                 )
             combined = combined + field_score * np.float32(weight)
 
+        # v1.2: the attribute veto. One signature per member, from the SAME
+        # joined text both rungs scored, so the veto and the scores describe
+        # one text.
+        veto = schema.uniqueness.attribute_veto
+        digit_sigs = []
+        material_sigs = []
+        if veto.enabled:
+            for key in member_keys:
+                joined = " ".join(
+                    texts_by_field[name].get(key, "") for name in texts_by_field
+                ).strip()
+                digit_sigs.append(digit_signature(joined))
+                material_sigs.append(material_signature(joined, veto.material_words))
+
         for left in range(size):
             for right in range(left + 1, size):
                 score = float(combined[left, right])
+                if veto.enabled:  # v1.2
+                    reason = signatures_disagree(
+                        digit_sigs[left], digit_sigs[right],
+                        material_sigs[left], material_sigs[right],
+                    )
+                    if reason and score > veto.cap:
+                        score = veto.cap
+                        combined[left, right] = np.float32(score)
+                        combined[right, left] = np.float32(score)
+                        self.vetoed_pairs[reason] += 1
                 if score >= duplicate_band:
                     self.score_spread["duplicate"] += 1
                     groups.join(left, right)
@@ -780,6 +825,7 @@ class UniquenessAgent(BaseAgent):
             "held_back": reasons,
             "held_back_total": len(self.held_back),
             "oversized_blocks": list(self.oversized_blocks),  # v1.1
+            "vetoed_pairs": dict(self.vetoed_pairs),  # v1.2
             "score_spread": dict(self.score_spread),
             "candidate_pairs": len(self.candidate_pairs),
             "bands": self.settings.get("bands", {}),

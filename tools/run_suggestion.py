@@ -8,6 +8,9 @@
 #                      the Phase 2 scheduled-job shape.
 # v1.1 | 13-Jul-2026 | Source per-table config from config/schema (not the
 #                      retired config/objects).
+# v1.3 | 11-Aug-2026 | Package 4g. configure_lm moves to
+#                      src/dspy_modules/lm_config.py, where every DSPy program
+#                      shares it. The name is re-exported here for old callers.
 # v1.2 | 15-Jul-2026 | Wire LM configuration into the CLI: load .env and call
 #                      dspy.configure before the pipeline runs, with a --model
 #                      flag. The testable core stays LM-free (programs are still
@@ -44,6 +47,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
 
+from src.dspy_modules.lm_config import configure_lm  # v1.3 (re-export kept)
 from src.rules.repository import candidate_suggestion_to_dict
 
 
@@ -102,28 +106,6 @@ def _build_real_components(model_label: str) -> tuple[Any, Any]:
     interpreter = ProfileInterpreter(roles_path="config/rule_bank/field_roles.yaml")
     suggester = RuleSuggester(bank=bank, reference_store=store)
     return interpreter, suggester
-
-
-def configure_lm(model: str) -> str:  # v1.2
-    """Load .env and configure the DSPy language model. Returns the resolved
-    model string (used as the artefact's model_label if none was given).
-
-    The key is read from the environment, not passed on the command line, so it
-    never lands in shell history or the artefact. For OpenAI set OPENAI_API_KEY
-    in a .env file at the repo root; for a local model later (Package 6) point
-    --model at 'ollama_chat/<name>' and no key is needed."""
-    import dspy  # heavy import kept local
-
-    try:
-        from dotenv import load_dotenv
-        load_dotenv()
-    except ImportError:
-        # python-dotenv is optional; env vars may already be set another way.
-        pass
-
-    lm = dspy.LM(model)
-    dspy.configure(lm=lm)
-    return model
 
 
 def main() -> None:

@@ -3,6 +3,8 @@
 # v0.3 | 04-Aug-2026 | Package 4a. TABLE_META now carries file_pattern and,
 #                      for MARA, the uniqueness block. Both were hand-added
 #                      to mara.yaml and were erased on every rebuild.
+# v0.6 | 11-Aug-2026 | Package 4g. The attribute veto dials join TABLE_META so
+#                      a schema rebuild keeps them.
 # v0.5 | 10-Aug-2026 | Package 4f fix. TABLE_META held jaro_winkler as the MARA
 #                      fuzzy metric; the default moved to token_sort_ratio in
 #                      Package 4e, so a rebuild would have reverted it. Adds the
@@ -90,6 +92,13 @@ TABLE_META: dict[str, dict[str, Any]] = {
             },
             "bands": {"duplicate": 0.92, "review_low": 0.8},
             "max_block_pairs": 20000000,  # v0.5
+            "attribute_veto": {  # v0.6
+                "enabled": True,
+                "cap": 0.75,
+                "material_words": ["stainless steel", "carbon steel", "steel",
+                                   "brass", "bronze", "nylon", "aluminium",
+                                   "copper", "plastic", "rubber", "titanium"],
+            },
         },
     },
     "MARC": {

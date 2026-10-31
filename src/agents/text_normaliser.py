@@ -1,5 +1,9 @@
 # ---------------------------------------------------------------------------
 # src/agents/text_normaliser.py
+# v1.1 | 11-Aug-2026 | Package 4g. Attribute extraction for the veto: the digit
+#                      groups and the material words of a normalised text. The
+#                      matcher compares the two signatures and caps a pair whose
+#                      signatures disagree.
 # v1.0 | 04-Aug-2026 | Package 4c. One text normaliser, used by BOTH scoring
 #                      rungs. The embeddings builder normalises before it
 #                      encodes, and the matcher normalises before it scores, so
@@ -82,3 +86,55 @@ def is_matchable(value: Any) -> bool:
     scoring it against everything and calling it unique.
     """
     return normalise_text(value) != ""
+
+
+# ---------------------------------------------------------------------------
+# Attribute extraction (v1.1, Package 4g)
+# ---------------------------------------------------------------------------
+# Digit groups, wherever they sit. "m8" yields "8" and "5in" yields "5", so a
+# unit-word twin ("5 inches" against "5in") keeps the SAME digit signature and
+# is never vetoed, while "6203" against "6204" differs and is.
+_DIGIT_GROUPS = re.compile(r"\d+")
+
+
+def digit_signature(normalised_text: str) -> frozenset[str]:  # v1.1
+    """The set of digit groups in one normalised text."""
+    return frozenset(_DIGIT_GROUPS.findall(normalised_text or ""))
+
+
+def material_signature(  # v1.1
+    normalised_text: str,
+    material_words: list[str],
+) -> frozenset[str]:
+    """The set of material words in one normalised text.
+
+    Longest phrases are matched first and removed, so "stainless steel" is one
+    material and never also counts as "steel".
+    """
+    found: set[str] = set()
+    working: str = f" {normalised_text or ''} "
+    word: str = ""
+
+    for word in sorted(material_words, key=len, reverse=True):
+        if f" {word} " in working:
+            found.add(word)
+            working = working.replace(f" {word} ", " ")
+    return frozenset(found)
+
+
+def signatures_disagree(  # v1.1
+    left_digits: frozenset[str],
+    right_digits: frozenset[str],
+    left_materials: frozenset[str],
+    right_materials: frozenset[str],
+) -> str:
+    """Return the veto reason, or an empty string for no veto.
+
+    A veto needs evidence on BOTH sides. A side with no digits or no material
+    word never vetoes, because absence is not disagreement.
+    """
+    if left_digits and right_digits and left_digits != right_digits:
+        return "digits"
+    if left_materials and right_materials and left_materials != right_materials:
+        return "material"
+    return ""

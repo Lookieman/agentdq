@@ -241,3 +241,124 @@ def test_the_ceiling_is_a_schema_dial_not_a_hidden_constant():
     from src.data.schema import load_schemas
     schemas = load_schemas(SCHEMA_DIR, TABLES)
     assert schemas["MARA"].uniqueness.max_block_pairs == 20_000_000
+
+
+# ---------------------------------------------------------------------------
+# Package 4g/4h: verdicts end to end, and the plan  (v1.3)
+# ---------------------------------------------------------------------------
+
+@pytest.fixture(scope="module")
+def verdict_dataset(tmp_path_factory):
+    """A labelled dataset of its own, so verdict files touch no other test."""
+    from src.data.defect_injector import _persist, inject_defects
+    from src.data.generator import generate_dataset
+    from src.data.schema import load_schemas
+    from src.rules.rule_loader import load_rules
+
+    schemas = load_schemas(SCHEMA_DIR, TABLES)
+    rules = load_rules(RULES_DIR)
+    baseline = generate_dataset(SCHEMA_DIR, PROFILE_DIR, TABLES, n_materials=400, seed=42)
+    frames, labels, manifest, decoys = inject_defects(
+        baseline, schemas, rules, scenario="degraded", seed=42
+    )
+    out_dir = tmp_path_factory.mktemp("verdict_dataset")
+    _persist(frames, labels, manifest, decoys, out_dir)
+    return str(out_dir)
+
+
+def _fake_verdict_artefact(result, data_dir: str, decision: str, fingerprint: str) -> dict:
+    """One verdict for the FIRST open pair, judged by hand."""
+    from src.agents.adjudicator import pair_key
+    from src.reporting.cluster_view import compare_field_texts
+    # the joined texts the agent scored are not on the result, so rebuild the
+    # key from the pair the result carries via a fresh agent-free read
+    pair = result.uniqueness_settings["candidate_pairs"][0]
+    texts = _texts_for(data_dir)
+    key = pair_key(pair["left_id"], pair["right_id"],
+                   texts[pair["left_id"]], texts[pair["right_id"]])
+    return {
+        "meta": {"fingerprint": fingerprint, "model": "fake/model", "cap": 500,
+                 "judged_total": 1},
+        "verdicts": {key: {
+            "table": pair["table"], "left_id": pair["left_id"],
+            "right_id": pair["right_id"], "decision": decision,
+            "confidence": 0.9, "reasoning": "Judged by the test.",
+            "score": pair["score"], "model": "fake/model",
+            "fingerprint": fingerprint,
+        }},
+    }
+
+
+def _texts_for(data_dir: str) -> dict:
+    """The combined normalised texts, rebuilt the way the CLI rebuilds them."""
+    from src.data.schema import load_schemas
+    from src.reporting.assessment import load_frames
+    from src.reporting.cluster_view import compare_field_texts
+
+    frames = load_frames(data_dir, TABLES, "parquet")
+    schemas = load_schemas(SCHEMA_DIR, TABLES)
+    texts: dict = {}
+    for field_texts in compare_field_texts(frames, schemas, "MARA").values():
+        for record_key, value in field_texts.items():
+            texts[record_key] = f"{texts.get(record_key, '')} {value}".strip()
+    return texts
+
+
+def test_a_confirmed_verdict_lands_in_the_next_assessment(verdict_dataset):
+    # THE WHOLE PATH: assess, judge one pair offline, write the artefact
+    # beside the dataset, assess again. The confirmed pair must arrive as a
+    # needs_steward cluster and a finding, and must leave the open list.
+    from src.agents.adjudicator import save_verdicts
+
+    first = assess(verdict_dataset, SCHEMA_DIR, RULES_DIR, TABLES, "parquet")
+    open_before = len(first.uniqueness_settings["candidate_pairs"])
+    assert open_before > 0
+    fingerprint = str(first.uniqueness_settings["resolved"]["fingerprint"])
+    save_verdicts(verdict_dataset,
+                  _fake_verdict_artefact(first, verdict_dataset, "duplicate", fingerprint))
+
+    second = assess(verdict_dataset, SCHEMA_DIR, RULES_DIR, TABLES, "parquet")
+    summary = second.uniqueness_settings["summary"]
+    assert summary["verdicts"]["confirmed"] == 1
+    assert summary["verdicts"]["stale"] is False
+    assert len(second.uniqueness_settings["candidate_pairs"]) == open_before - 1
+    assert any(c.cluster_id.startswith("CL-LLM-") for c in second.clusters)
+    llm_findings = [f for f in second.findings
+                    if f.metadata.get("source") == "llm_adjudicator"]
+    assert len(llm_findings) == 1
+    assert llm_findings[0].confidence == 0.9
+
+
+def test_stale_verdicts_are_refused_end_to_end(verdict_dataset):
+    # THE REQUESTED TEST CASE (4g Q3), on the real path: a verdicts file made
+    # under OTHER settings applies nothing, every pair stays open, and the
+    # summary says stale so the screen can explain itself.
+    from src.agents.adjudicator import save_verdicts
+
+    first = assess(verdict_dataset, SCHEMA_DIR, RULES_DIR, TABLES, "parquet")
+    save_verdicts(verdict_dataset,
+                  _fake_verdict_artefact(first, verdict_dataset, "duplicate",
+                                         "fp-FROM-OTHER-SETTINGS"))
+    second = assess(verdict_dataset, SCHEMA_DIR, RULES_DIR, TABLES, "parquet")
+    summary = second.uniqueness_settings["summary"]
+    assert summary["verdicts"]["stale"] is True
+    assert summary["verdicts"]["confirmed"] == 0
+    assert not any(c.cluster_id.startswith("CL-LLM-") for c in second.clusters)
+
+
+def test_every_assessment_carries_a_ranked_plan(assessed):
+    # Package 4h: the plan is deterministic and always present. Ranks are a
+    # sequence from 1, and a degraded run has work to rank.
+    assert assessed.actions
+    assert [action.rank for action in assessed.actions] == list(
+        range(1, len(assessed.actions) + 1))
+    assert assessed.narrative_attached == 0
+    assert assessed.narrative_stale is False
+
+
+def test_the_held_back_records_reach_the_plan(assessed):
+    refs = {ref for action in assessed.actions for ref in action.finding_refs}
+    held = assessed.uniqueness_settings["summary"]["held_back"]
+    for reason, count in held.items():
+        if count > 0:
+            assert reason in refs

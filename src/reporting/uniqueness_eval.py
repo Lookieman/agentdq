@@ -1,5 +1,9 @@
 # ---------------------------------------------------------------------------
 # src/reporting/uniqueness_eval.py
+# v1.1 | 11-Aug-2026 | Package 4g. evaluate_verdicts(): the adjudicator's
+#                      answers measured against the labelled twins and decoys
+#                      that fall in the band. The three counts a steward needs:
+#                      twins confirmed, decoys rejected, and each one's inverse.
 # v1.0 | 04-Aug-2026 | Package 4e. How well did the matcher do? Three numbers,
 #                      not one:
 #                          cluster recall on injected twins  - simple
@@ -31,7 +35,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional  # v1.1
 
 import pandas as pd
 from pydantic import BaseModel, Field
@@ -74,6 +78,34 @@ class DecoyResult(BaseModel):
     by_kind: dict[str, dict[str, int]] = Field(default_factory=dict)
 
 
+class VerdictEvaluation(BaseModel):  # v1.1
+    """How the adjudicator did on the pairs the labels know about.
+
+    Only judged pairs with a label are counted, so the numbers measure the
+    model and not the band. Unlabelled verdicts are counted apart, because the
+    labels hold no opinion on them.
+    """
+
+    judged: int = 0
+    twins_judged: int = 0
+    twins_confirmed: int = 0
+    decoys_judged: int = 0
+    decoys_rejected: int = 0
+    unlabelled_judged: int = 0
+
+    @property
+    def twin_accuracy_pct(self) -> float:
+        if self.twins_judged == 0:
+            return 0.0
+        return round(100.0 * self.twins_confirmed / self.twins_judged, 1)
+
+    @property
+    def decoy_accuracy_pct(self) -> float:
+        if self.decoys_judged == 0:
+            return 0.0
+        return round(100.0 * self.decoys_rejected / self.decoys_judged, 1)
+
+
 class UniquenessEvaluation(BaseModel):
     """The three numbers plus the score-spread report."""
 
@@ -81,6 +113,7 @@ class UniquenessEvaluation(BaseModel):
     decoy_result: DecoyResult
     unlabelled_joins: int = 0
     score_spread: dict[str, int] = Field(default_factory=dict)
+    verdicts: Optional[VerdictEvaluation] = None  # v1.1
     strategy_scores: dict[str, dict[str, float]] = Field(default_factory=dict)
 
 
@@ -337,6 +370,17 @@ def evaluate_uniqueness(
     )
 
 
+def print_verdict_evaluation(verdicts: "VerdictEvaluation") -> None:  # v1.1
+    """Print the adjudicator's report card."""
+    print("\nAdjudicator (on labelled pairs in the band):")
+    print(f"  pairs judged     : {verdicts.judged} "
+          f"({verdicts.unlabelled_judged} carry no label)")
+    print(f"  twins confirmed  : {verdicts.twins_confirmed} of {verdicts.twins_judged} "
+          f"({verdicts.twin_accuracy_pct}%)")
+    print(f"  decoys rejected  : {verdicts.decoys_rejected} of {verdicts.decoys_judged} "
+          f"({verdicts.decoy_accuracy_pct}%)")
+
+
 def print_evaluation(evaluation: UniquenessEvaluation) -> None:
     """Console output for the assessment runner."""
     recall: TwinRecall = evaluation.twin_recall
@@ -370,3 +414,44 @@ def print_evaluation(evaluation: UniquenessEvaluation) -> None:
         print("\n  Decoy errors by kind:")
         for kind, counts in sorted(decoys.by_kind.items()):
             print(f"    {kind:14} : {counts['wrongly_joined']}/{counts['total']}")
+
+
+def evaluate_verdicts(  # v1.1
+    verdicts: list[Any],
+    labels: list[DefectLabel],
+    decoys: list[dict[str, Any]],
+) -> VerdictEvaluation:
+    """Score the adjudicator's answers against the pairs the labels know.
+
+    A twin pair judged "duplicate" is correct. A decoy pair judged
+    "not_duplicate" is correct. Everything else the labels cannot judge.
+    """
+    twin_pairs: set[frozenset] = set()
+    decoy_pairs: set[frozenset] = set()
+    label: DefectLabel = None
+    decoy: dict[str, Any] = {}
+    verdict: Any = None
+    pair: frozenset = None
+    result: VerdictEvaluation = VerdictEvaluation()
+
+    for label in _twin_labels(labels):
+        source = str((label.detail or {}).get("duplicate_of", ""))
+        if source:
+            twin_pairs.add(frozenset({label.record_key, f"MATNR={source}"}))
+    for decoy in decoys:
+        decoy_pairs.add(frozenset({f"MATNR={decoy['left_matnr']}", f"MATNR={decoy['right_matnr']}"}))
+
+    for verdict in verdicts:
+        result.judged += 1
+        pair = frozenset({str(verdict.left_id), str(verdict.right_id)})
+        if pair in twin_pairs:
+            result.twins_judged += 1
+            if str(verdict.decision.value) == "duplicate":
+                result.twins_confirmed += 1
+        elif pair in decoy_pairs:
+            result.decoys_judged += 1
+            if str(verdict.decision.value) == "not_duplicate":
+                result.decoys_rejected += 1
+        else:
+            result.unlabelled_judged += 1
+    return result

@@ -1,3 +1,8 @@
+# v0.5 | 11-Aug-2026 | Package 4g/4h. The Duplicates tab shows the
+#                      adjudicator's verdicts and the open pairs that remain.
+#                      A seventh tab, Actions, shows the ranked remediation
+#                      plan, with the model narrative when a matching plan
+#                      artefact exists.
 # v0.4 | 10-Aug-2026 | Package 4f fix. The Settings tab names any block that was
 #                      too large to compare. One oversized block used to end the
 #                      whole run with a ValueError.
@@ -62,9 +67,11 @@ from src.reporting.cluster_view import (  # v0.3
     compare_field_texts,
     decoy_frame,
     held_back_frame,
+    actions_frame,
     match_mode_note,
     oversized_blocks_frame,
     score_spread_frame,
+    verdict_frame,
     settings_rows,
     twin_recall_frame,
 )
@@ -382,12 +389,14 @@ def render_duplicates_tab(result: AssessmentResult, texts: dict) -> None:  # v0.
                     f"a closer look."
                 )
 
+    render_verdicts(result, texts)  # v0.5
+
     st.subheader("Pairs awaiting a decision")
     st.caption(
         "These pairs scored inside the review band, so the deterministic methods could "
-        "not settle them. They form no cluster and raise no finding. The adjudicator in "
-        "Package 4g takes them, which is why model cost follows real ambiguity rather "
-        "than dataset size."
+        "not settle them. They form no cluster and raise no finding. The adjudicator "
+        "judges them in a batch step (tools/run_adjudication.py), which is why model "
+        "cost follows real ambiguity rather than dataset size."
     )
     if not pairs:
         st.info("No pairs fell in the review band.")
@@ -446,6 +455,79 @@ def render_uniqueness_evaluation(result: AssessmentResult) -> None:  # v0.3
     with right:
         st.caption("Decoy errors by kind")
         st.dataframe(decoy_frame(evaluation), use_container_width=True, hide_index=True)
+
+
+def render_verdicts(result: AssessmentResult, texts: dict) -> None:  # v0.5
+    """The adjudicator's answers, when a verdicts artefact was applied."""
+    settings: dict = result.uniqueness_settings or {}
+    summary: dict = settings.get("summary", {})
+    verdict_info: dict = summary.get("verdicts", {}) or {}
+    applied: list = settings.get("applied_verdicts", [])
+    metrics = None
+
+    st.subheader("Adjudicated pairs")
+    if verdict_info.get("stale"):
+        st.warning(
+            "A verdicts file exists, and its settings code does not match this run, so "
+            "none of it was applied. Run tools/run_adjudication.py again under the "
+            "current settings."
+        )
+        return
+    if not applied:
+        st.info(
+            "No verdicts are on file for this dataset. Judge the open pairs with "
+            "tools/run_adjudication.py; the verdicts are kept beside the dataset and "
+            "every later assessment applies them."
+        )
+        return
+    metrics = st.columns(3)
+    metrics[0].metric("Confirmed duplicates", f"{verdict_info.get('confirmed', 0):,}")
+    metrics[1].metric("Rejected pairs", f"{verdict_info.get('rejected', 0):,}")
+    metrics[2].metric("Model", verdict_info.get("model", "") or "-")
+    st.caption(
+        "A confirmed pair became a cluster marked needs_steward and a finding whose "
+        "confidence is the model's own. Nothing is merged; a person decides. A rejected "
+        "pair left the open list, and the rejection is kept."
+    )
+    st.dataframe(verdict_frame(applied, texts), use_container_width=True,
+                 hide_index=True, height=280)
+
+
+def render_actions_tab(result: AssessmentResult) -> None:  # v0.5
+    """The ranked remediation plan."""
+    frame = actions_frame(result.actions)
+
+    st.subheader("The plan")
+    st.caption(
+        "Findings are grouped by dimension, table, field and rule, and each group is one "
+        "action. The rank is severity times affected records, with a lift for a mandatory "
+        "field. The agent recommends; it writes nothing to the data."
+    )
+    if result.narrative_stale:
+        st.warning(
+            "A narrative plan exists for this dataset, and its settings code does not "
+            "match this run, so the template wording is shown. Run "
+            "tools/run_remediation.py again under the current settings."
+        )
+    elif result.narrative_attached:
+        st.caption(f"Model narrative attached to {result.narrative_attached} action(s).")
+    else:
+        st.info(
+            "The wording below is from templates. tools/run_remediation.py adds a model "
+            "narrative in one call and an executive summary."
+        )
+    if result.executive_summary:
+        st.markdown(f"**Summary:** {result.executive_summary}")
+    if frame.empty:
+        st.info("No actions: the run raised no findings and held nothing back.")
+    else:
+        st.dataframe(frame, use_container_width=True, hide_index=True, height=420)
+        st.download_button(
+            "Download the plan (CSV)",
+            data=frame.to_csv(index=False).encode("utf-8"),
+            file_name="agentdq_remediation_plan.csv",
+            mime="text/csv",
+        )
 
 
 def render_settings_tab(result: AssessmentResult) -> None:  # v0.3
@@ -591,15 +673,17 @@ def main() -> None:
         st.error(warning)
     render_kpis(result)
 
-    scorecard_tab, findings_tab, duplicates_tab, evidence_tab, settings_tab, about_tab = st.tabs(
-        ["Scorecard", "Findings", "Duplicates", "Evidence", "Settings", "About"]
-    )  # v0.3
+    scorecard_tab, findings_tab, duplicates_tab, actions_tab, evidence_tab, settings_tab, about_tab = st.tabs(
+        ["Scorecard", "Findings", "Duplicates", "Actions", "Evidence", "Settings", "About"]
+    )  # v0.5
     with scorecard_tab:
         render_scorecard_tab(result)
     with findings_tab:
         render_findings_tab(result)
     with duplicates_tab:  # v0.3
         render_duplicates_tab(result, texts)
+    with actions_tab:  # v0.5
+        render_actions_tab(result)
     with evidence_tab:
         render_evidence_tab(result)
     with settings_tab:  # v0.3

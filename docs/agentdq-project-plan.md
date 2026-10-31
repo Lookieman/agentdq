@@ -65,7 +65,7 @@ Two steps remain: the adjudicator with the shared LM setup (4g), and remediation
 with its dashboard tab (4h). A follow-on fix in the same session made the block pair ceiling a schema dial and
 turned it into a hold-back rather than an error, after the clean baseline dataset
 crashed on a block of 3,180 records where the degraded one did not. The suite
-stands at 244 passing tests, 1 skipped
+stands at 282 passing tests, 1 skipped
 (the skip needs the real CAL extract in data/raw), all offline. The first two AgentDQ
 LinkedIn articles are ready to write: Package 2's ("the agent proposes, the
 human disposes") and Package 3's ("where I put the human in the loop, and why").
@@ -201,30 +201,44 @@ Step   Status       Output files                          What it delivered
                                                           joins, and the score
                                                           spread by change strategy.
 
-4f     not started  (planned) app/dashboard.py            The dashboard moves onto
-                    (planned) src/reporting/assessment.py the graph. New tabs:
-                                                          Duplicates (clusters,
-                                                          survivors, weakest link)
-                                                          and Settings (read-only:
-                                                          bands, blocking keys,
-                                                          advisories in force, the
-                                                          settings code).
+4f     done         app/dashboard.py                     The dashboard moves onto
+                    src/reporting/assessment.py           the graph: assess() builds
+                    src/reporting/cluster_view.py         and invokes the assessment
+                    tools/run_assessment.py               graph, so every surface
+                                                          runs ONE path. Duplicates
+                                                          and Settings tabs; rules
+                                                          selector; the block pair
+                                                          ceiling became a schema
+                                                          dial with held-back
+                                                          reporting.
 
-4g     not started  (planned) src/dspy_modules/lm_config  The adjudicator: a shared
-                    (planned) src/agents/adjudicator.py   language-model config for
-                                                          every DSPy program in the
-                                                          repo, plus the DSPy
-                                                          signature that judges an
-                                                          uncertain pair or cluster.
-                                                          Cluster-level judgement is
-                                                          the working design.
+4g     done         src/dspy_modules/lm_config.py        The adjudicator judges the
+                    src/dspy_modules/                     uncertain PAIRS (chain
+                      adjudication_signatures.py          review is deferred), via a
+                    src/agents/adjudicator.py             batch CLI that writes
+                    src/agents/text_normaliser.py         verdicts.json beside the
+                    tools/run_adjudication.py             dataset; assessments apply
+                                                          it offline. The attribute
+                                                          veto was pulled forward as
+                                                          the cost gate ahead of the
+                                                          model.
 
-4h     not started  (planned) src/agents/remediation.py   The Remediation agent
-                    (planned) app/dashboard.py            groups findings into ranked
-                                                          actions, and its dashboard
-                                                          tab lets a steward see the
-                                                          plan for a run.
+4h     done         src/agents/remediation.py            Findings grouped and ranked
+                    tools/run_remediation.py              deterministically; the
+                    app/dashboard.py                      model writes the words in
+                                                          one call, kept in a plan
+                                                          artefact; the Actions tab
+                                                          shows the ranked plan and
+                                                          the executive summary.
 ```
+
+**Late change: the attribute veto moved from Package 5 into 4g.** The
+uncertain band is the adjudicator's bill, and the veto is the cheapest way to
+shrink it. On a generated degraded example (1,200 materials, fuzzy-only) it
+cut the band from 405 pairs to 8 and the decoy error rate from 27.8% to 0.0%,
+at a cost of one chained twin. The cap is a schema dial
+(`uniqueness.attribute_veto.cap`, default 0.75, alternatives documented in
+`config/schema/mara.yaml`); the calibration programme stays in Package 5.
 
 **Late change: the MARA fuzzy method.** During 4e testing, a review of the fuzzy
 method for MARA showed that `jaro_winkler` was the wrong default: it flattered

@@ -16,6 +16,13 @@
 #                      exclusion: a description that failed validity holds its
 #                      record out of deduplication, which also stops a large
 #                      false cluster of placeholder descriptions forming.
+# v1.5 | 11-Aug-2026 | Package 4g/4h. uniqueness_node loads the verdicts
+#                      artefact beside the dataset and applies it: confirmed
+#                      pairs become needs_steward clusters and findings BEFORE
+#                      the scorecard runs, rejected pairs leave the open list,
+#                      and a stale fingerprint applies nothing and says so. The
+#                      remediation stub is replaced by the real deterministic
+#                      plan; the model narrative attaches outside the graph.
 # v1.4 | 10-Aug-2026 | Package 4f. Two gaps closed. scorecard_node now passes
 #                      dimension_totals, so the per-dimension denominator built
 #                      in 4d finally reaches the scorecard; without it the
@@ -57,6 +64,8 @@ from __future__ import annotations
 from typing import Any
 
 from src.agents.base import AgentResult
+from src.agents.adjudicator import apply_verdicts, load_verdicts  # v1.5
+from src.agents.remediation import build_actions  # v1.5
 from src.agents.uniqueness import UniquenessAgent  # v1.3
 from src.agents.uniqueness_settings import (  # v1.2
     build_advisory,
@@ -240,17 +249,49 @@ def uniqueness_node(state: dict[str, Any]) -> dict[str, Any]:  # v1.3
     summary = dict(agent.summary())  # v1.4
     summary["records_assessed"] = result.records_assessed  # v1.4
     summary["records_excluded"] = result.records_excluded  # v1.4
+
+    # v1.5: apply the verdicts artefact, when one exists beside the dataset.
+    # This happens BEFORE the scorecard node runs, so a confirmed pair counts.
+    findings_out = list(result.findings)
+    clusters_out = list(result.clusters)
+    open_pairs = list(agent.candidate_pairs)
+    applied = {"verdicts": [], "confirmed": 0, "rejected": 0, "stale": False, "model": ""}
+    data_dir = state.get("data_dir")
+    if data_dir:
+        artefact = load_verdicts(data_dir)
+        if artefact.get("verdicts"):
+            subject = result.clusters[0].table if result.clusters else "MARA"
+            applied = apply_verdicts(
+                candidate_pairs=open_pairs,
+                verdict_artefact=artefact,
+                fingerprint=str(agent.settings.get("fingerprint", "")),
+                texts=agent.combined_texts,
+                frame=frames.get(subject) if subject in frames else frames.get("MARA"),
+                schema=schemas.get(subject) or schemas.get("MARA"),
+                match_mode=summary.get("mode", "full"),
+                cluster_offset=len(clusters_out),
+            )
+            findings_out.extend(applied["findings"])
+            clusters_out.extend(applied["clusters"])
+            open_pairs = applied["open_pairs"]
+    summary["candidate_pairs"] = len(open_pairs)  # v1.5: the OPEN count
+    summary["verdicts"] = {  # v1.5
+        "confirmed": applied["confirmed"],
+        "rejected": applied["rejected"],
+        "stale": applied["stale"],
+        "model": applied["model"],
+    }
     return {
-        "findings": result.findings,
+        "findings": findings_out,  # v1.5
         "agent_results": [{
             "agent": result.agent,
             "dimension": result.dimension.value,
-            "findings": len(result.findings),
-            "clusters": len(result.clusters),
+            "findings": len(findings_out),
+            "clusters": len(clusters_out),
             "records_assessed": result.records_assessed,
             "records_excluded": result.records_excluded,
         }],
-        "clusters": result.clusters,  # v1.3
+        "clusters": clusters_out,  # v1.5
         "uniqueness_settings": {  # v1.3
             "resolved": agent.settings,
             "excluded_counts": summary["held_back"],
@@ -258,14 +299,25 @@ def uniqueness_node(state: dict[str, Any]) -> dict[str, Any]:  # v1.3
             "summary": summary,
             # v1.4: the pairs themselves, not only how many. The summary keeps
             # the count so no existing reader breaks.
-            "candidate_pairs": list(agent.candidate_pairs),  # v1.4
+            "candidate_pairs": list(open_pairs),  # v1.5: only the OPEN pairs
+            "applied_verdicts": [v.model_dump(mode="json") for v in applied["verdicts"]],  # v1.5
         },
     }
 
 
 def remediation_node(state: dict[str, Any]) -> dict[str, Any]:
-    """STUB for Package 4."""
-    return {"remediation": [{"agent": "Remediation Agent (stub)", "actions": []}]}
+    """The deterministic remediation plan: grouped, ranked, template-worded.
+
+    Runs offline on every assessment. The model narrative is a batch step and
+    attaches OUTSIDE the graph, so this node is always fast and never spends.
+    """
+    summary: dict[str, Any] = state.get("uniqueness_settings", {}).get("summary", {})
+    actions = build_actions(  # v1.5
+        findings=state.get("findings", []),
+        schemas=state.get("schemas", {}),
+        uniqueness_summary=summary,
+    )
+    return {"remediation": [action.model_dump(mode="json") for action in actions]}
 
 
 def report_node(state: dict[str, Any]) -> dict[str, Any]:
