@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(uv sync *)",
+      "Bash(uv run pytest *)",
+      "Bash(uv run python -m src.*)",
+      "Bash(uv run python -m tools.*)"
+    ],
+    "ask": [
+      "Bash(uv run python -m tools.run_adjudication *)",
+      "Bash(uv run python -m tools.run_remediation *)",
+      "Bash(uv run python -m tools.run_suggestion *)",
+      "Bash(uv run python -m tools.build_embeddings *)",
+      "Bash(uv run python -m tools.benchmark_embedding_models *)",
+      "Bash(uv run python tools/run_adjudication.py *)",
+      "Bash(uv run python tools/run_remediation.py *)",
+      "Bash(uv run python tools/run_suggestion.py *)",
+      "Bash(uv run python tools/build_embeddings.py *)",
+      "Bash(uv run python tools/benchmark_embedding_models.py *)",
+      "Bash(uv add *)",
+      "Bash(uv remove *)",
+      "Bash(uv lock *)",
+      "Bash(uv run streamlit *)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(git reset *)",
+      "Bash(git restore *)",
+      "Bash(git clean *)",
+      "Bash(git rebase *)",
+      "Bash(git branch -d *)",
+      "Bash(git branch -D *)",
+      "Bash(git worktree remove *)"
+    ],
+    "deny": [
+      "Bash(pip *)",
+      "Bash(pip 3 *)",
+      "Bash(python -m pip *)",
+      "Bash(python3 -m pip *)",
+      "Bash(python -m venv *)",
+      "Bash(python3 -m venv *)",
+      "Read(./.env)",
+      "Read(./env)",
+      "Read(~/Documents/**)",
+      "Read(~/Pictures/**)",
+      "Read(~/Desktop/**)",
+      "Read(~/Downloads/**)",
+      "Read(~/Library/**)",
+      "Read(~/.ssh/**)"
+      "Bash(git add -A*)",
+      "Bash(git add --all*)",
+      "Bash(git add .)",
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(git push * --force*)",
+      "Bash(git push * -f*)",
+      "Bash(rm -rf *)",
+      "Edit(./data/repository/**)",
+      "Edit(./data/approved/**)",
+      "Edit(./data/raw/**)"
+    ]
+  }
+}

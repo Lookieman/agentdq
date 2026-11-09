@@ -32,3 +32,4 @@ build/
 # DVC cache
 .dvc/cache/
 .env
+.claude/ssettings.local.json
