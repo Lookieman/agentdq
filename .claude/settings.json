@@ -46,7 +46,7 @@
       "Read(~/Desktop/**)",
       "Read(~/Downloads/**)",
       "Read(~/Library/**)",
-      "Read(~/.ssh/**)"
+      "Read(~/.ssh/**)",
       "Bash(git add -A*)",
       "Bash(git add --all*)",
       "Bash(git add .)",
