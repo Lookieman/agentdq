@@ -103,6 +103,19 @@ v2.1 | 11-Aug-2026 | Packages 4g and 4h built; Package 4 is complete. The
                      Shared LM setup lands in src/dspy_modules/lm_config.py
                      (CLI flag, then AGENTDQ_MODEL, then openai/gpt-4o-mini at
                      temperature 0). Test count to 282 passing, 1 skipped.
+v2.2 | 13-Nov-2026 | Package 4z close-out. The approval gate exports the
+                     approved rules to data/approved/ after every decision
+                     (FileRepository, opt-in approved_dir), and data/approved/
+                     is tracked, so the default assessment runs only rules a
+                     human approved. Sections 1, 5.10, 6.4, 6.5 and 14 brought
+                     up to date: section 6.4 now describes the built veto with
+                     the schema cap of 0.75, and section 6.5 is renumbered.
+                     The live check found that load_labels() dropped the label
+                     detail, so the adjudicator's report card counted no twins;
+                     fixed in step z7b. On the degraded set, gpt-4o-mini
+                     confirmed 27 of 27 labelled twins and rejected 1 of 1
+                     decoy in the band. Test count to 291 passing, 0 skipped.
+                     Section 9: the rule bank holds 106 templates, as built.
 v2.0 | 10-Aug-2026 | Package 4f built (the dashboard moves onto the graph).
                      assess() now BUILDS and INVOKES the assessment graph, so
                      the dashboard, the console driver and the graph runner run
@@ -148,10 +161,11 @@ system.
 
 ## 1. Where the build stands
 
-Packages 1, 2 and 3 are complete, and Package 4 is complete through step 4f. The
-deterministic spine, the full agentic front half, the approval gate, the LangGraph
-orchestration and the uniqueness stage exist, are tested offline (244 passing
-tests, 1 skipped), and run on real SAP CAL extracts. Every surface now runs ONE
+Packages 1, 2, 3 and 4 are complete. Package 4 closed with step 4z on
+13-Nov-2026. The deterministic spine, the full agentic front half, the approval
+gate, the LangGraph orchestration, the uniqueness stage, the adjudicator and the
+remediation plan exist, are tested offline (291 passing tests, 0 skipped), and
+run on real SAP CAL extracts. Every surface now runs ONE
 path: assess() builds and invokes the assessment graph, and the dashboard, the
 console driver and the graph runner all call it. The loop closes:
 an agent suggests a rule, a human approves it, and the approved rule is loadable
@@ -160,13 +174,18 @@ LinkedIn article (Package 2's story - "the agent proposes, the human disposes") 
 ready to write; Package 3's story ("where I put the human in the loop, and why")
 follows it.
 
-Package 4 is now in build. Its design is settled (section 5); steps 4a and 4b
-are done, and so is 4c. 4a delivered the uniqueness settings (schema v0.4 and the
-MARA dials); 4b turned advice between agents into small structured records and
-replaced signal suppression with record exclusion; 4c built the semantic vectors
-and the shared text normaliser. The suite stands at 153 passing, 0 skipped -
-seven of those tests had been skipping in silence because the pipeline test
-looked for the profiles in data/profile while they live in data/profiles.
+Package 4 is complete (section 5). 4a delivered the uniqueness settings (schema
+v0.4 and the MARA dials); 4b turned advice between agents into small structured
+records and replaced signal suppression with record exclusion; 4c built the
+semantic vectors and the shared text normaliser; 4d built the matcher; 4e made
+the data honest to measure against; 4f put the dashboard on the graph; 4g added
+the attribute veto and the adjudicator; 4h added the remediation plan and its
+Actions tab. Step 4z closed the package: the approval gate now exports the
+approved rules to data/approved/ after every decision, so the default
+assessment runs only rules a human approved. Package 4 gets two articles:
+uniqueness (4a to 4g) and remediation (4h). Along the way, seven tests were found
+skipping in silence because the pipeline test looked for the profiles in
+data/profile while they live in data/profiles.
 
 Two defects that predate Package 4 were fixed along the way. The profiles path
 above is one. The other: `tools/build_schema.py` regenerates the schema YAMLs
@@ -220,9 +239,8 @@ Test position: 46 offline tests pass, no LLM or API key required. The three
 deterministic dimensions score 1.000 precision and recall against injected ground
 truth. All ten reference tables are extracted and loaded.
 
-What is NOT yet built: the rules repository and approval gate, LangGraph
-orchestration, the Uniqueness and Remediation agents, the evaluation harness,
-the local-LLM migration, and the public demo.
+What is NOT yet built: the evaluation harness (Package 5), the local-LLM
+migration (Package 6) and the public demo (Package 7).
 
 ---
 
@@ -816,11 +834,13 @@ Step  Deliverable                                   Model?  Regenerate?
 4e    The data and how it is measured: harder        no      YES (done)
       near-copies, decoy pairs, and teaching
       evaluate_against_labels about not_duplicate
-4f    The dashboard moves onto the graph.            no      no
+4f    The dashboard moves onto the graph.            no      no  (done)
       Duplicates and Settings tabs
-4g    The adjudicator: shared LM setup + the DSPy    yes     no
+4g    The adjudicator: shared LM setup + the DSPy    yes     no  (done)
       signature and its wiring
-4h    Remediation, and its tab on the dashboard      yes     no
+4h    Remediation, and its tab on the dashboard      yes     no  (done)
+4z    Close-out: approved-rules export, docs,        no      no  (done)
+      repo hygiene, live check
 ```
 
 The plan was nine steps and is now six. Three merges removed work that had no
@@ -942,18 +962,28 @@ Half the decoys still land wrong: the ones that change ONLY a size number or
 part code ("Bearing 6203" vs "Bearing 6204"). No general-English embedding
 model separates these, and no token-based fuzzy metric separates them either.
 
-Attribute veto is the smallest useful next step. Extract the size number (like
-`6203`) and the material word (like `Steel`) from a normalised description. If
-two records disagree on either, cap the combined score at 0.85 so the pair
-falls below the review band. About 60 lines in `src/agents/text_normaliser.py`
-and one tap in `uniqueness.py`. This moves into Package 5 because the decoy
-error rate is the headline precision figure, and it cannot fall further
-without this rule.
+The attribute veto was built in 4g as the cost gate ahead of the adjudicator.
+`src/agents/text_normaliser.py` extracts the digit groups (like `6203`) and the
+material words (like `Steel`) from a normalised description, and one tap in
+`src/agents/uniqueness.py` applies the veto. If both records carry a value and
+the values differ, the combined score is capped at
+`uniqueness.attribute_veto.cap` in `config/schema/mara.yaml`. The default is
+0.75, below the review floor of 0.80, so a vetoed pair leaves the uncertain band
+and costs no model call. A side with no digits or no material word never
+vetoes. The schema lists the alternatives: 0.85 keeps vetoed pairs in the band
+for the model, and 0.0 removes them from every report.
+
+What stays in Package 5 is the measurement. On a generated degraded example
+(1,200 materials, fuzzy-only) the veto cut the band from 405 pairs to 8 and the
+decoy error rate from 27.8% to 0.0%, at a cost of one chained twin. Package 5
+measures that effect on the full degraded set with vectors, and decides the cap
+from the evidence.
 
 ### 6.5 Deferred list (from the Package 4 build)
 
-Six items came out of the Package 4 build that would improve uniqueness quality
-but were held back so Package 4 could ship. Each is listed here with its cause
+Five items came out of the Package 4 build that would improve uniqueness quality
+but were held back so Package 4 could ship. (A sixth, the attribute veto, was
+built in 4g; see section 6.4.) Each is listed here with its cause
 and the smallest useful next step, so nothing is forgotten.
 
 **1. Character n-gram TF-IDF for candidate retrieval.**
@@ -988,7 +1018,7 @@ Next step: measure the score spread on the token_sort_ratio + semantic
 combination, then decide the bands from evidence. The change is one line in
 `config/schema/mara.yaml`.
 
-**6. A display label for a finding with no field.**
+**5. A display label for a finding with no field.**
 Cause: a Uniqueness finding is about a RECORD, so it carries no field, and the
 scorecard's worst-offending-fields list renders it as `MARA.None`. The number is
 right and the label is wrong. Found during the Package 4f build.
@@ -1151,7 +1181,7 @@ field_roles.yaml             MECHANISM yes,           vocabulary is material-
                                                       roles, added by a human (the
                                                       designed extension mechanism)
 rule bank retrieval          YES                      joins on table + role
-templates (107 wrapped)      NO                       all bound to MARA/MARC/MAKT;
+templates (106 wrapped)      NO                       all bound to MARA/MARC/MAKT;
                                                       cross-object reuse needs
                                                       curated generalisation (9.4)
 reference store              YES                      manifest is config; several
@@ -1502,11 +1532,11 @@ a precision and recall table. Guard those two packages.
 
 ## 14. Immediate next step
 
-Packages 1 to 3 are complete and Package 4 is in build. Steps 4a and 4b are done:
-the uniqueness settings live in the table schema, and advice between agents is
-now a small structured record that a consumer reads by field. The next build is
-step 4c, the batch embeddings artefact, followed by 4d, which produces real
-duplicate clusters with no language model involved at all.
+Packages 1 to 4 are complete. The next step is the Package 5 work breakdown:
+`Prepare Package 5` writes its WBS into the project plan, and no Package 5 code
+is written until that WBS is agreed. Before the Package 4 articles, the
+suggestion agent runs for MARC and MAKT and some of those drafts are approved,
+so the approved set covers all three tables (a follow-on item in the plan).
 
 At the end of Package 2 the loop closed for the first time: an agent suggests a
 rule, a human approves it, and the approved rule runs and changes the score.

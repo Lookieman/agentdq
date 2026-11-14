@@ -1,0 +1,198 @@
+table: MARA
+rule_count: 5
+rules:
+- rule_id: IS_MARA_MATKL_REFERENCE_EXISTS
+  name: MAT0070_MaterialGroupRef
+  table: MARA
+  dama_dimension: Validity
+  is_dimension: Consistency
+  archetype: reference_exists
+  severity: Medium
+  description: Verify the material group value exists in the Material Groups table.
+  fields:
+  - MATKL
+  assertion:
+    node: cmp
+    field: MATKL
+    op: in
+    value:
+    - '01'
+    - '02'
+    - '190102'
+    - '211502'
+    - A001
+    - A002
+    - B001
+    - B002
+    - DIGIVEHI
+    - E001
+    - E002
+    - E003
+    - E004
+    - FL80
+    - L001
+    - L002
+    - L003
+    - L004
+    - L005
+    - L006
+    - L007
+    - L008
+    - P000
+    - P001
+    - P002
+    - P003
+    - R001
+    - SUBS
+    - YBFA01
+    - YBFA02
+    - YBFA03
+    - YBFA04
+    - YBFA05
+    - YBFA06
+    - YBFA07
+    - YBFA08
+    - YBFA09
+    - YBFA10
+    - YBFA11
+    - YBFA12
+    - YBMM00
+    - YBMM01
+    - YBPM01
+    - YBPM02
+    - Z991
+    - Z992
+    - Z993
+    - Z994
+    - ZBRAKES
+    - ZCRUISE
+    - ZFORK
+    - ZFRAME
+    - ZGEARS
+    - ZHANDLE
+    - ZMTN
+    - ZPEDAL
+    - ZRACING
+    - ZSEAT
+    - ZSERV
+    - ZSHOCK
+    - ZTRAIN
+    - ZWHEEL
+    - ZYOUTH
+  executable: true
+  provenance:
+    source: information_steward
+    original_name: MAT0070_MaterialGroupRef
+    original_expression: "BEGIN\n     RETURN exists('DS_IS_RDS', 'T023', 'MATKL',\
+      \ $P_I_MaterialGroup);\nEND"
+    reference_table: T023
+    rule_doc: Verify the material group value exists in the Material Groups table.
+- rule_id: IS_MARA_MATKL_NOT_NULL
+  name: MAT0060_MaterialGroupPopulated
+  table: MARA
+  dama_dimension: Completeness
+  is_dimension: Completeness
+  archetype: not_null
+  severity: Medium
+  description: Verify the material group field is not empty.
+  fields:
+  - MATKL
+  assertion:
+    node: cmp
+    field: MATKL
+    op: is_not_null
+  executable: true
+  provenance:
+    source: information_steward
+    original_name: MAT0060_MaterialGroupPopulated
+    original_expression: 'BEGIN RETURN
+
+      $P_I_MaterialGroup IS NOT NULL
+
+      AND $P_I_MaterialGroup != '''';
+
+      END'
+    rule_doc: Verify the material group field is not empty.
+- rule_id: IS_MARA_MTART_NOT_NULL
+  name: MAT0010_MaterialTypePopulated
+  table: MARA
+  dama_dimension: Completeness
+  is_dimension: Completeness
+  archetype: not_null
+  severity: High
+  description: Verify the material type field is not empty.
+  fields:
+  - MTART
+  assertion:
+    node: cmp
+    field: MTART
+    op: is_not_null
+  executable: true
+  provenance:
+    source: information_steward
+    original_name: MAT0010_MaterialTypePopulated
+    original_expression: 'BEGIN RETURN
+
+      $P_I_MaterialType IS NOT NULL
+
+      AND $P_I_MaterialType != '''';
+
+      END'
+    rule_doc: Verify the material type field is not empty.
+- rule_id: IS_MARA_MEINS_NOT_NULL
+  name: MAT0080_BaseUnitOfMeasurePopulated
+  table: MARA
+  dama_dimension: Completeness
+  is_dimension: Completeness
+  archetype: not_null
+  severity: High
+  description: Verify the base unit of measure field is not empty.
+  fields:
+  - MEINS
+  assertion:
+    node: cmp
+    field: MEINS
+    op: is_not_null
+  executable: true
+  provenance:
+    source: information_steward
+    original_name: MAT0080_BaseUnitOfMeasurePopulated
+    original_expression: 'BEGIN RETURN
+
+      $P_I_BaseUOM IS NOT NULL
+
+      AND $P_I_BaseUOM != '''';
+
+      END'
+    rule_doc: Verify the base unit of measure field is not empty.
+- rule_id: INF_MARA_GEWEI_DOMAIN_IN
+  name: GEWEI domain_in (inferred)
+  table: MARA
+  dama_dimension: Validity
+  archetype: domain_in
+  severity: Medium
+  description: The high population density and the dominance of a single value ('KG')
+    among the potential distinct values indicate that this field serves a critical
+    role as a weight measurement unit. The closed set of values confirms that it is
+    likely designed to accept specific units that are not arbitrary but are essential
+    for maintaining consistency and correctness in usage. Therefore, enforcing that
+    GEWEI must contain one of the recognized weight units is justified, rather than
+    merely describing current data.
+  fields:
+  - GEWEI
+  assertion:
+    node: cmp
+    field: GEWEI
+    op: in
+    value:
+    - KG
+  executable: true
+  provenance:
+    source: data_driven_inference
+    natural_language: The high population density and the dominance of a single value
+      ('KG') among the potential distinct values indicate that this field serves a
+      critical role as a weight measurement unit. The closed set of values confirms
+      that it is likely designed to accept specific units that are not arbitrary but
+      are essential for maintaining consistency and correctness in usage. Therefore,
+      enforcing that GEWEI must contain one of the recognized weight units is justified,
+      rather than merely describing current data.

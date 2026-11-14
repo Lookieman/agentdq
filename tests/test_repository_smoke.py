@@ -7,6 +7,9 @@
 #                      importer/rule_loader shape, file persistence round-trip,
 #                      session isolation - and the FULL LOOP: suggest ->
 #                      artefact -> ingest -> approve -> export -> validate.
+# v1.1 | 09-Nov-2026 | Package 4z. The automatic approved-rules export: an
+#                      approve writes a loadable file, a retire of a table's
+#                      last rule removes it, and no folder means no export.
 # ---------------------------------------------------------------------------
 """No LLM anywhere. The loop test uses fake interpreter/suggester programs, so
 Package 2's closing claim - an agent suggests, a human approves, the approved
@@ -22,6 +25,7 @@ import pytest
 import yaml
 
 from src.contracts import RuleSpec
+from src.rules.rule_loader import load_rules  # v1.1
 from src.rules.repository import (
     FileRepository,
     SessionRepository,
@@ -201,6 +205,72 @@ def test_export_approved_matches_rule_loader_shape(tmp_path: Path):
     assert payload["table"] == "MARA"
     assert payload["rule_count"] == 1
     RuleSpec.model_validate(payload["rules"][0])  # executable by contract
+
+
+# ---------------------------------------------------------------------------
+# The automatic export (v1.1)
+# ---------------------------------------------------------------------------
+
+def _files_under(folder: Path) -> list[str]:
+    return sorted(path.relative_to(folder).as_posix() for path in folder.rglob("*") if path.is_file())
+
+
+def test_approve_writes_an_export_that_loads(tmp_path: Path):
+    approved_dir = tmp_path / "approved"
+    repo = FileRepository(tmp_path / "repo", approved_dir=approved_dir)
+    repo.load_candidates(_artefact(tmp_path, [_suggestion_payload()]))
+    assert _files_under(approved_dir) == []  # ingesting approves nothing
+
+    repo.approve(repo.drafts()[0].candidate_id, actor="luqman")
+
+    assert _files_under(approved_dir) == ["mara_rules.yaml"]
+    assert [rule.rule_id for rule in load_rules(str(approved_dir))] == ["IS_MARA_MATKL_NOT_NULL"]
+
+
+def test_retiring_a_tables_last_rule_removes_its_file(tmp_path: Path):
+    approved_dir = tmp_path / "approved"
+    repo = FileRepository(tmp_path / "repo", approved_dir=approved_dir)
+    mara = repo.add_manual_candidate(_valid_spec("CUST_MARA", table="MARA"), actor="luqman")
+    marc = repo.add_manual_candidate(_valid_spec("CUST_MARC", table="MARC"), actor="luqman")
+    repo.approve(mara.candidate_id, actor="luqman")
+    repo.approve(marc.candidate_id, actor="luqman")
+    assert _files_under(approved_dir) == ["mara_rules.yaml", "marc_rules.yaml"]
+
+    repo.retire(marc.candidate_id, actor="luqman", reason="no longer needed")
+
+    assert _files_under(approved_dir) == ["mara_rules.yaml"]
+
+
+def test_export_leaves_other_files_in_the_folder(tmp_path: Path):
+    approved_dir = tmp_path / "approved"
+    approved_dir.mkdir()
+    (approved_dir / "notes.yaml").write_text("rules: []\n", encoding="utf-8")
+    repo = FileRepository(tmp_path / "repo", approved_dir=approved_dir)
+    record = repo.add_manual_candidate(_valid_spec("CUST_MARA"), actor="luqman")
+
+    repo.approve(record.candidate_id, actor="luqman")
+
+    assert _files_under(approved_dir) == ["mara_rules.yaml", "notes.yaml"]
+
+
+def test_no_approved_dir_writes_no_export(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.chdir(tmp_path)  # a relative default path would land here
+    repo = FileRepository(tmp_path / "repo")
+    record = repo.add_manual_candidate(_valid_spec("CUST_MARA"), actor="luqman")
+
+    repo.approve(record.candidate_id, actor="luqman")
+
+    assert _files_under(tmp_path) == ["repo/candidates.yaml", "repo/ledger.jsonl"]
+
+
+def test_session_repository_writes_nothing(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.chdir(tmp_path)
+    repo = SessionRepository()
+    record = repo.add_manual_candidate(_valid_spec("CUST_MARA"), actor="visitor")
+
+    repo.approve(record.candidate_id, actor="visitor")
+
+    assert _files_under(tmp_path) == []
 
 
 # ---------------------------------------------------------------------------

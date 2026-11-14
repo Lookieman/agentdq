@@ -1,5 +1,13 @@
 # ---------------------------------------------------------------------------
 # tests/test_assess_graph_path.py
+# v1.4 | 13-Nov-2026 | Package 4z (z7b). Regression test: labels written to
+#                      parquet and read back through load_labels() keep
+#                      duplicate_of, so evaluate_verdicts() counts the twins.
+# v1.3 | 11-Aug-2026 | Package 4g/4h. Verdicts end to end: a confirmed verdict
+#                      lands in the next assessment, stale verdicts are refused,
+#                      and every assessment carries a ranked plan that includes
+#                      the held-back records. (Header entry added in Package 4z,
+#                      13-Nov-2026; the body already carried the v1.3 tag.)
 # v1.0 | 10-Aug-2026 | Package 4f. assess() runs the assessment graph, so the
 #                      dashboard and the console cannot drift apart again. Also
 #                      guards the two defects this step fixed: the scored
@@ -25,13 +33,16 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
+from src.contracts import DefectLabel, Dimension, PairVerdict, VerdictDecision  # v1.4
 from src.graph_nodes import dimension_totals
 from src.reporting.assessment import (
     LABEL_EVALUATED_DIMENSIONS,
     SCORED_DIMENSIONS,
     assess,
+    load_labels,  # v1.4
     no_checks_warning,
 )
+from src.reporting.uniqueness_eval import evaluate_verdicts  # v1.4
 
 SCHEMA_DIR: str = "config/schema"
 RULES_DIR: str = "config/rules"
@@ -362,3 +373,57 @@ def test_the_held_back_records_reach_the_plan(assessed):
     for reason, count in held.items():
         if count > 0:
             assert reason in refs
+
+
+# ---------------------------------------------------------------------------
+# Package 4z (z7b): the labels survive the parquet round trip  (v1.4)
+# ---------------------------------------------------------------------------
+
+def _write_labels(labels: list[DefectLabel], path: Path) -> None:
+    """Write labels the way src/data/defect_injector.py writes ground_truth.parquet."""
+    frame = pd.DataFrame([json.loads(label.model_dump_json()) for label in labels])
+    frame.to_parquet(path, index=False)
+
+
+def _verdict(left: str, right: str, decision: VerdictDecision) -> PairVerdict:
+    return PairVerdict(table="MARA", left_id=left, right_id=right, decision=decision)
+
+
+def test_loaded_labels_let_the_report_card_count_twins(tmp_path: Path):  # v1.4
+    labels_path = tmp_path / "ground_truth.parquet"
+    _write_labels([
+        DefectLabel(
+            defect_id="UNIQ_000000000900000000", table="MARA",
+            record_key="MATNR=000000000900000000", dimension=Dimension.UNIQUENESS,
+            field="MAKTX", original_value="000000000000100001",
+            corrupted_value="000000000900000000",
+            detail={"duplicate_of": "000000000000100001", "strategy": "swap"},
+        ),
+        DefectLabel(
+            defect_id="UNIQ_000000000900000001", table="MARA",
+            record_key="MATNR=000000000900000001", dimension=Dimension.UNIQUENESS,
+            field="MAKTX", original_value="000000000000100002",
+            corrupted_value="000000000900000001",
+            detail={"duplicate_of": "000000000000100002", "strategy": "upper"},
+        ),
+        DefectLabel(
+            defect_id="COMP_1", table="MARA", record_key="MATNR=000000000000100003",
+            dimension=Dimension.COMPLETENESS, field="MEINS", rule_id="IS_MARA_MEINS_NOT_NULL",
+        ),
+    ], labels_path)
+    decoys = [{"left_matnr": "000000000000100004", "right_matnr": "000000000000100005"}]
+    verdicts = [
+        _verdict("MATNR=000000000000100001", "MATNR=000000000900000000", VerdictDecision.DUPLICATE),
+        _verdict("MATNR=000000000900000001", "MATNR=000000000000100002", VerdictDecision.NOT_DUPLICATE),
+        _verdict("MATNR=000000000000100004", "MATNR=000000000000100005", VerdictDecision.NOT_DUPLICATE),
+        _verdict("MATNR=000000000000100006", "MATNR=000000000000100007", VerdictDecision.DUPLICATE),
+    ]
+
+    labels = load_labels(labels_path)
+    card = evaluate_verdicts(verdicts, labels, decoys)
+
+    assert labels[0].detail == {"duplicate_of": "000000000000100001", "strategy": "swap"}
+    assert labels[2].detail == {}  # a non-twin row reads back with no detail keys
+    assert (card.judged, card.twins_judged, card.twins_confirmed) == (4, 2, 1)
+    assert (card.decoys_judged, card.decoys_rejected) == (1, 1)
+    assert card.unlabelled_judged == 1

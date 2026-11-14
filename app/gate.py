@@ -11,6 +11,8 @@
 #                      works: Streamlit executes the file directly, leaving app/
 #                      (not the project root) on sys.path, which broke the src.
 #                      imports.
+# v1.2 | 09-Nov-2026 | Package 4z. Pass AGENTDQ_APPROVED_DIR to FileRepository,
+#                      so each decision refreshes the approved-rules export.
 # ---------------------------------------------------------------------------
 """Approval gate surface.
 
@@ -52,6 +54,7 @@ from src.rules.repository import (
 
 REPO_MODE: str = os.environ.get("AGENTDQ_REPO_MODE", "file")
 REPO_DIR: str = os.environ.get("AGENTDQ_REPO_DIR", "data/repository")
+APPROVED_DIR: str = os.environ.get("AGENTDQ_APPROVED_DIR", "data/approved")  # v1.2
 DEFAULT_ARTEFACT: str = os.environ.get("AGENTDQ_SUGGESTIONS", "artefacts/suggestions_mara.json")
 HIGHLIGHT_FLOOR: float = 0.95  # presentation dial only; calibrated in Package 5
 
@@ -63,7 +66,7 @@ def get_repository() -> RulesRepository:
         if REPO_MODE == "session":
             st.session_state.repository = SessionRepository()
         else:
-            st.session_state.repository = FileRepository(REPO_DIR)
+            st.session_state.repository = FileRepository(REPO_DIR, approved_dir=APPROVED_DIR)  # v1.2
     return st.session_state.repository
 
 

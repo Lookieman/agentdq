@@ -7,6 +7,8 @@
 #                      invokes; never decides.
 # v1.1 | 15-Jul-2026 | Add a repo-root bootstrap so `streamlit run` works (app/
 #                      alone lands on sys.path otherwise, breaking src imports).
+# v1.2 | 09-Nov-2026 | Package 4z. Pass AGENTDQ_APPROVED_DIR to FileRepository,
+#                      so each strength change refreshes the approved-rules export.
 # ---------------------------------------------------------------------------
 """Rule Bank browser + strength governance surface.
 
@@ -41,6 +43,7 @@ from src.rules.rule_bank import RuleBank, Template
 
 REPO_MODE: str = os.environ.get("AGENTDQ_REPO_MODE", "file")
 REPO_DIR: str = os.environ.get("AGENTDQ_REPO_DIR", "data/repository")
+APPROVED_DIR: str = os.environ.get("AGENTDQ_APPROVED_DIR", "data/approved")  # v1.2
 BANK_DIR: str = os.environ.get("AGENTDQ_BANK_DIR", "config/rule_bank")
 
 
@@ -49,7 +52,7 @@ def get_repository() -> RulesRepository:
         if REPO_MODE == "session":
             st.session_state.repository = SessionRepository()
         else:
-            st.session_state.repository = FileRepository(REPO_DIR)
+            st.session_state.repository = FileRepository(REPO_DIR, approved_dir=APPROVED_DIR)  # v1.2
     return st.session_state.repository
 
 

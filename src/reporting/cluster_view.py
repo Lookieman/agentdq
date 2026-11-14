@@ -1,5 +1,7 @@
 # ---------------------------------------------------------------------------
 # src/reporting/cluster_view.py
+# v1.3 | 09-Nov-2026 | Package 4z. The note that names the tables with approved
+#                      rules, for the dashboard's rules selector.
 # v1.2 | 11-Aug-2026 | Package 4g/4h. Verdict and action frames for the two new
 #                      screen areas: the adjudicator's answers, and the ranked
 #                      remediation plan.
@@ -35,7 +37,7 @@ from typing import Any, Optional
 import pandas as pd
 
 from src.agents.embedding_store import LANGUAGE_FIELD, resolve_compare_field
-from src.contracts import ClusterMember, DuplicateCluster
+from src.contracts import ClusterMember, DuplicateCluster, RuleSpec  # v1.3
 from src.data.schema import COMPARE_LANGUAGE, TableSchema
 
 # What a reader is told when a record has no text for a compare field.
@@ -264,6 +266,19 @@ def match_mode_note(summary: dict[str, Any]) -> tuple[str, str]:
         f"Reason: {reason or 'not recorded'}. "
         "Build the vectors with tools/build_embeddings.py to run the full ladder."
     )
+
+
+def approved_tables_note(rules: list[RuleSpec]) -> str:  # v1.3
+    """A caption that names the tables with at least one approved rule.
+
+    A table with no approved rule runs no checks, so a reader must not take its
+    absence from the findings as a clean result.
+    """
+    tables: list[str] = sorted({rule.table for rule in rules})
+
+    if not tables:
+        return "No table has approved rules yet."
+    return f"Tables with approved rules: {', '.join(tables)}."
 
 
 def settings_rows(resolved: dict[str, Any], summary: dict[str, Any]) -> list[dict[str, str]]:

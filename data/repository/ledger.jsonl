@@ -8,3 +8,8 @@
 {"at": "2026-07-18T14:31:22+00:00", "candidate_id": "IS_MARA_MTART_NOT_NULL::ca07915e", "event": "ingested", "from": null, "to": "draft", "actor": "batch_runner", "reason": "a87d469dcbce"}
 {"at": "2026-07-18T14:31:22+00:00", "candidate_id": "IS_MARA_MEINS_NOT_NULL::46623558", "event": "ingested", "from": null, "to": "draft", "actor": "batch_runner", "reason": "a87d469dcbce"}
 {"at": "2026-07-18T14:31:22+00:00", "candidate_id": "INF_MARA_GEWEI_DOMAIN_IN::c6ff37bf", "event": "ingested", "from": null, "to": "draft", "actor": "batch_runner", "reason": "a87d469dcbce"}
+{"at": "2026-11-09T13:37:04+00:00", "candidate_id": "INF_MARA_GEWEI_DOMAIN_IN::c6ff37bf", "event": "approved", "from": "draft", "to": "approved", "actor": "steward", "reason": ""}
+{"at": "2026-11-13T15:16:39+00:00", "candidate_id": "IS_MARA_MTART_NOT_NULL::ca07915e", "event": "approved", "from": "draft", "to": "approved", "actor": "Luqman", "reason": ""}
+{"at": "2026-11-13T15:16:43+00:00", "candidate_id": "IS_MARA_MEINS_NOT_NULL::46623558", "event": "approved", "from": "draft", "to": "approved", "actor": "Luqman", "reason": ""}
+{"at": "2026-11-13T15:16:53+00:00", "candidate_id": "IS_MARA_MATKL_NOT_NULL::a5d4bfab", "event": "approved", "from": "draft", "to": "approved", "actor": "Luqman", "reason": ""}
+{"at": "2026-11-13T15:17:15+00:00", "candidate_id": "IS_MARA_MATKL_REFERENCE_EXISTS::5334ebcd", "event": "approved", "from": "draft", "to": "approved", "actor": "Luqman", "reason": ""}

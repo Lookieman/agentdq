@@ -1,3 +1,7 @@
+# v0.6 | 13-Nov-2026 | Package 4z (z7b). load_labels() keeps original_value,
+#                      corrupted_value and detail. It dropped detail, so
+#                      evaluate_verdicts() found no duplicate_of, saw no twin
+#                      pairs, and reported every judged twin as unlabelled.
 # v0.5 | 11-Aug-2026 | Package 4g/4h. AssessmentResult carries the remediation
 #                      actions the graph computed, the verdict summary, and the
 #                      executive summary from the plan artefact when one matches
@@ -133,16 +137,32 @@ def load_frames(data_dir: str, tables: list[str], data_format: str) -> dict[str,
 
 
 def load_labels(path: Path) -> list[DefectLabel]:
-    """Reconstruct ground-truth labels from a parquet file."""
+    """Reconstruct ground-truth labels from a parquet file.
+
+    Keeps the original and corrupted values and the detail dictionary, which
+    carries a twin's duplicate_of and strategy. Parquet stores detail as one
+    struct for every row, so a label without a twin reads back with None in
+    each key; those keys are dropped, and the detail comes back as {}.
+    """
     frame: pd.DataFrame = pd.read_parquet(path)
     labels: list[DefectLabel] = []
     row = None
     field_value = None
     rule_value = None
+    original_value = None  # v0.6
+    corrupted_value = None  # v0.6
+    raw_detail = None  # v0.6
+    detail: dict[str, Any] = {}  # v0.6
 
     for row in frame.itertuples():
         field_value = row.field if pd.notna(row.field) else None
         rule_value = row.rule_id if pd.notna(row.rule_id) else None
+        original_value = getattr(row, "original_value", None)  # v0.6
+        corrupted_value = getattr(row, "corrupted_value", None)  # v0.6
+        raw_detail = getattr(row, "detail", None)  # v0.6
+        detail = {}  # v0.6
+        if isinstance(raw_detail, dict):  # v0.6
+            detail = {key: value for key, value in raw_detail.items() if value is not None}
         labels.append(DefectLabel(
             defect_id=str(row.defect_id),
             table=str(row.table),
@@ -150,7 +170,9 @@ def load_labels(path: Path) -> list[DefectLabel]:
             dimension=str(row.dimension),
             field=field_value,
             rule_id=rule_value,
-            detail={},
+            original_value=original_value if pd.notna(original_value) else None,  # v0.6
+            corrupted_value=corrupted_value if pd.notna(corrupted_value) else None,  # v0.6
+            detail=detail,  # v0.6
         ))
     return labels
 

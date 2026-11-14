@@ -1,7 +1,8 @@
-# Data (DVC-tracked, not Git)
+# Data: generated or real extracts, never committed
 data/raw/
 data/synthetic/
 mlruns/
+artefacts/remediation/
 
 # Environment
 .env
@@ -29,7 +30,4 @@ dist/
 build/
 *.egg-info/
 
-# DVC cache
-.dvc/cache/
-.env
 .claude/ssettings.local.json

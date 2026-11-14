@@ -71,7 +71,7 @@ Cross-entity linkages between equipment and material master records provide the 
 ```bash
 git clone https://github.com/<your-username>/agentdq.git
 cd agentdq
-pip install -e .
+uv sync
 ```
 
 ### Configuration
@@ -81,15 +81,50 @@ cp .env.example .env
 # Edit .env with your API keys
 ```
 
-### Running the Pipeline
+### Regenerate the data
+
+Run these four steps from the repository root, in this order. Each step reads the output of the step before it.
 
 ```bash
-# Generate synthetic test data
-python -m src.data.generator --scenario degraded --records 5000
+# 1. Profile the real extracts in data/raw
+uv run python -m src.data.profiler --input data/raw --tables MARA,MARC,MAKT \
+    --pattern "{table}_EX_DATA.xlsx" --out data/profiles
 
-# Run the full DQ assessment
-python -m src.orchestrator --input data/synthetic/degraded_5000.parquet
+# 2. Import the Information Steward rules
+uv run python -m src.rules.is_importer --workbook docs/Infomation_Steward_Rules_Tables.xlsx \
+    --schema config/schema --tables MARA,MARC,MAKT --out config/rules
+
+# 3. Generate the clean baseline
+uv run python -m src.data.generator --schema config/schema --profiles data/profiles \
+    --tables MARA,MARC,MAKT --materials 5000 --seed 42 --out data/synthetic/baseline
+
+# 4. Inject defects into a degraded copy
+uv run python -m src.data.defect_injector --baseline data/synthetic/baseline \
+    --schema config/schema --rules config/rules --scenario degraded \
+    --seed 42 --out data/synthetic/degraded
 ```
+
+`config/rules/cross_field_examples.yaml` is written by hand and committed. The importer in step 2 does not make it. Step 4 reads every rule file in `--rules`, so the file must sit beside the imported rules. Without it the degraded set has no Consistency defects: 9,232 labels instead of 10,596.
+
+### Run the assessment
+
+Run Python modules with `uv run python -m`, never as a script path, because the tools import from `src`.
+
+```bash
+uv run python -m tools.run_assessment_graph --data data/synthetic/degraded --format parquet
+```
+
+By default the assessment runs only the rules a human approved, from `data/approved`. Add `--rules config/rules` to run every imported rule.
+
+The approval gate writes `data/approved` after every decision. Start the apps with these commands:
+
+```bash
+uv run streamlit run app/dashboard.py
+uv run streamlit run app/gate.py
+uv run streamlit run app/bank_browser.py
+```
+
+Run the offline tests with `uv run pytest -q`.
 
 ## Project Structure
 

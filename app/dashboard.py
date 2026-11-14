@@ -1,3 +1,5 @@
+# v0.6 | 09-Nov-2026 | Package 4z. A caption under the rules selector names the
+#                      tables with approved rules when that option is chosen.
 # v0.5 | 11-Aug-2026 | Package 4g/4h. The Duplicates tab shows the
 #                      adjudicator's verdicts and the open pairs that remain.
 #                      A seventh tab, Actions, shows the ranked remediation
@@ -59,8 +61,10 @@ from src.reporting.assessment import (  # v0.3
     load_frames,
     no_checks_warning,
 )
+from src.rules.rule_loader import load_rules  # v0.6
 from src.reporting.cluster_view import (  # v0.3
     advisory_lines,
+    approved_tables_note,  # v0.6
     candidate_pairs_frame,
     cluster_members_frame,
     cluster_overview_frame,
@@ -83,9 +87,10 @@ SEVERITY_ORDER: list[str] = ["Critical", "High", "Medium", "Low"]
 # Which rules the agents execute. config/rules is every imported rule; the
 # approved directory is the export from the approval gate, so choosing it
 # demonstrates the governance loop: only a rule a human approved can run.
+APPROVED_RULES_DIR: str = "data/approved"  # v0.6
 RULE_SOURCES: dict[str, str] = {  # v0.3
     "All imported rules (config/rules)": "config/rules",
-    "Approved rules only (data/approved)": "data/approved",
+    "Approved rules only (data/approved)": APPROVED_RULES_DIR,  # v0.6
 }
 MAX_CLUSTERS_LISTED: int = 25  # v0.3
 
@@ -664,6 +669,8 @@ def main() -> None:
         "Approved rules are the export from the approval gate, so choosing them shows the "
         "governance loop: only a rule a human approved can run."
     )
+    if rules_dir == APPROVED_RULES_DIR:  # v0.6
+        st.sidebar.caption(approved_tables_note(load_rules(str(ROOT / rules_dir))))  # v0.6
 
     result = cached_assess(chosen["dir"], chosen["format"], rules_dir)  # v0.3
     texts = cached_compare_texts(chosen["dir"], chosen["format"])  # v0.3

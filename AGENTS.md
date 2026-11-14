@@ -6,7 +6,7 @@ This file adds project facts to my shared working agreement. Where the two confl
 
 ## Know the project
 
-AgentDQ assesses the data quality of SAP material master data (MARA, MARC, MAKT). Agents profile the data and suggest rules, a human approves them, a deterministic executor runs them, and agents adjudicate uncertain duplicates and write a remediation plan. It is a proof of concept and a public portfolio piece, not a product. Current phase: Package 4 close-out (4z), then the Package 5 work breakdown.
+AgentDQ assesses the data quality of SAP material master data (MARA, MARC, MAKT). Agents profile the data and suggest rules, a human approves them, a deterministic executor runs them, and agents adjudicate uncertain duplicates and write a remediation plan. It is a proof of concept and a public portfolio piece, not a product. Current phase: the Package 5 work breakdown.
 
 ## Load the shared agreement
 
@@ -74,7 +74,7 @@ The items below are locked for this project. Each one needs my explicit decision
 
 - The agentic value is rule suggestion from profiled data. Rule execution stays deterministic, in the pandas executor.
 - A model call earns its place only on judgement: which rules apply, why a value failed, whether an uncertain pair is a duplicate, and the remediation narrative. Never call deterministic work agentic, and never add a model call for show.
-- Agents reason only over provided knowledge: the rule bank, reference tables, the schema and profile evidence. Never over model memory. Every suggestion carries a rationale, evidence and a confidence.
+- Agents may use SAP domain knowledge to judge which rules matter and which values make no sense. Every claim about the dataset itself comes from evidence: the profile, the executor or the reference tables. Every suggestion carries a rationale, the data evidence and a confidence, and says which part rests on domain knowledge.
 - The Information Steward workbook is a rule bank of templates, not the active ruleset.
 - A human approves every rule before it runs. Rule state changes only through the `RulesRepository` verbs. The Streamlit apps render and invoke; they never decide. Manual rules enter through the same gate. Agents never write rule strength.
 - `export_approved()` writes approved rules in the importer's YAML shape, so the loader and the executor do not change.

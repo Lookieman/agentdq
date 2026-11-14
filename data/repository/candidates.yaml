@@ -235,7 +235,7 @@ records:
   decided_by: null
   decision_reason: null
 - candidate_id: IS_MARA_MATKL_REFERENCE_EXISTS::5334ebcd
-  state: draft
+  state: approved
   rule_spec:
     rule_id: IS_MARA_MATKL_REFERENCE_EXISTS
     name: MAT0070_MaterialGroupRef
@@ -351,11 +351,11 @@ records:
   strength: strong
   strength_reason: proven_template
   created_at: '2026-07-18T14:31:22+00:00'
-  decided_at: null
-  decided_by: null
-  decision_reason: null
+  decided_at: '2026-11-13T15:17:15+00:00'
+  decided_by: Luqman
+  decision_reason: ''
 - candidate_id: IS_MARA_MATKL_NOT_NULL::a5d4bfab
-  state: draft
+  state: approved
   rule_spec:
     rule_id: IS_MARA_MATKL_NOT_NULL
     name: MAT0060_MaterialGroupPopulated
@@ -409,9 +409,9 @@ records:
   strength: strong
   strength_reason: proven_template
   created_at: '2026-07-18T14:31:22+00:00'
-  decided_at: null
-  decided_by: null
-  decision_reason: null
+  decided_at: '2026-11-13T15:16:53+00:00'
+  decided_by: Luqman
+  decision_reason: ''
 - candidate_id: IS_MARA_MTART_REFERENCE_EXISTS::91185b71
   state: draft
   rule_spec:
@@ -524,7 +524,7 @@ records:
   decided_by: null
   decision_reason: null
 - candidate_id: IS_MARA_MTART_NOT_NULL::ca07915e
-  state: draft
+  state: approved
   rule_spec:
     rule_id: IS_MARA_MTART_NOT_NULL
     name: MAT0010_MaterialTypePopulated
@@ -579,11 +579,11 @@ records:
   strength: strong
   strength_reason: proven_template
   created_at: '2026-07-18T14:31:22+00:00'
-  decided_at: null
-  decided_by: null
-  decision_reason: null
+  decided_at: '2026-11-13T15:16:39+00:00'
+  decided_by: Luqman
+  decision_reason: ''
 - candidate_id: IS_MARA_MEINS_NOT_NULL::46623558
-  state: draft
+  state: approved
   rule_spec:
     rule_id: IS_MARA_MEINS_NOT_NULL
     name: MAT0080_BaseUnitOfMeasurePopulated
@@ -637,11 +637,11 @@ records:
   strength: strong
   strength_reason: proven_template
   created_at: '2026-07-18T14:31:22+00:00'
-  decided_at: null
-  decided_by: null
-  decision_reason: null
+  decided_at: '2026-11-13T15:16:43+00:00'
+  decided_by: Luqman
+  decision_reason: ''
 - candidate_id: INF_MARA_GEWEI_DOMAIN_IN::c6ff37bf
-  state: draft
+  state: approved
   rule_spec:
     rule_id: INF_MARA_GEWEI_DOMAIN_IN
     name: GEWEI domain_in (inferred)
@@ -701,6 +701,6 @@ records:
   strength: weak
   strength_reason: inferred
   created_at: '2026-07-18T14:31:22+00:00'
-  decided_at: null
-  decided_by: null
-  decision_reason: null
+  decided_at: '2026-11-09T13:37:04+00:00'
+  decided_by: steward
+  decision_reason: ''

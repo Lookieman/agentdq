@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-AgentDQ is a multi-agent system that autonomously assesses data quality across SAP master data entities, aligned to the six DAMA data quality dimensions: Completeness, Validity, Consistency, Accuracy, Timeliness, and Uniqueness. Each dimension is handled by a specialist agent, coordinated by a LangGraph orchestrator that produces a consolidated DQ scorecard.
+AgentDQ is a multi-agent system that autonomously assesses data quality across SAP master data entities, aligned to the DAMA data quality dimensions. Four dimensions are built: Completeness, Validity, Consistency and Uniqueness. Accuracy and Timeliness are designed, not built: Timeliness needs the change history (CDHDR and CDPOS), which the extracts lack, and Accuracy needs an outside source of truth, which the project lacks. Each built dimension is handled by a specialist agent, coordinated by a LangGraph orchestrator that produces a consolidated DQ scorecard.
 
 The project targets asset-intensive industries (oil & gas, utilities, manufacturing) by focusing on two core SAP master data domains: Material Master (with plant and storage location data) and Equipment Master.
 
@@ -33,16 +33,16 @@ design, not as a plan.
 
 ## Build Status
 
-**Delivery status (10-Aug-2026): Packages 1, 2 and 3 complete; Package 4 in
-build - six of eight steps done (4a to 4f).** The agentic loop closes end to
+**Delivery status (13-Nov-2026): Packages 1, 2, 3 and 4 complete. Package 4
+closed with step 4z on 13-Nov-2026.** The agentic loop closes end to
 end: an agent suggests a rule, a human governs it at the approval gate, and the
 approved rule is executable, orchestrated as two LangGraph graphs (a suggestion
 graph and an assessment graph joined by the repository). The assessment graph
 fans the three deterministic dimensions out in parallel and routes structured
 advisories to the downstream Uniqueness stage.
 
-Package 4 (Uniqueness and Remediation) is designed. Five of the eight steps are
-built: the uniqueness settings live in the table schema; advice between agents
+Package 4 (Uniqueness and Remediation) is complete. All eight steps are built,
+and step 4z closed the package: the uniqueness settings live in the table schema; advice between agents
 travels as a small structured record; a validity finding on a description or
 blocking key holds the RECORD out of deduplication; the semantic vectors are
 built in a batch step and written beside their dataset; the matcher produces
@@ -61,14 +61,22 @@ denominator, so the Uniqueness score on the degraded scenario read 97.2% where t
 honest figure is 87.7%. The dashboard gains a Duplicates tab, a read-only Settings
 tab, a rules-directory selector, a match-mode banner and the no-checks guard, and
 the display shaping lives in a testable module rather than in the Streamlit file.
-Two steps remain: the adjudicator with the shared LM setup (4g), and remediation
-with its dashboard tab (4h). A follow-on fix in the same session made the block pair ceiling a schema dial and
+Step 4g adds the adjudicator: it judges the uncertain pairs in a capped batch
+run, through the shared LM setup, and writes verdicts.json beside the dataset;
+assessments apply the verdicts offline. The attribute veto runs ahead of it as
+the cost gate. Step 4h ranks the findings into remediation actions
+deterministically, adds a one-call model narrative kept in a plan artefact, and
+shows both on a new Actions tab. Step 4z closed the package: the approval gate
+now exports the approved rules to data/approved/ after every decision, so the
+default assessment runs only rules a human approved. A follow-on fix in the same session made the block pair ceiling a schema dial and
 turned it into a hold-back rather than an error, after the clean baseline dataset
 crashed on a block of 3,180 records where the degraded one did not. The suite
-stands at 282 passing tests, 1 skipped
-(the skip needs the real CAL extract in data/raw), all offline. The first two AgentDQ
-LinkedIn articles are ready to write: Package 2's ("the agent proposes, the
-human disposes") and Package 3's ("where I put the human in the loop, and why").
+stands at 291 passing tests, 0 skipped, measured on 14-Nov-2026 with the real
+CAL extract in data/raw (without it, one test skips), all offline. The first two
+AgentDQ LinkedIn articles are ready to write: Package 2's ("the agent proposes,
+the human disposes") and Package 3's ("where I put the human in the loop, and
+why"). Package 4 gets two articles, not one: uniqueness (steps 4a to 4g) and
+remediation (step 4h).
 The delivery breakdown, the remaining packages, and the per-package designs live
 in `agentdq_design.md`.
 
@@ -94,7 +102,7 @@ Validity agent                src/agents/validity.py              done
 Scorecard + evaluation        src/reporting/scorecard.py          done
 Shared assess() function      src/reporting/assessment.py         done
 Console assessment CLI        tools/run_assessment.py             done
-Streamlit dashboard (6 tabs)  app/dashboard.py                    done
+Streamlit dashboard (7 tabs)  app/dashboard.py                    done
 Cluster + settings display    src/reporting/cluster_view.py       done
 Smoke test suite (12 tests)   tests/test_pipeline_smoke.py        done
 Uniqueness settings (v0.4)    src/data/schema.py, config/schema/  done
@@ -103,6 +111,10 @@ Shared text normaliser        src/agents/text_normaliser.py       done
 Semantic vectors (batch)      tools/build_embeddings.py           done
 Uniqueness matcher            src/agents/uniqueness.py            done
 Uniqueness evaluator          src/reporting/uniqueness_eval.py    done
+Shared LM configuration       src/dspy_modules/lm_config.py       done
+Duplicate adjudicator         src/agents/adjudicator.py           done
+Remediation plan              src/agents/remediation.py           done
+Approved-rules export         src/rules/repository.py             done
 ```
 
 What the pilot demonstrates today:
@@ -122,10 +134,8 @@ Core" below):
 ```
 Item                                       Notes
 -----------------------------------------  ----------------------------------
-Package 4 remaining (see WBS below)        4g: adjudicator + shared LM setup
-                                           4h: remediation + dashboard tab
-Timeliness agent + defect stub             needs MARA date fields (re-export in)
-Accuracy agent (DSPy)                      LLM judgement on real-world truth
+Timeliness agent (designed, not built)     needs CDHDR/CDPOS; extracts lack it
+Accuracy agent (designed, not built)       needs an outside source of truth
 MLflow experiment tracking                 suggestion quality + per-run scores
 ```
 
@@ -133,8 +143,8 @@ Note: the earlier "Still to build" list has been thinned. Items delivered by
 Packages 1 to 3 (rule bank, profiling agent, suggestion agent, approval gate,
 authoring UI, approved-rules execution, LangGraph orchestrator) are done and
 recorded in the "Done" table above. The Uniqueness agent is done under Package
-4d. Remaining work is either inside Package 4 (see the WBS below), or is a
-future package.
+4d. Package 4 is complete, so all remaining work belongs to a future
+package.
 
 Note: the Consistency agent is now built (deterministic execution layer). The
 three execution-layer agents (Completeness, Validity, Consistency) are complete
@@ -252,8 +262,8 @@ line in `config/schema/mara.yaml`. It sits alongside 4e in the work log.
 `agentdq_design.md` section 6.4, and moved into Package 5's plan:
 
 1. Attribute veto (extract 6203 vs 6204, "Steel" vs "Brass", cap the score
-   when they disagree). Now a Package 5 sub-step, because the decoy error rate
-   cannot fall below 30% without it.
+   when they disagree). Built in 4g (see the late change above). Package 5
+   keeps the measurement: its effect on the band and the cap value.
 2. Character n-gram TF-IDF for candidate retrieval (a speed improvement for
    customer-sized data).
 3. A steward score-report CLI tool (so a steward sets the bands from evidence,
@@ -261,6 +271,116 @@ line in `config/schema/mara.yaml`. It sits alongside 4e in the work log.
 4. Soft TF-IDF and Monge-Elkan measurement (waiting on `py_stringmatching`
    compatibility with Python 3.14).
 5. Narrower band setting (0.92 / 0.95), now measurable on the new score spread.
+
+### Package 4z - Close-out
+
+Package 4z closes Package 4 in the code, the tests, the three living documents
+and git history. The issue IDs (M1 to M10, m1 to m10) come from the audit report
+of 08-Nov-2026. The steps are below.
+
+```
+Step   Status       Output files                          What it delivers
+-----  -----------  ------------------------------------  ---------------------------
+z0     done         docs/agentdq-project-plan.md          This WBS, written before
+                                                          any code change.
+
+z1     done         src/rules/repository.py               Approved-rules export (M5).
+                    app/gate.py                           FileRepository refreshes
+                    app/bank_browser.py                   data/approved/ after every
+                    app/dashboard.py                      state change. The dashboard
+                    src/reporting/cluster_view.py         names the tables that have
+                    tests/test_repository_smoke.py        approved rules.
+                    tests/test_cluster_view.py
+                    data/approved/
+
+z2     done         README.md                             Regeneration chain in
+                    docs/modules_map.md                   dependency order, and
+                                                          cross_field_examples.yaml
+                                                          documented as a hand-written
+                                                          input (M4).
+
+z3     done         tools/run_assessment_graph.py         Correct usage text. Remove
+                                                          the stale adjudicator
+                                                          wording (M6, m5).
+
+z4     done         docs/agentdq-project-plan.md          Living documents match the
+                    docs/agentdq_design.md                code (M1, M2, M3, m4).
+                    docs/modules_map.md                   AGENTS.md current phase and
+                    AGENTS.md                             command check.
+
+z5     done         tests/test_assess_graph_path.py       Header bump for the 4g
+                                                          change (M8).
+
+z6     done         .env.example                          Repo hygiene (m2, m3, m6,
+                    README.md                             m7). Example environment
+                    pyproject.toml                        file, README commands,
+                    uv.lock                               unused dependencies
+                    .gitignore                            removed, dvc.yaml removed.
+                    dvc.yaml (removed)
+
+z7     done         .gitignore                            Live check (M9, M10).
+                    (verdicts and plan not tracked)       Vectors compared with the
+                                                          backup, then adjudication
+                                                          (cap 60, owner's change
+                                                          from 50, so all 58 pairs
+                                                          are judged) and
+                                                          remediation on a live
+                                                          model. artefacts/
+                                                          remediation/ is ignored.
+
+z7b    done         src/reporting/assessment.py           Report-card fix, found in
+                    tests/test_assess_graph_path.py       z7. load_labels() dropped
+                                                          the label detail, so
+                                                          evaluate_verdicts() saw no
+                                                          twins. It keeps the detail
+                                                          now; a regression test
+                                                          covers the parquet round
+                                                          trip. Report card
+                                                          recomputed offline.
+
+z8     done         (one close-out commit)                Tests, document checks, one
+                    docs/agentdq-project-plan.md          commit, recovery branch and
+                                                          scratch worktrees removed.
+                                                          The plan now marks Accuracy
+                                                          and Timeliness designed,
+                                                          not built (from PR #1), and
+                                                          origin/main is merged.
+```
+
+The decisions below are agreed for Package 4z.
+
+```
+ID   Decision
+---  ------------------------------------------------------------------------
+D1   Approved-rules path: wire the existing export
+     (RulesRepository.export_approved()) to data/approved/. The loader and
+     the executor do not change.
+D2   Export trigger: automatic, after every state change. The hook is in
+     FileRepository._persist(). SessionRepository never exports.
+D3   Export folder is opt-in: FileRepository(repo_dir, approved_dir=None).
+     No export when approved_dir is None. app/gate.py and app/bank_browser.py
+     pass AGENTDQ_APPROVED_DIR (default data/approved).
+D4   Stale files: before each export, delete the existing *_rules.yaml files
+     in the export folder only, then write.
+D5   Seeding: the owner approves 5 or 6 drafts in the gate. No script
+     approves rules.
+D6   data/approved/ is tracked in git.
+D7   The approved set is MARA only (all 10 tracked drafts are MARA). The
+     dashboard caption names the tables that have approved rules.
+D8   config/rules/cross_field_examples.yaml is a hand-written, committed
+     input. It is documented and not generated.
+D9   Remove unused dependencies, but keep mlflow (Package 5 uses it).
+D10  Live check: build vectors, then run_adjudication with --cap 50, then
+     run_remediation. Revised at STOP 2: --cap 60, so all 58 pairs are judged.
+D12  The report-card defect found in z7 is fixed inside 4z, as step z7b.
+D11  One close-out commit. Then delete recover/4g-4h (remote and local) and
+     remove both scratch worktrees.
+```
+
+**Follow-on item, outside 4z.** Before the Package 4 articles, run the
+suggestion agent for MARC and MAKT (paid model calls) and approve some of those
+drafts in the gate, so the approved set covers all three tables. Today the
+approved set is MARA only.
 
 For every future package: the WBS is set when the package is broken down. The
 project plan is updated with it before any code is written.
@@ -859,7 +979,7 @@ covered in "The Agentic Core" above.
 
 ### Agent-to-Dimension Mapping
 
-Six specialist agents, one per DAMA dimension, plus an orchestrator and a reporter:
+The design has six specialist agents, one per DAMA dimension, plus an orchestrator and a reporter. Four agents are built: Completeness, Validity, Consistency and Uniqueness. The Accuracy and Timeliness agents are designed, not built. Their designs stay below for a later package.
 
 **Orchestrator (LangGraph StateGraph)** - Routes execution, manages shared state, applies conditional logic (e.g., if completeness is below threshold, deprioritise uniqueness), aggregates dimension scores into a composite DQ scorecard.
 
@@ -869,13 +989,13 @@ Six specialist agents, one per DAMA dimension, plus an orchestrator and a report
 
 **Agent 3 - Consistency** - Cross-table and intra-record logical coherence. Does MARC-BESKZ (procurement type) align with MARA-MTART (material type)? If a material is externally procured, does it have a valid purchasing info record? Does the country in BUT000-LAND1 match the country derived from ADRC-POST_CODE? If a business partner has role FLVN00 (vendor) and FLCU00 (customer), are the addresses consistent? This agent requires entity-relationship knowledge of the SAP data model.
 
-**Agent 4 - Accuracy** - The hardest dimension. Accuracy means "does the value reflect the real-world truth?" Approximated by: cross-referencing company names against ACRA's public registry (UEN lookup), validating postal codes against OneMap API, checking whether material descriptions match their material group classification (an LLM judgement call - does "Hex Bolt M8 Stainless" belong in material group "Fasteners"?). This is where DSPy shines - define a signature like `MaterialDescription, MaterialGroup, MaterialType -> AccuracyAssessment, Confidence, Reasoning` and optimise it.
+**Agent 4 - Accuracy (designed, not built)** - Not built because accuracy needs an outside source of truth, for example a supplier catalogue, and the project has none. The design follows. The hardest dimension. Accuracy means "does the value reflect the real-world truth?" Approximated by: cross-referencing company names against ACRA's public registry (UEN lookup), validating postal codes against OneMap API, checking whether material descriptions match their material group classification (an LLM judgement call - does "Hex Bolt M8 Stainless" belong in material group "Fasteners"?). This is where DSPy shines - define a signature like `MaterialDescription, MaterialGroup, MaterialType -> AccuracyAssessment, Confidence, Reasoning` and optimise it.
 
-**Agent 5 - Timeliness** - Record currency and staleness. Materials with MARA-ERSDA (creation date) older than five years and no change document (CDHDR/CDPOS) entries in the last two years. Business partners created during initial migration (identifiable by creation date clustering) never subsequently maintained. Price conditions in KONP past their validity end date but still flagged as active. This agent needs temporal metadata - creation dates, last change dates, validity periods.
+**Agent 5 - Timeliness (designed, not built)** - Not built because a useful staleness check needs the change history (CDHDR and CDPOS), and the current extracts do not include it. The design follows. Record currency and staleness. Materials with MARA-ERSDA (creation date) older than five years and no change document (CDHDR/CDPOS) entries in the last two years. Business partners created during initial migration (identifiable by creation date clustering) never subsequently maintained. Price conditions in KONP past their validity end date but still flagged as active. This agent needs temporal metadata - creation dates, last change dates, validity periods.
 
 **Agent 6 - Uniqueness** - Duplicate and near-duplicate detection. For business partners: fuzzy matching on name (BUT000-NAME_ORG1/2) + address (ADRC) using Jaro-Winkler or embedding similarity. For materials: similar MAKTX descriptions with different material numbers, potentially across plants. Produces candidate duplicate clusters with a confidence score, not binary yes/no. The LLM serves as a second-pass adjudicator on borderline cases - "Are 'ACME Corp' and 'ACME Corporation Pte Ltd' the same entity given these addresses?"
 
-**Reporter - Remediation Recommender** - Consumes the structured findings from all six agents, prioritises by business impact (a completeness gap in safety-critical material fields outranks a formatting issue in search terms), and generates a structured remediation report. This is a DSPy pipeline: `DimensionFindings, MaterialType, BusinessContext -> PrioritisedRemediations, ExecutiveSummary`.
+**Reporter - Remediation Recommender** - Consumes the structured findings from the built dimension agents (four of the six designed), prioritises by business impact (a completeness gap in safety-critical material fields outranks a formatting issue in search terms), and generates a structured remediation report. This is a DSPy pipeline: `DimensionFindings, MaterialType, BusinessContext -> PrioritisedRemediations, ExecutiveSummary`.
 
 ### Profiling: Deterministic Measurement, Agentic Interpretation
 
@@ -896,7 +1016,7 @@ Two principles govern the agent:
 - **It cites the numbers it reasons from.** Every claim is anchored to a figure in the deterministic profile rather than free-narrated. This keeps the readout honest and auditable, which a data-operations audience needs in order to trust and act on it.
 - **Severity reflects business impact, not raw percentage.** A 5% gap in a safety-relevant field outranks a 30% gap in a cosmetic one. The agent therefore takes a small amount of domain context about which fields matter as an input, supplied from SAP knowledge, rather than ranking issues by magnitude alone.
 
-The separation earns its keep three ways. The numbers stay trustworthy because no language model computes them. The narrative is cheap to regenerate and easy to tune per audience - the same JSON can yield a technical readout, a data-operations summary and an executive paragraph from three different signatures, with no change to the evidence layer. And it is a low-risk rehearsal of the exact pattern the six dimension agents use, letting the DSPy and MLflow plumbing be proven out before the dimension logic gets complicated.
+The separation earns its keep three ways. The numbers stay trustworthy because no language model computes them. The narrative is cheap to regenerate and easy to tune per audience - the same JSON can yield a technical readout, a data-operations summary and an executive paragraph from three different signatures, with no change to the evidence layer. And it is a low-risk rehearsal of the exact pattern the dimension agents use, letting the DSPy and MLflow plumbing be proven out before the dimension logic gets complicated.
 
 ```mermaid
 graph LR
@@ -914,26 +1034,32 @@ This "deterministic findings in, judgement out" contract is the shape of every d
 
 ### Execution Flow
 
+The diagram below shows the built assessment graph in `src/orchestrator.py`.
+The three rule-based agents run in parallel, and their advisories reach the
+Uniqueness agent through the aggregator. The adjudicator and the remediation
+narrative run outside the graph, in their own runners, and the graph attaches
+their stored results.
+
 ```mermaid
 graph LR
-    START([Start]) --> SP[Schema Profiler]
-    SP --> COMP[Completeness Agent]
-    COMP --> PARALLEL_START{Parallel}
-    PARALLEL_START --> VAL[Validity Agent]
-    PARALLEL_START --> CON[Consistency Agent]
-    PARALLEL_START --> UNQ[Uniqueness Agent]
-    PARALLEL_START --> TIM[Timeliness Agent]
-    VAL --> AGG[Aggregator]
+    START([Start]) --> LOAD[Load approved rules]
+    LOAD --> COMP[Completeness Agent]
+    LOAD --> VAL[Validity Agent]
+    LOAD --> CON[Consistency Agent]
+    COMP --> AGG[Aggregator]
+    VAL --> AGG
     CON --> AGG
-    UNQ --> AGG
-    TIM --> AGG
-    AGG --> ACC[Accuracy Agent]
-    ACC --> REM[Remediation Recommender]
-    REM --> RPT[Report Generator]
+    AGG --> UNQ[Uniqueness Agent]
+    UNQ --> SC[Scorecard]
+    SC --> REM[Remediation]
+    REM --> RPT[Report]
     RPT --> END([End])
 ```
 
-Conditional edges apply - for instance, if the Completeness Agent finds the table is less than 70% complete, the Uniqueness Agent gets deprioritised (no point finding duplicates in sparse data), and the Remediation Recommender is told to flag completeness as the primary concern.
+The designed Timeliness agent would join the parallel stage, and the designed
+Accuracy agent would run after the aggregator. Neither is built.
+
+Designed, not built: conditional edges - for instance, if the Completeness Agent finds the table is less than 70% complete, the Uniqueness Agent gets deprioritised (no point finding duplicates in sparse data), and the Remediation Recommender is told to flag completeness as the primary concern.
 
 ---
 
@@ -1435,8 +1561,8 @@ The generator takes those distributions and produces datasets at configurable sc
 - **Completeness defects:** Null out mandatory fields at rate $r_c$ (e.g., 5%). Vary by field importance - higher rate for low-criticality fields, lower for high-criticality.
 - **Validity defects:** Insert out-of-domain values at rate $r_v$. Wrong UoM codes, malformed postal codes, invalid material type codes.
 - **Consistency defects:** Create cross-table contradictions at rate $r_{con}$. Material typed as FERT but procurement type set to external with no purchasing info record.
-- **Accuracy defects:** Swap material descriptions between material groups at rate $r_a$. A "Hex Bolt" classified under "Lubricants."
-- **Timeliness defects:** Backdate creation dates and remove change logs at rate $r_t$. Create expired-but-active conditions.
+- **Accuracy defects (designed, not built):** Swap material descriptions between material groups at rate $r_a$. A "Hex Bolt" classified under "Lubricants." The injector stubs this dimension.
+- **Timeliness defects (designed, not built):** Backdate creation dates and remove change logs at rate $r_t$. Create expired-but-active conditions. The injector stubs this dimension, because the extracts carry no change history.
 - **Uniqueness defects:** Generate near-duplicate clusters at rate $r_u$. Same company, slightly different name spelling, same or nearby address.
 
 Each injected defect is logged with its exact location (table, record ID, field) and dimension. This gives precision/recall/F1 per agent per dimension - proper quantitative evaluation, not just "it found some issues."
@@ -1572,13 +1698,13 @@ agentdq/
 
 #### Week 3-5: Agent Development (individual agents)
 - Build agents one at a time, starting with the most straightforward
-- Recommended order: Completeness -> Validity -> Timeliness -> Consistency -> Uniqueness -> Accuracy
+- Recommended order: Completeness -> Validity -> Consistency -> Uniqueness. Timeliness and Accuracy are designed, not built.
 - Completeness and Validity are rule-based and fast to build - both done in week 3
 - Consistency needs the cross-entity logic - allow a full week
 - Uniqueness needs the fuzzy matching pipeline - allow a full week
-- Accuracy is the LLM-heavy agent - build last, once comfortable with DSPy signatures in this context
+- Accuracy would be the LLM-heavy agent; it is designed, not built, because the project has no outside source of truth
 - Each agent unit-tested against synthetic data with known defects, results logged to MLflow
-- **Deliverable:** Six working agents with individual precision/recall/F1 scores
+- **Deliverable:** Four working agents (Completeness, Validity, Consistency, Uniqueness) with individual precision/recall/F1 scores
 
 #### Week 6-7: Orchestration
 - Wire all agents into LangGraph StateGraph
@@ -1589,7 +1715,7 @@ agentdq/
 - **Deliverable:** End-to-end pipeline producing DQ scorecards
 
 #### Week 8: DSPy Optimisation + Evaluation
-- Run DSPy optimisation for the Accuracy and Uniqueness agents (the two where LLM judgement matters most)
+- Run DSPy optimisation for the Uniqueness adjudicator, where LLM judgement matters most (Accuracy is designed, not built)
 - Full evaluation run: precision/recall/F1 per agent per dimension per scenario
 - MLflow comparison of optimised vs baseline prompts
 - **Deliverable:** Optimised agents with before/after comparison

@@ -8,6 +8,10 @@
 #                      score means "checked nothing", not "clean data". Warn
 #                      loudly, label the scorecard, and hint at --rules
 #                      config/rules. Guard logic is a testable pure helper.
+# v1.6 | 13-Nov-2026 | Package 4z. The usage text names the module form, the
+#                      only form that imports src. The candidate-pairs line no
+#                      longer says the adjudicator is still to come; it points
+#                      to tools/run_assessment.py, which prints the verdicts.
 # v1.5 | 10-Aug-2026 | Package 4f. Two corrections. The scorecard now covers the
 #                      SAME dimensions the linear path covers, so Uniqueness is
 #                      scored rather than run and then ignored; and the
@@ -30,13 +34,16 @@
 
 Mirrors the linear tools/run_assessment.py, but orchestrated: the three
 dimension agents fan out in parallel and cross-agent advisories are routed to
-the (stubbed) uniqueness stage. Approved rules are read from the repository's
+the uniqueness stage. This runner does not print the adjudicator's verdicts;
+tools/run_assessment.py does. Approved rules are read from the repository's
 export directory by default - the loop the design intends (agent suggests ->
 human approves -> executor runs approved rules).
 
-Run:
-    python -m tools.run_assessment_graph --data data/synthetic/degraded \\
-        --rules data/approved --schema-dir config/schema
+Run from the repository root, as a module (run as a script path, Python
+cannot import src):
+    uv run python -m tools.run_assessment_graph --data data/synthetic/degraded \\
+        --format parquet
+Add --rules config/rules to run every imported rule, not only the approved ones.
 """
 
 from __future__ import annotations
@@ -98,6 +105,7 @@ def _cluster_size(cluster: Any) -> int:  # v1.3
 
 def main() -> None:
     parser: argparse.ArgumentParser = argparse.ArgumentParser(
+        prog="python -m tools.run_assessment_graph",  # v1.6
         description="Run the AgentDQ assessment graph and print a scorecard."
     )
     parser.add_argument("--data", required=True, help="dataset directory")
@@ -170,7 +178,8 @@ def main() -> None:
         print("\nUniqueness:")
         print(f"  mode            : {summary.get('mode')} ({summary.get('mode_reason') or 'all rungs ran'})")
         print(f"  score spread    : {summary.get('score_spread')}")
-        print(f"  candidate pairs : {summary.get('candidate_pairs')} awaiting the adjudicator (Package 4g)")
+        print(f"  candidate pairs : {summary.get('candidate_pairs')} awaiting the adjudicator "  # v1.6
+              "(verdicts: tools/run_assessment.py)")
     if clusters:
         for cluster in clusters:
             if cluster.resolution.value == "automatic":

@@ -8,6 +8,9 @@
 #                      demo. Includes add_manual_candidate() for customer-
 #                      authored rules and export_approved() so the existing
 #                      rule_loader consumes approved rules unchanged.
+# v1.1 | 09-Nov-2026 | Package 4z. FileRepository takes an optional approved_dir
+#                      and refreshes the approved-rules export after every
+#                      state change. SessionRepository never exports.
 # ---------------------------------------------------------------------------
 """The rules repository - where candidates become (or fail to become) rules.
 
@@ -406,13 +409,21 @@ class FileRepository(RulesRepository):
     """File-backed backend for real runs: a YAML snapshot of all records plus
     an append-only JSONL ledger. One writer module (this one) keeps the two
     consistent - every verb persists the snapshot and appends the ledger in the
-    same call."""
+    same call. With an approved_dir, every verb also refreshes the export the
+    executor reads."""
 
-    def __init__(self, repo_dir: str | Path):
+    def __init__(self, repo_dir: str | Path, approved_dir: Optional[str | Path] = None):  # v1.1
+        """Open or create the store in repo_dir.
+
+        approved_dir is the folder that receives the approved-rules export. The
+        export is opt-in: None means no export. Opening a repository writes
+        nothing; the first state change does.
+        """
         super().__init__()
         self.repo_dir: Path = Path(repo_dir)
         self.snapshot_path: Path = self.repo_dir / "candidates.yaml"
         self.ledger_path: Path = self.repo_dir / "ledger.jsonl"
+        self.approved_dir: Optional[Path] = None if approved_dir is None else Path(approved_dir)  # v1.1
         self.repo_dir.mkdir(parents=True, exist_ok=True)
         self._load()
 
@@ -437,6 +448,23 @@ class FileRepository(RulesRepository):
         }
         with self.snapshot_path.open("w", encoding="utf-8") as handle:
             yaml.safe_dump(payload, handle, sort_keys=False, allow_unicode=True)
+        self._refresh_approved_export()  # v1.1
+
+    def _refresh_approved_export(self) -> None:  # v1.1
+        """Rewrite the approved-rules export from the current records.
+
+        Deletes the existing *_rules.yaml files in approved_dir first, so a table
+        whose last approved rule was retired loses its file. Touches nothing
+        else in that folder. Does nothing when approved_dir is None.
+        """
+        stale_path: Path = None
+
+        if self.approved_dir is None:
+            return
+        self.approved_dir.mkdir(parents=True, exist_ok=True)
+        for stale_path in self.approved_dir.glob("*_rules.yaml"):
+            stale_path.unlink()
+        self.export_approved(self.approved_dir)
 
     def _ledger(self, entry: dict[str, Any]) -> None:
         with self.ledger_path.open("a", encoding="utf-8") as handle:

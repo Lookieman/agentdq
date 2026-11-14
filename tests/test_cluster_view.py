@@ -1,5 +1,7 @@
 # ---------------------------------------------------------------------------
 # tests/test_cluster_view.py
+# v1.2 | 09-Nov-2026 | Package 4z. Adds the note that names the tables with
+#                      approved rules.
 # v1.1 | 10-Aug-2026 | Package 4f fix. Adds the oversized-block table and the
 #                      block ceiling row.
 # v1.0 | 10-Aug-2026 | Package 4f. The display shaping for the Duplicates and
@@ -9,6 +11,8 @@
 """What the screen shows, checked without starting the screen."""
 
 from __future__ import annotations
+
+from types import SimpleNamespace  # v1.2
 
 import pandas as pd
 import pytest
@@ -23,6 +27,7 @@ from src.contracts import (
 from src.data.schema import load_schemas
 from src.reporting.cluster_view import (
     NO_TEXT,
+    approved_tables_note,  # v1.2
     candidate_pairs_frame,
     cluster_members_frame,
     cluster_overview_frame,
@@ -288,3 +293,16 @@ def test_the_block_ceiling_is_shown_in_the_settings():
     rows = settings_rows(dict(_resolved(), max_block_pairs=20000000), {})
     frame = pd.DataFrame(rows)
     assert frame[frame["Setting"] == "Block size ceiling"].iloc[0]["In force"] == "20,000,000 pairs"
+
+
+def test_the_approved_note_names_each_table_once():  # v1.2
+    rules = [
+        SimpleNamespace(table="MARC"),
+        SimpleNamespace(table="MARA"),
+        SimpleNamespace(table="MARA"),
+    ]
+    assert approved_tables_note(rules) == "Tables with approved rules: MARA, MARC."
+
+
+def test_the_approved_note_says_when_no_table_has_rules():  # v1.2
+    assert approved_tables_note([]) == "No table has approved rules yet."
