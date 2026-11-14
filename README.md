@@ -104,7 +104,7 @@ If you use the runners that call a model, put your key in `.env`. To use a diffe
 uv run pytest -q
 ```
 
-The suite has 282 tests. All tests run offline. One test is skipped because it needs the real CAL extracts in `data/raw/`.
+The suite has 291 tests, and all of them run offline. With the real CAL extracts in `data/raw/`, all 291 pass with 0 skipped. Without the extracts, one test is skipped.
 
 ### Make the synthetic data
 
@@ -216,7 +216,7 @@ agentdq/
 
 ## Status and limits
 
-- Packages 1 to 4 are built: data foundation, approval gate, LangGraph orchestration, and uniqueness with remediation. The close-out of Package 4 is in progress.
+- Packages 1 to 4 are built: data foundation, approval gate, LangGraph orchestration, and uniqueness with remediation. Package 4 is complete.
 - Planned packages: evaluation with MLflow (Package 5), a local model on a Mac mini (Package 6) and a public demo (Package 7).
 - The confidence weights and the retrieval thresholds are placeholders. Package 5 calibrates them.
 - The duplicate settings in `config/schema/mara.yaml` are tuned on synthetic data only.

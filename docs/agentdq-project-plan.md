@@ -122,9 +122,10 @@ What the pilot demonstrates today:
 - A full generate -> inject labelled defects -> execute rules -> score loop, with
   the executor reproducing the injected ground truth exactly (precision and
   recall of 1.000 on Completeness, Validity and Consistency).
-- 107 legacy Information Steward rules imported into the canonical IR, re-mapped
+- 106 legacy Information Steward rules imported into the canonical IR, re-mapped
   from the IS taxonomy onto the DAMA dimensions, and bound to self-defined
-  domains for the synthetic path.
+  domains for the synthetic path. Two hand-written cross-field rules sit beside
+  them, so the loader reads 108 rules from `config/rules/`.
 - A scorecard and dashboard that run on both the labelled synthetic scenarios
   and the real CAL extract, surfacing genuine completeness gaps in the real data.
 
@@ -257,9 +258,10 @@ default moved to `token_sort_ratio`, which cut the decoy error rate from 78% to
 39% and moved word_order twin recall from 0 of 41 to 24 of 41. This was one
 line in `config/schema/mara.yaml`. It sits alongside 4e in the work log.
 
-**Deferred items from the Package 4 build.** Five items came out during Package
-4 but were held back so Package 4 could ship. They are recorded in
-`agentdq_design.md` section 6.4, and moved into Package 5's plan:
+**Deferred items from the Package 4 build.** Seven items came out during
+Package 4 but were held back so Package 4 could ship. Items 1 to 5 are recorded
+in `agentdq_design.md` section 6.4. Items 6 and 7 came from the 4z live run.
+All seven move into Package 5's plan:
 
 1. Attribute veto (extract 6203 vs 6204, "Steel" vs "Brass", cap the score
    when they disagree). Built in 4g (see the late change above). Package 5
@@ -271,6 +273,16 @@ line in `config/schema/mara.yaml`. It sits alongside 4e in the work log.
 4. Soft TF-IDF and Monge-Elkan measurement (waiting on `py_stringmatching`
    compatibility with Python 3.14).
 5. Narrower band setting (0.92 / 0.95), now measurable on the new score spread.
+6. Adjudicator over-merging. The adjudicator judges pairs duplicate when they
+   differ only in a specification word ("Standard" vs "Precision", "Cylinder"
+   vs "Motor"). In the 4z run it judged 35 pairs duplicate; 27 are labelled
+   twins, and Luqman reviewed the other 8 and confirmed them false positives,
+   so precision is 27 of 35. Two of the 8 (pairs 7 and 8 of the review) also
+   show cluster chaining: one bad link joins a labelled twin to a third record.
+7. Narrative faithfulness. Check that each remediation narrative stays faithful
+   to its deterministic action. In the 4z run, action 3's narrative says
+   "Implement a blocking key" where the deterministic action says "Populate the
+   blocking key fields".
 
 ### Package 4z - Close-out
 
@@ -607,7 +619,7 @@ data_derived         values inferred from observed data   HIGH - must be
 ```
 
 Templates live as YAML in `config/rule_bank/`, loaded by `src/rules/rule_bank.py`.
-The one-off job that wraps the 107 imported RuleSpecs with match metadata is
+The one-off job that wraps the 106 imported RuleSpecs with match metadata is
 `tools/build_rule_bank.py`.
 
 ### Rule strength as a governed attribute, not a birthmark
@@ -661,7 +673,7 @@ templates.
 
 A role is the *semantic job* a field performs, independent of its SAP name - the
 handle that lets a template generalise across fields and datasets. The starting
-enum is drawn from the fields the 107 imported rules actually touch across
+enum is drawn from the fields the 106 imported rules actually touch across
 MARA/MARC/MAKT:
 
 ```
@@ -888,7 +900,7 @@ data, measure recall at retrieval and precision at suggestion, adjust.
 Not every domain needs a reference *table*. Small fixed domains (BESKZ = E/F/X)
 are `template_fixed` - the values live in the template, no file needed. Reference
 tables earn their existence when the value set is large, client-specific or
-externally standardised. Filtering the 107 rules' needs through that lens gives a
+externally standardised. Filtering the 106 rules' needs through that lens gives a
 shortlist of ten, all extractable from the CAL appliance via the same
 SE16N route as the master data (the existing `extract_loader.py` ingests them
 unchanged):
@@ -946,7 +958,7 @@ control - the human-only, audited promotion described earlier.
 config/rule_bank/                    template YAMLs
 config/rule_bank/field_roles.yaml    the controlled role enum
 config/reference/                    the ten reference tables + metadata
-tools/build_rule_bank.py             wraps the 107 RuleSpecs with match metadata
+tools/build_rule_bank.py             wraps the 106 RuleSpecs with match metadata
 src/rules/rule_bank.py               loads and queries the bank
 src/agents/profile_interpreter.py    Profiling Agent (two outputs)
 src/agents/rule_suggester.py         Rule Suggestion Agent (two engines)
@@ -959,7 +971,7 @@ src/dspy_modules/suggestion_signatures.py   the DSPy signatures
 Decision                     Resolution
 ---------------------------  ------------------------------------------------
 Field-role vocabulary        fixed controlled enum of 16 roles + `unknown`,
-                             seeded from the 107 rules' field coverage
+                             seeded from the 106 rules' field coverage
 Retrieval threshold          two dials: 0.80 retrieval (recall), 0.95
                              highlight (precision at the gate)
 Reference tables up front    ten scaffolded now (T006, T023, T134, T137,
@@ -1606,6 +1618,9 @@ Prove the architecture works, establish benchmark scores, publish as a portfolio
 
 ### Project Scaffold
 
+This is the original scaffold from the first plan, kept as a record. The built
+repository differs from it. For the current files, see `docs/modules_map.md`.
+
 ```
 agentdq/
 |
@@ -1764,7 +1779,7 @@ and quantify the result against known ground truth.
 ### What to Write Hands-on (with Claude as reviewer)
 
 - **LangGraph orchestrator** - state schema, node definitions, edge routing, conditional logic. This is the architectural core.
-- **DSPy signatures and metric functions** for the Accuracy and Uniqueness agents.
+- **DSPy signatures and metric functions** for the Uniqueness adjudicator (the Accuracy agent is designed, not built).
 - **Cross-entity consistency rules** - the domain logic that codifies SAP data model knowledge.
 
 ### What to Co-develop (write first, then get review)

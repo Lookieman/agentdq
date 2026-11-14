@@ -116,6 +116,8 @@ v2.2 | 13-Nov-2026 | Package 4z close-out. The approval gate exports the
                      confirmed 27 of 27 labelled twins and rejected 1 of 1
                      decoy in the band. Test count to 291 passing, 0 skipped.
                      Section 9: the rule bank holds 106 templates, as built.
+                     Section 1: the importer writes 106 rules; with the 2
+                     hand-written cross-field rules, the loader reads 108.
 v2.0 | 10-Aug-2026 | Package 4f built (the dashboard moves onto the graph).
                      assess() now BUILDS and INVOKES the assessment graph, so
                      the dashboard, the console driver and the graph runner run
@@ -218,7 +220,7 @@ Deterministic profiler           src/data/profiler.py                  done
 Schema layer                     src/data/schema.py, config/schema/    done
 Synthetic generator              src/data/generator.py                 done
 Defect injector + labels         src/data/defect_injector.py           done
-IS rule importer (107 rules)     src/rules/is_importer.py              done
+IS rule importer (106 rules)     src/rules/is_importer.py              done
 Rule loader                      src/rules/rule_loader.py              done
 Rule executor (pandas, Kleene)   src/rules/executor.py                 done
 Completeness / Validity /        src/agents/completeness.py,           done
@@ -227,13 +229,16 @@ Scorecard + evaluation           src/reporting/scorecard.py            done
 Streamlit dashboard (4 tabs)     app/dashboard.py                      done
 Field-role vocabulary (16+1)     config/rule_bank/field_roles.yaml     done
 Rule bank + retrieval join       src/rules/rule_bank.py                done
-Bank builder (wraps 107 rules)   tools/build_rule_bank.py              done
+Bank builder (wraps 106 rules)   tools/build_rule_bank.py              done
 Reference store (10 tables)      src/rules/reference_store.py          done
 Profiling Agent (DSPy)           src/agents/profile_interpreter.py     done
 Rule Suggestion Agent (DSPy)     src/agents/rule_suggester.py          done
 DSPy signatures (3)              src/dspy_modules/                     done
                                  suggestion_signatures.py
 ```
+
+The importer writes 106 rules. With the 2 hand-written cross-field rules in
+`config/rules/cross_field_examples.yaml`, the loader reads 108.
 
 Test position: 46 offline tests pass, no LLM or API key required. The three
 deterministic dimensions score 1.000 precision and recall against injected ground

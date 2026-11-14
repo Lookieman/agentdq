@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------
 # tools/build_rule_bank.py
 # v1.0 | 05-Jul-2026 | Initial creation. One-off builder: wraps imported
-#                      RuleSpecs (the 107 IS rules) into rule-bank templates
+#                      RuleSpecs (the 106 IS rules) into rule-bank templates  # v1.2
 #                      with derived binding, applicability signals and a
 #                      default prior_strength_block. Emits config/rule_bank/
 #                      templates.yaml. Includes a --self-test mode.
@@ -11,6 +11,11 @@
 #                      the authoritative parameter-source signal. load_source_
 #                      rules() now reads config/rules/*_rules.yaml. Self-test
 #                      rules updated to the exclude_none on-disk shape.
+# v1.2 | 14-Nov-2026 | Header count corrected: the importer writes 106 IS rules
+#                      (34 MARA, 71 MARC, 1 MAKT), so the bank has 106
+#                      templates. The 2 hand-written cross-field rules are not
+#                      wrapped, because load_source_rules() reads *_rules.yaml.
+#                      Comment change only.
 # ---------------------------------------------------------------------------
 """Build the rule bank from the imported IS rules.
 
