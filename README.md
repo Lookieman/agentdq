@@ -1,122 +1,162 @@
-# AgentDQ — Agentic Data Quality Assessment for SAP Master Data
+# AgentDQ: agentic data quality for SAP material master data
 
-AgentDQ is a multi-agent system that autonomously assesses data quality across SAP master data entities. Six specialist agents — one per DAMA data quality dimension — are coordinated by a LangGraph orchestrator to produce a consolidated DQ scorecard with prioritised remediation recommendations.
+AgentDQ assesses the data quality of SAP material master data in the tables MARA, MARC and MAKT. Agents profile the data and suggest data quality rules. A person approves each rule. A deterministic executor then runs the approved rules, and agents judge uncertain duplicates and write a remediation plan.
 
-The project targets asset-intensive industries (oil & gas, utilities, manufacturing) by focusing on two core SAP master data domains: **Material Master** (with plant and storage location data) and **Equipment Master**.
+AgentDQ is a proof of concept and a portfolio piece. It is not a product. It runs on an open-source stack against synthetic data and SAP Cloud Appliance Library (CAL) sandbox extracts.
+
+## What it does
+
+The agentic value is in rule suggestion. Rule execution stays deterministic. AgentDQ uses a language model only where a task needs judgement:
+
+| Step | Who does the work | Model call |
+|---|---|---|
+| Profile each table | Deterministic profiler (pandas) | No |
+| Interpret the profile | Profiling agent (DSPy) | Yes |
+| Suggest rules from the rule bank and the profile | Rule suggestion agent (DSPy) | Yes |
+| Approve, edit or reject each suggestion | A person, at the approval gate | No |
+| Run the approved rules | Pandas executor, through the Completeness, Validity and Consistency agents | No |
+| Find duplicate materials | Uniqueness agent: fuzzy score, semantic score, attribute veto | No |
+| Judge uncertain duplicate pairs | Adjudicator (DSPy), capped number of calls | Yes |
+| Group, rank and explain fixes | Remediation agent: deterministic ranking, model narrative | Narrative only |
+
+Each suggestion carries a rationale, the evidence from the profile, and a confidence. The confidence is arithmetic with visible parts, not a number that the model invents.
+
+The rule bank holds 106 rule templates, built from an SAP Information Steward rules workbook. The suggestion agent uses them as a starting point. They are not the active ruleset.
+
+## Data quality dimensions
+
+AgentDQ covers four of the six DAMA data quality dimensions.
+
+| Dimension | Status | Method |
+|---|---|---|
+| Completeness | Built | Not-null rules, from approved suggestions |
+| Validity | Built | Domain rules: each value must be in its list of permitted values |
+| Consistency | Built | Cross-field rules, for example the MRP type against the lot size |
+| Uniqueness | Built | Blocking on MTART and MEINS, fuzzy and semantic scores on MAKTX, attribute veto, then model adjudication |
+| Timeliness | Not built | A useful staleness check needs the change history (CDHDR and CDPOS). The current extracts do not include it. |
+| Accuracy | Not built | Accuracy needs an outside source of truth, for example a supplier catalogue. The project has none. |
 
 ## Architecture
 
+AgentDQ uses two LangGraph graphs. The rules repository joins them. The pause for human approval is the repository, not a LangGraph `interrupt()`. A suggestion can wait days for approval, and no graph run stays open during that time.
+
 ```mermaid
 graph LR
-    START([Start]) --> SP[Schema Profiler]
-    SP --> COMP[Completeness Agent]
-    COMP --> PARALLEL_START{Parallel}
-    PARALLEL_START --> VAL[Validity Agent]
-    PARALLEL_START --> CON[Consistency Agent]
-    PARALLEL_START --> UNQ[Uniqueness Agent]
-    PARALLEL_START --> TIM[Timeliness Agent]
-    VAL --> AGG[Aggregator]
-    CON --> AGG
-    UNQ --> AGG
-    TIM --> AGG
-    AGG --> ACC[Accuracy Agent]
-    ACC --> REM[Remediation Recommender]
-    REM --> RPT[Report Generator]
-    RPT --> END([End])
+    subgraph SG[Suggestion graph]
+        P[Profile] --> I[Interpret] --> S[Suggest] --> W[Write drafts]
+    end
+    W --> R[(Rules repository<br/>YAML + JSONL ledger)]
+    R <--> G[Approval gate<br/>Streamlit]
+    R --> AG[Assessment graph]
 ```
 
-### Agent-to-Dimension Mapping
+```mermaid
+graph LR
+    L[Load approved rules] --> C[Completeness]
+    L --> V[Validity]
+    L --> K[Consistency]
+    C --> A[Aggregate]
+    V --> A
+    K --> A
+    A --> U[Uniqueness]
+    U --> SC[Scorecard]
+    SC --> RM[Remediation]
+    RM --> RP[Report]
+```
 
-| Agent         | DAMA Dimension | Approach                                                    |
-|---------------|----------------|-------------------------------------------------------------|
-| Completeness  | Completeness   | Mandatory field population checks, conditional by type      |
-| Validity      | Validity       | Domain value and format rule validation                     |
-| Consistency   | Consistency    | Cross-table and intra-record logical coherence              |
-| Accuracy      | Accuracy       | LLM-based classification + external reference verification  |
-| Timeliness    | Timeliness     | Record staleness and temporal validity analysis             |
-| Uniqueness    | Uniqueness     | Fuzzy matching + LLM adjudication for duplicate detection   |
+The three rule-based checks run in parallel. Their findings go to the Uniqueness stage as structured advisories. For example, a record with an invalid description stays out of duplicate matching.
 
-## Data Scope
+## Technology
 
-**Material Master:** MARA (general), MARC (plant-level), MARD (storage location), MAKT (descriptions)
+| Component | Technology |
+|---|---|
+| Orchestration | LangGraph, two `StateGraph` graphs |
+| Model calls | DSPy signatures, default model `openai/gpt-4o-mini` |
+| Rule execution | pandas |
+| Duplicate scoring | rapidfuzz (`token_sort_ratio`) and sentence-transformers (`all-MiniLM-L6-v2`) |
+| Rule storage | YAML files and a JSONL audit ledger |
+| User interface | Three Streamlit apps |
+| Tests | pytest, offline, with fake models |
+| Environment | Python 3.14 and uv |
 
-**Equipment Master:** EQUI (equipment), EQKT (descriptions), EQUZ (time segments), IFLOT (functional locations)
-
-Cross-entity linkages between equipment and material master records provide the consistency checks relevant to asset-intensive operations.
-
-## Technology Stack (Phase 1 — Open Source Pilot)
-
-| Component              | Technology                                      |
-|------------------------|------------------------------------------------|
-| Orchestration          | LangGraph (StateGraph)                         |
-| LLM prompting          | DSPy (signatures + optimisation)               |
-| LLM backend            | Claude API (primary), local Ollama (fallback)  |
-| Experiment tracking    | MLflow                                         |
-| Data generation        | Python (Faker + custom SAP schema module)      |
-| Fuzzy matching         | rapidfuzz, sentence-transformers               |
-| Data profiling         | pandas, Great Expectations                     |
-| Storage                | DuckDB or SQLite (local)                       |
-| Reporting              | Structured JSON + Markdown/HTML scorecard      |
-| Version control        | Git + DVC (for dataset versioning)             |
-
-## Getting Started
+## Get started
 
 ### Prerequisites
 
-- Python 3.11+
-- An Anthropic API key (for Claude API access)
+- Python 3.14
+- [uv](https://docs.astral.sh/uv/)
+- An OpenAI API key, only for the runners that call a model
 
-### Installation
+### Install
 
 ```bash
-git clone https://github.com/<your-username>/agentdq.git
+git clone https://github.com/Lookieman/agentdq.git
 cd agentdq
 uv sync
-```
-
-### Configuration
-
-```bash
 cp .env.example .env
-# Edit .env with your API keys
 ```
 
-### Regenerate the data
+If you use the runners that call a model, put your key in `.env`. To use a different model, change `AGENTDQ_MODEL`, or give the `--model` flag.
 
-Run these four steps from the repository root, in this order. Each step reads the output of the step before it.
+### Run the tests
 
 ```bash
-# 1. Profile the real extracts in data/raw
-uv run python -m src.data.profiler --input data/raw --tables MARA,MARC,MAKT \
-    --pattern "{table}_EX_DATA.xlsx" --out data/profiles
-
-# 2. Import the Information Steward rules
-uv run python -m src.rules.is_importer --workbook docs/Infomation_Steward_Rules_Tables.xlsx \
-    --schema config/schema --tables MARA,MARC,MAKT --out config/rules
-
-# 3. Generate the clean baseline
-uv run python -m src.data.generator --schema config/schema --profiles data/profiles \
-    --tables MARA,MARC,MAKT --materials 5000 --seed 42 --out data/synthetic/baseline
-
-# 4. Inject defects into a degraded copy
-uv run python -m src.data.defect_injector --baseline data/synthetic/baseline \
-    --schema config/schema --rules config/rules --scenario degraded \
-    --seed 42 --out data/synthetic/degraded
+uv run pytest -q
 ```
+
+The suite has 282 tests. All tests run offline. One test is skipped because it needs the real CAL extracts in `data/raw/`.
+
+### Make the synthetic data
+
+The CAL extracts are not in the repository. The table profiles from those extracts are in `data/profiles/`, so you can make the synthetic data without the extracts.
+
+The full chain has four steps. Run them in this order, because each step reads the output of the step before it. Step 1 needs the extracts in `data/raw/`. The outputs of steps 1 and 2 are committed in `data/profiles/` and `config/rules/`, so without the extracts, start at step 3.
+
+1. Profile the extracts:
+
+   ```bash
+   uv run python -m src.data.profiler --input data/raw --tables MARA,MARC,MAKT \
+       --pattern "{table}_EX_DATA.xlsx" --out data/profiles
+   ```
+
+2. Import the Information Steward rules:
+
+   ```bash
+   uv run python -m src.rules.is_importer --workbook docs/Infomation_Steward_Rules_Tables.xlsx \
+       --schema config/schema --tables MARA,MARC,MAKT --out config/rules
+   ```
+
+3. Make the clean baseline:
+
+   ```bash
+   uv run python -m src.data.generator --schema config/schema --profiles data/profiles \
+       --tables MARA,MARC,MAKT --materials 5000 --seed 42 --out data/synthetic/baseline
+   ```
+
+4. Inject labelled defects:
+
+   ```bash
+   uv run python -m src.data.defect_injector --baseline data/synthetic/baseline \
+       --schema config/schema --rules config/rules --scenario degraded \
+       --seed 42 --out data/synthetic/degraded
+   ```
 
 `config/rules/cross_field_examples.yaml` is written by hand and committed. The importer in step 2 does not make it. Step 4 reads every rule file in `--rules`, so the file must sit beside the imported rules. Without it the degraded set has no Consistency defects: 9,232 labels instead of 10,596.
 
-### Run the assessment
+The scenarios are `healthy`, `degraded` and `critical`. Each defect is labelled with its table, record, field and dimension. The injector labels a defect only after the executor finds it, so the ground truth agrees with the executor.
 
-Run Python modules with `uv run python -m`, never as a script path, because the tools import from `src`.
+### Run an assessment
 
 ```bash
-uv run python -m tools.run_assessment_graph --data data/synthetic/degraded --format parquet
+uv run python -m tools.run_assessment_graph --data data/synthetic/degraded \
+    --format parquet --rules config/rules
 ```
 
-By default the assessment runs only the rules a human approved, from `data/approved`. Add `--rules config/rules` to run every imported rule.
+The default rules folder is `data/approved/`, which holds only the rules that a person approved. The approval gate rewrites it after every decision. It is committed, with the five MARA rules approved so far. The `--rules config/rules` flag runs all imported rules instead.
 
-The approval gate writes `data/approved` after every decision. Start the apps with these commands:
+If no vector file exists, the Uniqueness agent uses the fuzzy score only. The console shows the mode in use.
+
+### Open the apps
 
 ```bash
 uv run streamlit run app/dashboard.py
@@ -124,48 +164,79 @@ uv run streamlit run app/gate.py
 uv run streamlit run app/bank_browser.py
 ```
 
-Run the offline tests with `uv run pytest -q`.
+| App | Purpose |
+|---|---|
+| `app/dashboard.py` | Scorecard, findings, duplicates, ranked actions, evidence and settings |
+| `app/gate.py` | Approve, edit or reject suggestions, and write manual rules |
+| `app/bank_browser.py` | Browse the rule bank and govern rule strength |
 
-## Project Structure
+### Run the model and vector steps
 
-```
+These runners call a paid model or download a model. Each runner shows its flags with `--help`.
+
+| Runner | Purpose |
+|---|---|
+| `tools.run_suggestion` | Profile, interpret and suggest rules for one table |
+| `tools.build_embeddings` | Build the semantic vectors for duplicate matching (downloads the embedding model) |
+| `tools.run_adjudication` | Judge the uncertain duplicate pairs (`--cap` sets the maximum calls, default 500) |
+| `tools.run_remediation` | Write the remediation narrative |
+
+Each runner writes its result to a file beside the dataset or in `artefacts/`. The apps read these files, so the apps make no model calls.
+
+## Project structure
+
+```text
 agentdq/
++-- app/               Streamlit apps: dashboard, approval gate, rule bank browser
++-- artefacts/         Suggestion and remediation outputs
 +-- config/
-|   +-- schema/          # SAP table field definitions (YAML)
-|   +-- rules/           # Validation, consistency, completeness rules
-|   +-- settings.yaml    # Global configuration
+|   +-- reference/     Reference-table manifest
+|   +-- rule_bank/     Rule templates and field roles
+|   +-- rules/         Rules imported from Information Steward, plus cross-field examples
+|   +-- schema/        One YAML contract for each SAP table
++-- data/
+|   +-- approved/      Approved rules, exported by the approval gate
+|   +-- profiles/      Table profiles from the CAL extracts
+|   +-- repository/    Rule candidates and the audit ledger
++-- docs/              Design, project plan and module map
 +-- src/
-|   +-- agents/          # Six specialist DQ agents + base class
-|   +-- dspy_modules/    # DSPy signatures and evaluation metrics
-|   +-- data/            # Data loading, generation, defect injection
-|   +-- matching/        # Fuzzy matching utilities
-|   +-- reporting/       # Scorecard computation and rendering
-|   +-- utils/           # Logging, MLflow helpers
-|   +-- state.py         # LangGraph state schema
-|   +-- orchestrator.py  # LangGraph StateGraph definition
-+-- data/                # Raw, synthetic, and ground truth datasets
-+-- notebooks/           # EDA and evaluation notebooks
-+-- tests/               # Per-agent unit tests
-+-- docs/                # Project plan and documentation
+|   +-- agents/        Dimension agents, uniqueness, adjudicator, remediation
+|   +-- data/          Extract loader, profiler, generator, defect injector
+|   +-- dspy_modules/  DSPy signatures and model configuration
+|   +-- reporting/     Scorecard, assessment and evaluation
+|   +-- rules/         Rule IR, importer, rule bank, repository, executor
+|   +-- orchestrator.py, graph_nodes.py, state.py, contracts.py
++-- tests/             Offline pytest suite
++-- tools/             Command-line runners
 ```
 
-## Evaluation Methodology
+## Add a new SAP table
 
-Synthetic datasets are generated with controlled defect injection at known rates per dimension. Each defect is logged with its exact location (table, record, field) and dimension, enabling precision/recall/F1 measurement per agent. Three scenario variants (healthy, degraded, critical) test agent performance across different data quality maturity levels.
+`tools/onboard_object.py` reads an SE16N or SE12 extract and writes a draft schema for a new table, for example EQUI. It finds the header row and the candidate key, and it maps fields to known roles. It does not use a model. A person must review the draft before the table joins the assessment.
 
-All experiments are tracked in MLflow for reproducibility and comparison.
+## Status and limits
 
-## Phase 2 — Enterprise (SAP BDC)
+- Packages 1 to 4 are built: data foundation, approval gate, LangGraph orchestration, and uniqueness with remediation. The close-out of Package 4 is in progress.
+- Planned packages: evaluation with MLflow (Package 5), a local model on a Mac mini (Package 6) and a public demo (Package 7).
+- The confidence weights and the retrieval thresholds are placeholders. Package 5 calibrates them.
+- The duplicate settings in `config/schema/mara.yaml` are tuned on synthetic data only.
+- Only material master data is in scope. Equipment master data is a candidate for the onboarding tool, and is not built.
 
-Phase 2 migrates the same agent architecture onto SAP Business Data Cloud: Datasphere for the data layer, SAP AI Core for LLM serving, and SAP Analytics Cloud for reporting. The agents and their logic remain unchanged; only the data access and LLM invocation plumbing is replaced.
+## Documentation
 
-See `docs/PROJECT_PLAN.md` for the full project plan and architecture details.
+- [Design](docs/agentdq_design.md)
+- [Project plan](docs/agentdq-project-plan.md)
+- [Module map](docs/modules_map.md)
+
+Articles about the design decisions:
+
+1. [Where should intelligence live in a data quality system?](https://www.linkedin.com/pulse/where-should-intelligence-live-data-quality-system-luqman-ali-x3rhe/)
+2. [Can an agent decide what your data quality rules should be?](https://www.linkedin.com/pulse/can-agent-decide-what-your-data-quality-rules-should-luqman-ali-et8je/)
 
 ## Licence
 
-This project is for portfolio and educational purposes.
+Apache License 2.0. See [LICENSE](LICENSE).
 
 ## Author
 
-
-[Luqman ](https://github.com/Lookieman/agentdq)
+[Luqman Ali](https://github.com/Lookieman)
